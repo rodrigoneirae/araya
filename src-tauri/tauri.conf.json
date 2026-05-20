@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Araya Ltda",
+  "version": "0.1.0",
+  "identifier": "cl.rodrigoneira.araya-ltda",
+  "build": {
+    "devUrl": "http://127.0.0.1:1111",
+    "beforeDevCommand": "",
+    "beforeBuildCommand": ""
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Araya Ltda",
+        "width": 1200,
+        "height": 800,
+        "devtools": true,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "url": "about:blank"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "createUpdaterArtifacts": true,
+    "resources": [
+      "bin",
+      "bin/*",
+      "loading.html"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    },
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMzNDQ5RjNBNUQ1OTExNjIKUldSaUVWbGRPcDlFdzdya1VoaUJJdWpvWFFRWWh5N3FwbVdwS3pTUEM5Z1Z4S3FGZHc3N1BhY2IK",
+      "endpoints": ["https://rodrigoneira.cl/static/up/latest/manifest.json"]
+    }
+  }
+}

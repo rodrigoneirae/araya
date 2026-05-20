@@ -1,0 +1,74 @@
+{% load static  %}
+<!DOCTYPE html>
+<html lang="es" class="h-full light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}Araya Ltda.{% endblock %}</title>
+
+    <script>
+        (function() {
+            const saved = localStorage.getItem("theme");
+            const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+            if (saved === "dark" || (!saved && prefersDark)) {
+                document.documentElement.classList.add("dark");
+            }
+        })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&display=swap"
+          rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'libs/boxicons/css/boxicons.min.css' %}">
+    <link rel="stylesheet" href="{% static 'libs/toastify/toastify.min.css' %}">
+
+    {% block extra_css %}{% endblock %}
+    
+    <link rel="stylesheet" href="/static/css/dist/styles.css">
+</head>
+<body class="h-full flex flex-col bg-aq-bg text-aq-text font-sans">
+{% block body %}
+    <div id="app" class="h-full flex flex-col">
+        {% include 'plantilla/base/header.html' %}
+        {% include 'plantilla/base/top_menu.html' %}
+        {% include 'plantilla/base/aside_menu.html' %}
+
+        <main id="mainContent" class="flex-1 transition-all duration-300 pt-14 p-4 lg:p-6 relative">
+            <!-- Page Loader -->
+            <div id="pageLoader" class="page-loader">
+                <div class="loader-spinner">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+            {% block content %}{% endblock %}
+        </main>
+
+        {% include 'plantilla/base/footer.html' %}
+    </div>
+
+    <button
+            id="backToTop"
+            type="button"
+            class="fixed bottom-4 right-4 z-50 hidden h-11 w-11 items-center justify-center rounded-full
+         bg-aq-surface border border-aq-border text-aq-text shadow-lg hover:bg-aq-border"
+            aria-label="Volver al inicio"
+            title="Volver al inicio"
+    >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-6 w-6" fill="currentColor"
+             aria-hidden="true">
+            <path d="M12 4a1 1 0 0 1 .7.3l6 6a1 1 0 1 1-1.4 1.4L13 7.4V19a1 1 0 1 1-2 0V7.4L6.7 11.7a1 1 0 0 1-1.4-1.4l6-6A1 1 0 0 1 12 4Z"/>
+        </svg>
+    </button>
+{% endblock %}
+
+
+<script src="{% static 'libs/toastify/toastify-js.js' %}"></script>
+<script type="module" src="{% static 'js/init.js' %}"></script>
+
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

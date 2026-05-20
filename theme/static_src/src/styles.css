@@ -1,0 +1,6 @@
+@import "tailwindcss";
+@import "./tabulator.css";
+@import "./theme.css";
+
+
+@source "../../../**/*.{html,py,js}";

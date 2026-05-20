@@ -1,0 +1,167 @@
+{% extends 'plantilla/base/base.html' %}
+{% load static  %}
+{% block content %}
+<div class="w-full max-w-4xl mx-auto px-2 sm:px-4">
+    <div class="bg-aq-surface border border-aq-border rounded-xl p-4 sm:p-6 shadow-lg">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+            <h1 class="text-xl sm:text-2xl font-bold text-aq-text">Ingreso de Clientes/Proveedores</h1>
+            <div class="flex gap-2">
+                <button type="button" id="btnNuevo" onclick="nuevoCliente()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85" title="Nuevo">
+                    <i class='bx bx-plus text-xl'></i>
+                </button>
+                <button type="button" id="btnGuardar" onclick="guardarCliente()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85 hidden" title="Guardar">
+                    <i class='bx bx-save text-xl'></i>
+                </button>
+                <button type="button" id="btnEditar" onclick="editarCliente()" class="w-10 h-10 flex items-center justify-center rounded-full bg-amber-500 text-white hover:opacity-85 hidden" title="Editar">
+                    <i class='bx bx-edit text-xl'></i>
+                </button>
+                <button type="button" id="btnEliminar" onclick="eliminarCliente()" class="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 hidden" title="Eliminar">
+                    <i class='bx bx-trash text-xl'></i>
+                </button>
+                <a href="{% url 'home' %}" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-500 text-white hover:opacity-85 p-2" title="Salir">
+                    <i class='bx bx-exit text-lg'></i>
+                </a>
+            </div>
+        </div>
+
+        <form id="clienteForm" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-aq-text mb-1">RUT</label>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="rut" name="rut" onkeyup="if(event.key==='Enter')buscarPorRut()" class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text uppercase" placeholder="RUT">
+                        <input type="text" id="dig_ver" name="dig_ver" class="w-10 sm:w-12 px-2 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text uppercase" placeholder="DV">
+                        <button type="button" onclick="abrirListaClientes()" class="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                            <i class='bx bx-search'></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Tipo</label>
+                    <select id="tipo" name="tipo" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                        <option value="">--- Seleccionar Tipo ---</option>
+                    </select>
+                </div>
+
+                <div class="sm:col-span-2 lg:col-span-3">
+                    <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
+                    <input type="text" id="nombre" name="nombre" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Sigla</label>
+                    <input type="text" id="sigla" name="sigla" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                </div>
+
+                <div class="sm:col-span-2 lg:col-span-2">
+                    <label class="block text-sm font-medium text-aq-text mb-1">Giro</label>
+                    <input type="text" id="giro" name="giro" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                </div>
+
+                <div class="lg:col-span-3">
+                    <label class="block text-sm font-medium text-aq-text mb-1">Dirección</label>
+                    <input type="text" id="direccion" name="direccion" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Fono</label>
+                    <input type="text" id="fono" name="fono" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Comuna</label>
+                    <input type="text" id="comuna" name="comuna" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Ciudad</label>
+                    <input type="text" id="ciudad" name="ciudad" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Condición de Pago</label>
+                    <select id="cpago" name="cpago" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                        <option value="">--- Seleccionar ---</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Fax</label>
+                    <input type="text" id="fax" name="fax" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Email</label>
+                    <input type="email" id="email" name="email" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Contacto</label>
+                    <input type="text" id="contacto" name="contacto" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Email Contacto</label>
+                    <input type="email" id="emailcontacto" name="emailcontacto" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Lista Clientes -->
+<div id="modalClientes" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-lg sm:max-w-3xl max-h-[90vh] flex flex-col shadow-xl">
+        <div class="flex justify-between items-center p-4 border-b border-aq-border">
+            <div class="flex items-center gap-2">
+                <h2 class="text-lg sm:text-xl font-bold text-aq-text">Lista de Clientes/Proveedores</h2>
+            </div>
+            <button onclick="cerrarListaClientes()" class="text-aq-muted hover:text-aq-text">
+                <i class='bx bx-x text-2xl'></i>
+            </button>
+        </div>
+        <div class="p-4 overflow-auto flex-1 min-h-0">
+            <input type="text" id="filtroClientes" onkeyup="filtrarClientes()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar...">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm min-w-[250px]">
+                    <thead class="bg-aq-surface-2 sticky top-0">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">RUT</th>
+                            <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Nombre</th>
+                            <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaClientes" class="divide-y divide-aq-border"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div id="modalConfirmar" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-md p-4 sm:p-6 shadow-xl">
+        <div class="text-center">
+            <div class="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                <i class='bx bx-trash text-xl sm:text-2xl text-red-500'></i>
+            </div>
+            <h3 class="text-lg sm:text-xl font-bold text-aq-text mb-2">Confirmar Eliminación</h3>
+            <p class="text-sm sm:text-base text-aq-muted mb-6">¿Está seguro de eliminar el cliente/proveedor "<span id="eliminarRut" class="font-semibold"></span>"?</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="cerrarConfirmar()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                    Cancelar
+                </button>
+                <button onclick="confirmarEliminar()" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+{% block extra_js %}
+    <script src="{% static 'js/modulos/maestros/prov_cliente.js' %}" data-url="/maestros/prov-cliente/" data-csrf-token="{{ csrf_token }}"></script>
+{% endblock %}

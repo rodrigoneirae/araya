@@ -1,0 +1,52 @@
+{% load static %}
+ {% block header %}
+        <!-- Header Superior: Logo + Buscador + Usuario -->
+        <header class="sticky top-0 z-50 bg-aq-surface border-b border-aq-border">
+            <div class="flex items-center justify-between h-14 px-4">
+                <!-- Logo & Mobile Menu -->
+                <div class="flex items-center">
+                    <button id="sidebarToggle" class="p-2 rounded-lg text-aq-text hover:bg-aq-border transition-colors">
+                        <i class='bx bx-menu text-xl'></i>
+                    </button>
+                    <a href="{% url 'home' %}" class="flex items-center ml-2">
+                        <img src="{% static 'assets/images/brand-logos/desktop-logo.png' %}" alt="Logo" class="h-8 w-auto">
+                    </a>
+                </div>
+
+                <!-- Buscador - Solo Desktop -->
+                <div class="hidden lg:flex flex-1 max-w-md mx-8">
+                    <div class="relative w-full">
+                        <input type="text" placeholder="Buscar..."
+                            class="w-full pl-10 pr-4 py-2 text-sm bg-aq-bg border border-aq-border rounded-lg text-aq-text placeholder-aq-muted focus:outline-none focus:border-aq-primary">
+                        <i class='bx bx-search absolute left-3 top-1/2 -translate-y-1/2 text-aq-muted'></i>
+                    </div>
+                </div>
+
+                <!-- Right Side -->
+                <div class="flex items-center space-x-2">
+                    <button id="themeToggle" type="button" class="p-2 rounded-lg bg-aq-surface  text-aq-text hover:bg-aq-border transition-colors" aria-label="Cambiar tema">
+                        <i class="bx text-xl" id="themeIcon"></i>
+                    </button>
+                    {% if user.is_authenticated %}
+                    <div class="relative" id="userDropdown">
+                        <button id="userMenuBtn" class="flex items-center space-x-2 text-aq-text hover:opacity-80">
+                            <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
+                                {{ user.username|make_list|first|upper }}
+                            </div>
+                            <span class="hidden lg:inline text-sm">{{ user.username }}</span>
+                            <i class='bx bx-chevron-down text-sm'></i>
+                        </button>
+                        <div id="userDropdownMenu" class="absolute right-0 mt-2 w-48 bg-aq-surface rounded-lg shadow-lg py-1 z-50 hidden border border-aq-border">
+{#                            <a href="#" class="block px-4 py-2 text-sm text-aq-text hover:bg-aq-border">#}
+{#                                <i class='bx bx-user mr-2'></i>Perfil#}
+{#                            </a>#}
+                            <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                <i class='bx bx-log-out mr-2'></i>Cerrar Sesión
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+        {% endblock %}

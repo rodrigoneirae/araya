@@ -1,0 +1,141 @@
+{% extends 'plantilla/base/base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'libs/tabulator/css/tabulator.min.css' %}">
+<style>
+    #spinnerInforme { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.3s ease; }
+    #spinnerInforme.hidden { opacity: 0; pointer-events: none; }
+</style>
+{% endblock %}
+{% block content %}
+<div id="spinnerInforme" class="hidden">
+    <div class="loader-spinner">
+        <div class="spinner"></div>
+        <p class="text-white text-sm font-medium mt-3">Generando informe...</p>
+    </div>
+</div>
+
+<div class="h-full w-full mx-auto px-4 py-2">
+    <div class="bg-aq-surface border border-aq-border rounded-xl shadow-lg h-full flex flex-col">
+        <div class="p-4 border-b border-aq-border">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-aq-text">Compra por Proveedor</h1>
+                <a href="{% url 'home' %}" class="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-500 text-white hover:bg-gray-600" title="Salir">
+                    <i class='bx bx-exit text-lg'></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="p-4 border-b border-aq-border">
+            <div class="xl:w-2/3">
+                <div class="flex flex-wrap gap-2 items-end">
+                    <div class="flex-1 min-w-[130px]">
+                        <label class="block text-xs text-aq-text/60 mb-1">RUT Proveedor</label>
+                        <div class="flex gap-1">
+                            <input type="text" id="proRut" class="flex-1 min-w-0 px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text" placeholder="RUT proveedor">
+                            <button type="button" onclick="abrirListaProveedores()" class="px-2 py-1.5 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white text-sm" title="Buscar">
+                                <i class='bx bx-search'></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="min-w-[140px] flex-1">
+                        <label class="block text-xs text-aq-text/60 mb-1">Nombre</label>
+                        <span id="proNombre" class="block px-2 py-1.5 text-sm rounded-lg border border-dashed border-aq-border text-aq-text/60 truncate min-h-[36px] leading-[22px]">&nbsp;</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-aq-text/60 mb-1">Fecha Inicio</label>
+                        <input type="date" id="proFechaInicio" class="px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-aq-text/60 mb-1">Fecha Corte</label>
+                        <input type="date" id="proFechaCorte" class="px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    </div>
+                    <div class="flex gap-1 pb-[1px]">
+                        <button type="button" onclick="generarPDF()" class="btn-gen px-3 py-1.5 text-xs rounded-lg bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 font-medium shadow-sm hover:shadow-md transition-all duration-150 flex items-center gap-1.5 border border-red-400/20">
+                            <i class='bx bxs-file-pdf text-sm'></i> PDF
+                        </button>
+                        <button type="button" onclick="generarEXCEL()" class="btn-gen px-3 py-1.5 text-xs rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600 font-medium shadow-sm hover:shadow-md transition-all duration-150 flex items-center gap-1.5 border border-emerald-400/20">
+                            <i class='bx bx-grid-alt text-sm'></i> Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-b border-aq-border">
+            <div class="flex gap-0 px-4">
+                <button type="button" id="btnTabInforme" class="px-4 py-3 text-sm font-semibold text-aq-primary border-b-2 border-aq-primary" onclick="switchTab('tabInforme')">
+                    <i class='bx bx-report mr-1'></i> Informe
+                </button>
+                <button type="button" id="btnTabLibro" class="px-4 py-3 text-sm text-aq-text/60 hover:text-aq-text border-b-2 border-transparent" onclick="switchTab('tabLibro')">
+                    <i class='bx bx-book mr-1'></i> Libro de Compras
+                </button>
+            </div>
+        </div>
+
+        <div id="tabInforme" class="flex-1 min-h-0 flex flex-col">
+            <div class="flex-1 flex flex-col min-h-0 p-4">
+                <div id="resumenInforme" class="hidden mb-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Registros</p>
+                        <p id="resMovimientos" class="text-lg font-bold text-aq-text">0</p>
+                    </div>
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Total Cantidad</p>
+                        <p id="resEntradas" class="text-lg font-bold text-blue-500">0</p>
+                    </div>
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Monto Total</p>
+                        <p id="resTotalMonto" class="text-lg font-bold text-purple-500">$0</p>
+                    </div>
+                </div>
+                <div class="flex-1 min-h-0 overflow-auto">
+                    <div id="tablaInforme" class="w-full text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tabLibro" class="flex-1 min-h-0 hidden flex-col">
+            <div class="flex-1 flex flex-col min-h-0 p-4">
+                <div class="flex-1 min-h-0 overflow-auto">
+                    <div id="tablaLibro" class="w-full text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="sinSeleccion" class="flex-1 hidden items-center justify-center p-4">
+            <div class="text-center text-aq-text/40">
+                <i class='bx bx-book-open text-6xl'></i>
+                <p class="mt-2 text-sm">Configure las fechas para generar el informe</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalProveedores" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-lg md:max-w-2xl border border-aq-border max-h-[90vh] flex flex-col">
+        <h3 class="text-lg font-semibold text-aq-text mb-4">Buscar Proveedor</h3>
+        <input type="text" id="filtroProveedores" onkeyup="filtrarProveedores()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar por RUT o nombre...">
+        <div class="overflow-x-auto max-h-64 flex-1 min-h-0">
+            <table class="w-full min-w-[300px]">
+                <thead class="bg-aq-surface-2">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">RUT</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Nombre</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaListaProveedores" class="divide-y divide-aq-border"></tbody>
+            </table>
+        </div>
+        <div class="flex justify-end mt-4 pt-4 border-t border-aq-border">
+            <button onclick="cerrarListaProveedores()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+    <script src="{% static 'libs/tabulator/js/tabulator.min.js' %}"></script>
+    <script src="{% static 'js/modulos/inventario/informes/compra_provedores.js' %}" data-url="{% url 'inventario:inventario_compra_provedores' %}"></script>
+{% endblock %}

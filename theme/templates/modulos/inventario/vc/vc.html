@@ -1,0 +1,188 @@
+{% extends 'plantilla/base/base.html' %}
+{% load static %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'libs/tabulator/css/tabulator.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="h-full w-full mx-auto px-4 py-2">
+    <div class="bg-aq-surface border border-aq-border rounded-xl shadow-lg h-full flex flex-col">
+        <div class="p-4 border-b border-aq-border">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-aq-text">Vale de Consumo</h1>
+                <div class="flex gap-2">
+                    <button type="button" onclick="nuevaVC()" class="w-10 h-10 flex items-center justify-center rounded-lg bg-aq-primary text-white hover:opacity-85" title="Nuevo">
+                        <i class='bx bx-plus text-xl'></i>
+                    </button>
+                    <button type="button" onclick="guardarVC()" id="btnGuardarVC" class="w-10 h-10 flex items-center justify-center rounded-lg bg-aq-primary text-white hover:opacity-85 hidden" title="Guardar">
+                        <i class='bx bx-save text-xl'></i>
+                    </button>
+                    <button type="button" onclick="editarVC()" id="btnEditarVC" class="w-10 h-10 flex items-center justify-center rounded-lg bg-amber-500 text-white hover:opacity-85 hidden" title="Editar">
+                        <i class='bx bx-edit text-xl'></i>
+                    </button>
+                    <button type="button" onclick="eliminarVC()" id="btnEliminarVC" class="w-10 h-10 flex items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 hidden" title="Eliminar">
+                        <i class='bx bx-trash text-xl'></i>
+                    </button>
+                    <a href="{% url 'home' %}" class="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-500 text-white hover:bg-gray-600" title="Salir">
+                        <i class='bx bx-exit text-lg'></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-b border-aq-border overflow-x-auto">
+            <nav class="flex -mb-px lg:w-1/3 min-w-max" aria-label="Tabs">
+                <button onclick="cambiarTabVC('encabezado')" id="tab-encabezado" class="tab-btn active">
+                    <i class='bx bx-file'></i>
+                    <span>Encabezado</span>
+                </button>
+                <button onclick="cambiarTabVC('detalle')" id="tab-detalle" class="tab-btn">
+                    <i class='bx bx-list-ul'></i>
+                    <span>Detalle</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="p-4 w-full flex-1 overflow-hidden flex flex-col">
+            <div id="contenido-encabezado" class="tab-content h-full">
+                <form id="vcForm" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 w-full lg:w-1/2">
+                        <div class="lg:col-span-1">
+                            <label class="block text-sm font-medium text-aq-text mb-1">Número</label>
+                            <div class="flex gap-1">
+                                <input type="text" id="vcNumero" onchange="buscarVCInput()" class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-sm">
+                                <button type="button" onclick="abrirBusquedaVC()" class="px-3 py-2 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                    <i class='bx bx-search text-sm'></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-1">
+                            <label class="block text-sm font-medium text-aq-text mb-1">Fecha</label>
+                            <input type="date" id="vcFecha" class="w-full px-3 py-2 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div id="contenido-detalle" class="tab-content hidden flex flex-col h-full">
+                <h3 class="text-lg font-semibold text-aq-text mb-3">Detalle de Artículos</h3>
+                <div class="w-full lg:w-1/2">
+                    <div class="flex gap-2 mb-3 flex-wrap items-end">
+                    <div class="w-full sm:w-24 md:w-28">
+                        <input type="date" id="vcArtFecha" class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="Fecha">
+                    </div>
+                    <div class="w-24 sm:w-28">
+                        <div class="flex h-[34px]">
+                            <input type="text" id="vcArtCod" onchange="buscarArticuloVCInput()" class="w-full px-2 py-1.5 rounded-l-lg border border-aq-border bg-aq-bg text-aq-text text-xs" placeholder="Código">
+                            <button type="button" onclick="abrirListaArticulosVC()" class="px-2 py-1.5 rounded-r-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white border border-l-0 border-aq-border" title="Buscar">
+                                <i class='bx bx-search text-xs'></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-[120px]">
+                        <input type="text" id="vcArtNombre" class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="Nombre" readonly>
+                    </div>
+                    <div class="w-20 sm:w-20">
+                        <input type="number" id="vcArtCant" class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="Cant">
+                    </div>
+                    <div class="w-24 sm:w-24">
+                        <select id="vcArtBodega" class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
+                            <option value="">Bodega</option>
+                        </select>
+                    </div>
+                    <div class="w-24 sm:w-24">
+                        <input type="text" id="vcArtUM" class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="UM" readonly>
+                    </div>
+                    <div class="w-24 sm:w-24">
+                        <input type="text" id="vcArtTipo" class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="Tipo" readonly>
+                    </div>
+                    <button type="button" onclick="agregarArticuloVC()" class="px-3 py-1.5 rounded-lg bg-aq-primary text-white hover:opacity-85 text-xs h-[34px]" title="Agregar">
+                        <i class='bx bx-plus'></i>
+                    </button>
+                </div>
+                </div>
+                <div class="w-full">
+                <div class="flex-1 overflow-auto min-h-0">
+                    <div class="overflow-x-auto min-w-0">
+                        <table class="w-full border-collapse min-w-[600px]">
+                            <thead>
+                                <tr class="bg-aq-surface-2 text-aq-text text-xs">
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">Fecha</th>
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">Código</th>
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">Nombre</th>
+                                    <th class="px-1 py-2 text-right whitespace-nowrap">Cant</th>
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">Bodega</th>
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">UM</th>
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">Tipo</th>
+                                    <th class="px-1 py-2 text-center whitespace-nowrap">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vcDetalle">
+                            </tbody>
+                        </table>
+                    </div>
+                    </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-4 bg-aq-surface-2 rounded-lg w-full">
+                    <div id="historialArticulo" class="text-xs"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalBusquedaVC" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-lg md:max-w-2xl border border-aq-border max-h-[90vh] flex flex-col">
+        <h3 class="text-lg font-semibold text-aq-text mb-4">Buscar Vale de Consumo</h3>
+        <input type="text" id="filtroBusquedaVC" onkeyup="filtrarVC()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar por número o RUT...">
+        <div class="overflow-x-auto max-h-64 flex-1 min-h-0">
+            <table class="w-full min-w-[300px]">
+                <thead class="bg-aq-surface-2">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Número</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Tipo Doc</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaBusquedaVC" class="divide-y divide-aq-border"></tbody>
+            </table>
+        </div>
+        <div class="flex justify-end mt-4 pt-4 border-t border-aq-border">
+            <button onclick="document.getElementById('modalBusquedaVC').classList.add('hidden')" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="modalArticulosVC" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-lg md:max-w-2xl border border-aq-border max-h-[90vh] flex flex-col">
+        <h3 class="text-lg font-semibold text-aq-text mb-4">Buscar Artículo</h3>
+        <input type="text" id="filtroArticulosVC" onkeyup="filtrarArticulosVC()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar por código o nombre...">
+        <div class="overflow-x-auto max-h-64 flex-1 min-h-0">
+            <table class="w-full min-w-[300px]">
+                <thead class="bg-aq-surface-2">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Nombre</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaListaArticulosVC" class="divide-y divide-aq-border"></tbody>
+            </table>
+        </div>
+        <div class="flex justify-end mt-4 pt-4 border-t border-aq-border">
+            <button onclick="cerrarListaArticulosVC()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+{% block extra_js %}
+    <script src="{% static 'libs/tabulator/js/tabulator.min.js' %}"></script>
+    <script src="{% static 'js/modulos/inventario/vc.js' %}" data-url="{% url 'inventario:inventario_ingreso_vc' %}"></script>
+{% endblock %}

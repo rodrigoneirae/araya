@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargando...</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css">
+    <style>
+        :root {
+            --aq-bg: 12 16 20;
+            --aq-surface: 22 28 34;
+            --aq-text: 230 235 240;
+            --aq-muted: 140 150 160;
+            --aq-primary: 74 140 90;
+            --aq-accent: 255 200 100;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgb(var(--aq-bg));
+            font-family: 'Nunito Sans', Roboto, system-ui, sans-serif;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo svg {
+            width: 100%;
+            height: 100%;
+        }
+        .brand {
+            text-align: center;
+        }
+        .brand h1 {
+            color: rgb(var(--aq-text));
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            margin-bottom: 0.25rem;
+        }
+        .brand p {
+            color: rgb(var(--aq-muted));
+            font-size: 0.875rem;
+            font-weight: 300;
+        }
+        .spinner-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(var(--aq-primary), 0.2);
+            border-top: 3px solid rgb(var(--aq-primary));
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .spinner-text {
+            color: rgb(var(--aq-muted));
+            font-size: 0.875rem;
+        }
+    </style>
+    <script>
+        const SERVER_URL = 'http://127.0.0.1:1111';
+        const CHECK_INTERVAL = 300;
+        const MAX_ATTEMPTS = 100;
+        let attempts = 0;
+
+        function checkServer() {
+            if (attempts >= MAX_ATTEMPTS) {
+                document.querySelector('.spinner-text').textContent = 'Tiempo de espera agotado';
+                return;
+            }
+
+            fetch(SERVER_URL, { method: 'HEAD', cache: 'no-cache' })
+                .then(() => {
+                    window.location.href = SERVER_URL;
+                })
+                .catch(() => {
+                    attempts++;
+                    setTimeout(checkServer, CHECK_INTERVAL);
+                });
+        }
+
+        setTimeout(checkServer, 500);
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="45" stroke="rgb(74, 140, 90)" stroke-width="4"/>
+                <path d="M30 50 L45 65 L70 35" stroke="rgb(74, 140, 90)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <div class="brand">
+            <h1>ARAYA LTDA</h1>
+            <p>Sistema de Gestión</p>
+        </div>
+        <div class="spinner-container">
+            <div class="spinner"></div>
+            <span class="spinner-text">Cargando aplicación...</span>
+        </div>
+    </div>
+</body>
+</html>

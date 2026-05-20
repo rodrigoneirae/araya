@@ -1,0 +1,1 @@
+from modulos.core.models.usuario.usuario import *

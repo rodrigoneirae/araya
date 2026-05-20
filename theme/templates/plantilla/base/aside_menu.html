@@ -1,0 +1,52 @@
+ {% block sidebar %}
+            <!-- Sidebar: Mobile + Menú completo -->
+            <aside id="sidebar"
+                   class="fixed inset-y-0 left-0 z-40 w-72 bg-aq-surface border-r border-aq-border transform -translate-x-full transition-transform duration-300 pt-14">
+                <div class="h-full overflow-y-auto py-4">
+                    <!-- Buscador Mobile -->
+                    <div class="px-3 mb-4 lg:hidden">
+                        <div class="relative">
+                            <input type="text" placeholder="Buscar..."
+                                   class="w-full pl-10 pr-4 py-2 text-sm bg-aq-bg border border-aq-border rounded-lg text-aq-text placeholder-aq-muted focus:outline-none focus:border-aq-primary">
+                            <i class='bx bx-search absolute left-3 top-1/2 -translate-y-1/2 text-aq-muted'></i>
+                        </div>
+                    </div>
+
+                    <ul class="px-3 space-y-1">
+                        <li>
+                            <a href="{% url 'home' %}"
+                               class="flex items-center px-4 py-3 text-aq-text hover:bg-aq-border rounded-lg group transition-colors">
+                                <i class='bx bx-home mr-3 text-lg'></i><span>Inicio</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href=""
+                               class="flex items-center px-4 py-3 text-aq-text hover:bg-aq-border rounded-lg group transition-colors">
+                                <i class='bx bx-user mr-3 text-lg'></i><span>Usuarios</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href=""
+                               class="flex items-center px-4 py-3 text-aq-text hover:bg-aq-border rounded-lg group transition-colors">
+                                <i class='bx bx-building-house mr-3 text-lg'></i><span>Empresa</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#"
+                               class="flex items-center px-4 py-3 text-aq-text hover:bg-aq-border rounded-lg group transition-colors">
+                                <i class='bx bx-package mr-3 text-lg'></i><span>Inventario</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#"
+                               class="flex items-center px-4 py-3 text-aq-text hover:bg-aq-border rounded-lg group transition-colors">
+                                <i class='bx bx-cog mr-3 text-lg'></i><span>Configuración</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <button id="sidebarClose" class="absolute top-4 right-4 p-2 text-aq-text hover:bg-aq-border rounded-lg">
+                    <i class='bx bx-x text-xl'></i>
+                </button>
+            </aside>
+        {% endblock %}

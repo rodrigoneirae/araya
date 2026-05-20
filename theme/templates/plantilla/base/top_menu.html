@@ -1,0 +1,254 @@
+    {% block navbar %}
+            <!-- Navbar Inferior: Menú Horizontal - Solo Desktop -->
+            <nav class="hidden lg:block sticky top-14 z-40 bg-aq-surface border-b border-aq-border">
+                <div class="flex flex-container h-10 px-4 space-x-1">
+                    {% if request.user.identifier == 'public:root' %}
+                        <div class="relative dropdown" id="configClientes">
+                        <button class="flex items-center px-3 py-1.5 text-sm text-aq-text hover:bg-aq-border rounded-lg transition-colors">
+                            <i class='bx bx-cog mr-2'></i>Clientes
+                            <i class='bx bx-chevron-down ml-1 text-xs'></i>
+                        </button>
+                        <div id="configDropdownMenu"
+                             class="absolute top-full left-0 mt-1 w-56 bg-aq-surface border border-aq-border rounded-lg shadow-lg hidden">
+                            <div class="py-2">
+
+                                <a href="{% url 'erp:tenant' %}"
+                                   class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-building mr-2'></i>Nuevo
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Dropdown: Inventario -->
+{#                    <div class="relative dropdown" id="inventarioDropdown">#}
+{#                        <button class="flex items-center px-3 py-1.5 text-sm text-aq-text hover:bg-aq-border rounded-lg transition-colors">#}
+{#                            <i class='bx bx-package mr-2'></i>Inventario#}
+{#                            <i class='bx bx-chevron-down ml-1 text-xs'></i>#}
+{#                        </button>#}
+{#                        <div id="inventarioDropdownMenu"#}
+{#                             class="absolute top-full left-0 mt-1 w-56 bg-aq-surface border border-aq-border rounded-lg shadow-lg hidden">#}
+{#                            <div class="py-2">#}
+{#                                <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">#}
+{#                                    <i class='bx bx-box mr-2'></i>Productos#}
+{#                                </a>#}
+{#                                <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">#}
+{#                                    <i class='bx bx-category mr-2'></i>Categorías#}
+{#                                </a>#}
+{#                                <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">#}
+{#                                    <i class='bx bx-archive mr-2'></i>Stock#}
+{#                                </a>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+
+                    <!-- Dropdown: Maestros -->
+                    <div class="relative dropdown" id="maestrosDropdown">
+                        <button class="flex items-center px-3 py-1.5 text-sm text-aq-text hover:bg-aq-border rounded-lg transition-colors">
+                            <i class='bx bx-book-bookmark mr-2'></i>Maestros
+                            <i class='bx bx-chevron-down ml-1 text-xs'></i>
+                        </button>
+                        <div id="maestrosDropdownMenu"
+                             class="absolute top-full left-0 mt-1 w-64 bg-aq-surface border border-aq-border rounded-lg shadow-lg hidden">
+                            <div class="py-2">
+                                <a href="{% url 'maestros:maestro_articulos' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-package mr-2'></i>Ingreso de Artículos
+                                </a>
+                                <a href="{% url 'maestros:maestro_prov_cliente' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-user-circle mr-2'></i>Ingreso Clientes y Proveedores
+                                </a>
+                                <div class="border-t border-aq-border my-1"></div>
+                                <a href="{% url 'maestros:maestro_parametros' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-slider mr-2'></i>Ingreso Parámetros
+                                </a>
+<div class="border-t border-aq-border my-1"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown: Inventario -->
+                    <div class="relative dropdown" id="inventarioDropdown">
+                        <button class="flex items-center px-3 py-1.5 text-sm text-aq-text hover:bg-aq-border rounded-lg transition-colors">
+                            <i class='bx bx-box mr-2'></i>Inventario
+                            <i class='bx bx-chevron-down ml-1 text-xs'></i>
+                        </button>
+                        <div id="inventarioDropdownMenu"
+                             class="absolute top-full left-0 mt-1 w-80 bg-aq-surface border border-aq-border rounded-lg shadow-lg hidden z-50">
+                            <div class="py-2">
+                                <a href="{% url 'inventario:inventario_ingreso_ocat' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-file mr-2'></i>Ingreso de OCAT
+                                </a>
+                                <a href="{% url 'inventario:inventario_ingreso_pe' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-import mr-2'></i>Ingreso Parte Entrada General
+                                </a>
+                                <a href="{% url 'inventario:inventario_ingreso_vc' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-download mr-2'></i>Ingreso Vale de Consumo General
+                                </a>
+                                <div class="border-t border-aq-border my-1"></div>
+                                <div class="relative group px-1">
+                                    <button class="flex items-center w-full px-3 py-2 text-sm text-aq-text hover:bg-aq-border rounded">
+                                        <i class='bx bx-chart mr-2'></i>Informes
+                                        <i class='bx bx-chevron-right ml-auto text-xs'></i>
+                                    </button>
+                                    <div class="absolute left-full top-0 ml-0 w-72 bg-aq-surface border border-aq-border rounded-lg shadow-lg hidden z-50 submenu-informes">
+                                        <div class="py-2">
+                                            <a href="{% url 'inventario:inventario_informe_aux_existencia_articulo' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-archive mr-2'></i>Auxiliar de existencia por artículo
+                                            </a>
+                                            <a href="{% url 'inventario:inventario_informe_saldo_inventario' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-bar-chart mr-2'></i>Saldos de inventario
+                                            </a>
+                                            <div class="border-t border-aq-border my-1"></div>
+                                            <a href="{% url 'inventario:inventario_or_provedor' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-user mr-2'></i>O.R. por proveedor (compras: cant -$)
+                                            </a>
+                                            <a href="{% url 'inventario:inventario_or_articulo' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-package mr-2'></i>O.R. por artículo (compras: cant -$)
+                                            </a>
+                                            <div class="border-t border-aq-border my-1"></div>
+                                            <a href="{% url 'inventario:inventario_compra_articulos' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-shopping-bag mr-2'></i>Compras todos los artículos
+                                            </a>
+                                            <a href="{% url 'inventario:inventario_compra_provedores' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-book-open mr-2'></i>Compras todos los proveedores / libro de compra
+                                            </a>
+                                            <div class="border-t border-aq-border my-1"></div>
+                                            <a href="{% url 'inventario:inventario_ocat_pendiente' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-file-find mr-2'></i>OCAT pendientes
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="border-t border-aq-border my-1"></div>
+                                <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-user-check mr-2'></i>Ingreso Implementos a Cargo Trabajadores
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown: Producción -->
+                    <div class="relative dropdown" id="produccionDropdown">
+                        <button class="flex items-center px-3 py-1.5 text-sm text-aq-text hover:bg-aq-border rounded-lg transition-colors">
+                            <i class='bx bx-cog mr-2'></i>Producción
+                            <i class='bx bx-chevron-down ml-1 text-xs'></i>
+                        </button>
+                        <div id="produccionDropdownMenu"
+                             class="absolute top-full left-0 mt-1 w-72 bg-aq-surface border border-aq-border rounded-lg shadow-lg hidden">
+                            <div class="py-2">
+                                <a href="{% url 'produccion:produccion_ingreso_ot' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-clipboard mr-2'></i>Ingreso de Orden de Trabajo
+                                </a>
+                                <a href="{% url 'produccion:produccion_ingreso_pe' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-import mr-2'></i>Ingreso Parte de Entrada
+                                </a>
+                                <a href="{% url 'produccion:produccion_ingreso_vc' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-download mr-2'></i>Ingreso Vales de Consumo
+                                </a>
+                                <div class="border-t border-aq-border my-1"></div>
+                                <div class="relative group px-1">
+                                    <button class="flex items-center w-full px-3 py-2 text-sm text-aq-text hover:bg-aq-border rounded">
+                                        <i class='bx bx-chart mr-2'></i>Informes
+                                        <i class='bx bx-chevron-right ml-auto text-xs'></i>
+                                    </button>
+                                    <div class="absolute left-full top-0 ml-0 w-72 bg-aq-surface border border-aq-border rounded-lg shadow-lg hidden z-50 submenu-informes-produccion">
+                                        <div class="py-2">
+                                            <a href="{% url 'produccion:produccion_informe_vc_encargado' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-user mr-2'></i>Consumo por encargado
+                                            </a>
+                                            <a href="{% url 'produccion:produccion_informe_pe_encargado' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-file-find mr-2'></i>P/E por encargado
+                                            </a>
+                                            <div class="border-t border-aq-border my-1"></div>
+                                            <a href="{% url 'produccion:produccion_informe_produccion_proceso' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-cog mr-2'></i>Producción por proceso
+                                            </a>
+                                            <a href="{% url 'produccion:produccion_informe_consumo_proceso' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-download mr-2'></i>Consumo por proceso
+                                            </a>
+                                            <div class="border-t border-aq-border my-1"></div>
+                                            <a href="{% url 'produccion:produccion_informe_resumen_ots' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-list-ul mr-2'></i>Resúmenes de OTs
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="border-t border-aq-border my-1"></div>
+                                <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-calculator mr-2'></i>Cálculo de Costo de OT
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown: Ventas -->
+                    <div class="relative dropdown" id="ventasDropdown">
+                        <button class="flex items-center px-3 py-1.5 text-sm text-aq-text hover:bg-aq-border rounded-lg transition-colors">
+                            <i class='bx bx-cart mr-2'></i>Ventas
+                            <i class='bx bx-chevron-down ml-1 text-xs'></i>
+                        </button>
+                        <div id="ventasDropdownMenu"
+                             class="absolute top-full left-0 mt-1 w-64 bg-aq-surface border border-aq-border rounded-lg shadow-lg hidden">
+                            <div class="py-2">
+                                <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-receipt mr-2'></i>Facturas
+                                </a>
+<a href="{% url 'produccion:produccion_informe_consumo_proceso' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-download mr-2'></i>Consumo por proceso
+                                            </a>
+                                <div class="border-t border-aq-border my-1"></div>
+                                <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-chart mr-2'></i>Informes
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown: Informes -->
+                    <div class="relative dropdown" id="informesDropdown">
+                        <button class="flex items-center px-3 py-1.5 text-sm text-aq-text hover:bg-aq-border rounded-lg transition-colors">
+                            <i class='bx bx-chart mr-2'></i>Informes
+                            <i class='bx bx-chevron-down ml-1 text-xs'></i>
+                        </button>
+                        <div id="informesDropdownMenu"
+                             class="absolute top-full left-0 mt-1 w-56 bg-aq-surface border border-aq-border rounded-lg shadow-lg hidden">
+                            <div class="py-2">
+                                <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-box mr-2'></i>Inventario
+                                </a>
+<a href="{% url 'produccion:produccion_informe_produccion_proceso' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                                <i class='bx bx-cog mr-2'></i>Producción por proceso
+                                            </a>
+                                <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-cart mr-2'></i>Ventas
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown: Utilitarios -->
+                    <div class="relative dropdown" id="utilitariosDropdown">
+                        <button class="flex items-center px-3 py-1.5 text-sm text-aq-text hover:bg-aq-border rounded-lg transition-colors">
+                            <i class='bx bx-wrench mr-2'></i>Utilitarios
+                            <i class='bx bx-chevron-down ml-1 text-xs'></i>
+                        </button>
+                        <div id="utilitariosDropdownMenu"
+                             class="absolute top-full left-0 mt-1 w-64 bg-aq-surface border border-aq-border rounded-lg shadow-lg hidden">
+                            <div class="py-2">
+                                <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-user-plus mr-2'></i>Definir Usuario
+                                </a>
+                                <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-calculator mr-2'></i>Contabilizar Factura
+                                </a>
+                                <div class="border-t border-aq-border my-1"></div>
+                                <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                                    <i class='bx bx-chart mr-2'></i>Mantención de Grúas (Informe)
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        {% endblock %}

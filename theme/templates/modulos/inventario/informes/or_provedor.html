@@ -1,0 +1,210 @@
+{% extends 'plantilla/base/base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'libs/tabulator/css/tabulator.min.css' %}">
+<style>
+    #spinnerInforme { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.3s ease; }
+    #spinnerInforme.hidden { opacity: 0; pointer-events: none; }
+    .tabulator-row.ocat-header { background-color: rgb(var(--aq-primary-soft)) !important; font-weight: 700 !important; }
+    html.dark .tabulator-row.ocat-header { background-color: rgb(var(--aq-primary-soft)) !important; }
+</style>
+{% endblock %}
+{% block content %}
+<div id="spinnerInforme" class="hidden">
+    <div class="loader-spinner">
+        <div class="spinner"></div>
+        <p class="text-white text-sm font-medium mt-3">Generando informe...</p>
+    </div>
+</div>
+
+<div class="h-full w-full mx-auto px-4 py-2">
+    <div class="bg-aq-surface border border-aq-border rounded-xl shadow-lg h-full flex flex-col">
+        <div class="p-4 border-b border-aq-border">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-aq-text">Informe por Proveedor</h1>
+                <a href="{% url 'home' %}" class="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-500 text-white hover:bg-gray-600" title="Salir">
+                    <i class='bx bx-exit text-lg'></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="p-4 border-b border-aq-border">
+            <div class="xl:w-2/3">
+                <div class="flex flex-wrap gap-2 items-end">
+                    <div class="flex-1 min-w-[130px]">
+                        <label class="block text-xs text-aq-text/60 mb-1">RUT Proveedor</label>
+                        <div class="flex gap-1">
+                            <input type="text" id="oprRut" class="flex-1 min-w-0 px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text" placeholder="RUT proveedor">
+                            <button type="button" onclick="abrirListaProveedores()" class="px-2 py-1.5 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white text-sm" title="Buscar">
+                                <i class='bx bx-search'></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="min-w-[140px] flex-1">
+                        <label class="block text-xs text-aq-text/60 mb-1">Nombre</label>
+                        <span id="oprNombre" class="block px-2 py-1.5 text-sm rounded-lg border border-dashed border-aq-border text-aq-text/60 truncate min-h-[36px] leading-[22px]">&nbsp;</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-aq-text/60 mb-1">Fecha Inicio</label>
+                        <input type="date" id="oprFechaInicio" class="px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-aq-text/60 mb-1">Fecha Corte</label>
+                        <input type="date" id="oprFechaCorte" class="px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    </div>
+                    <div class="flex gap-1 pb-[1px]">
+                        <button type="button" onclick="generarPDFInfo()" class="btn-gen px-3 py-1.5 text-xs rounded-lg bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 font-medium shadow-sm hover:shadow-md transition-all duration-150 flex items-center gap-1.5 border border-red-400/20">
+                            <i class='bx bxs-file-pdf text-sm'></i> PDF
+                        </button>
+                        <button type="button" onclick="generarEXCELInfo()" class="btn-gen px-3 py-1.5 text-xs rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600 font-medium shadow-sm hover:shadow-md transition-all duration-150 flex items-center gap-1.5 border border-emerald-400/20">
+                            <i class='bx bx-grid-alt text-sm'></i> Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-b border-aq-border">
+            <div class="flex gap-0 px-4">
+                <button type="button" id="btnTabArt" class="px-4 py-3 text-sm font-semibold text-aq-primary border-b-2 border-aq-primary" onclick="cambiarTab('articulo')">
+                    <i class='bx bx-package mr-1'></i> Info Artículo
+                </button>
+                <button type="button" id="btnTabOcat" class="px-4 py-3 text-sm text-aq-text/60 hover:text-aq-text border-b-2 border-transparent" onclick="cambiarTab('ocat')">
+                    <i class='bx bx-file mr-1'></i> Info OCAT
+                </button>
+                <button type="button" id="btnTabMensual" class="px-4 py-3 text-sm text-aq-text/60 hover:text-aq-text border-b-2 border-transparent" onclick="cambiarTab('mensual')">
+                    <i class='bx bx-calendar mr-1'></i> Informe Mensual por Año
+                </button>
+            </div>
+        </div>
+
+        <div id="tabArticulo" class="flex-1 min-h-0 flex flex-col">
+            <div class="flex-1 flex flex-col min-h-0 p-4">
+                <div id="resumenArticulo" class="hidden mb-4 grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Total Movimientos</p>
+                        <p id="resMovimientos" class="text-lg font-bold text-aq-text">0</p>
+                    </div>
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Total Entradas</p>
+                        <p id="resEntradas" class="text-lg font-bold text-green-500">0</p>
+                    </div>
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Total Salidas</p>
+                        <p id="resSalidas" class="text-lg font-bold text-red-500">0</p>
+                    </div>
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Saldo Cantidad</p>
+                        <p id="resSaldo" class="text-lg font-bold text-blue-500">0</p>
+                    </div>
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Total</p>
+                        <p id="resTotalMonto" class="text-lg font-bold text-purple-500">$0</p>
+                    </div>
+                </div>
+                <div class="flex-1 min-h-0 overflow-auto">
+                    <div id="tablaArticulo" class="w-full text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tabOcat" class="hidden flex-1 min-h-0 flex flex-col">
+            <div class="flex-1 flex flex-col min-h-0 p-4">
+                <div id="resumenOcat" class="hidden mb-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Total OCAT</p>
+                        <p id="resTotalOcat" class="text-lg font-bold text-aq-text">0</p>
+                    </div>
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Neto Total</p>
+                        <p id="resNetoOcat" class="text-lg font-bold text-green-500">$0</p>
+                    </div>
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Monto Total</p>
+                        <p id="resMontoOcat" class="text-lg font-bold text-blue-500">$0</p>
+                    </div>
+                </div>
+                <div class="flex-1 min-h-0 overflow-auto">
+                    <div id="tablaOcat" class="w-full text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tabMensual" class="hidden flex-1 min-h-0 flex flex-col">
+            <div class="p-4 border-b border-aq-border">
+                <div class="flex flex-wrap gap-3 items-end">
+                    <div>
+                        <label class="block text-xs text-aq-text/60 mb-1">Año</label>
+                        <select id="oprAno" class="px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text min-w-[100px]"></select>
+                    </div>
+                    <div class="flex gap-1 pb-[1px]">
+                        <button type="button" onclick="generarPDFMensual()" class="btn-gen px-3 py-1.5 text-xs rounded-lg bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 font-medium shadow-sm hover:shadow-md transition-all duration-150 flex items-center gap-1.5 border border-red-400/20">
+                            <i class='bx bxs-file-pdf text-sm'></i> PDF
+                        </button>
+                        <button type="button" onclick="generarEXCELMensual()" class="btn-gen px-3 py-1.5 text-xs rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600 font-medium shadow-sm hover:shadow-md transition-all duration-150 flex items-center gap-1.5 border border-emerald-400/20">
+                            <i class='bx bx-grid-alt text-sm'></i> Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-1 flex flex-col min-h-0 p-4">
+                <div id="resumenMensual" class="hidden mb-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Neto Anual</p>
+                        <p id="resNetoAnual" class="text-lg font-bold text-green-500">$0</p>
+                    </div>
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Total Cantidad</p>
+                        <p id="resMontoAnual" class="text-lg font-bold text-blue-500">0</p>
+                    </div>
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Total Artículos</p>
+                        <p id="resOcatAno" class="text-lg font-bold text-aq-text">0</p>
+                    </div>
+                    <div class="bg-aq-bg rounded-lg p-3 border border-aq-border text-center">
+                        <p class="text-xs text-aq-text/60">Prom. Neto Mensual</p>
+                        <p id="resPromMensual" class="text-lg font-bold text-purple-500">$0</p>
+                    </div>
+                </div>
+                <div class="flex-1 min-h-0 overflow-auto">
+                    <div id="tablaMensual" class="w-full text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="sinSeleccion" class="flex-1 flex items-center justify-center p-4">
+            <div class="text-center text-aq-text/40">
+                <i class='bx bx-user text-6xl'></i>
+                <p class="mt-2 text-sm">Seleccione un proveedor y configure las fechas para generar el informe</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalProveedores" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-lg md:max-w-2xl border border-aq-border max-h-[90vh] flex flex-col">
+        <h3 class="text-lg font-semibold text-aq-text mb-4">Buscar Proveedor</h3>
+        <input type="text" id="filtroProveedores" onkeyup="filtrarProveedores()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar por RUT o nombre...">
+        <div class="overflow-x-auto max-h-64 flex-1 min-h-0">
+            <table class="w-full min-w-[300px]">
+                <thead class="bg-aq-surface-2">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">RUT</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Nombre</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaListaProveedores" class="divide-y divide-aq-border"></tbody>
+            </table>
+        </div>
+        <div class="flex justify-end mt-4 pt-4 border-t border-aq-border">
+            <button onclick="cerrarListaProveedores()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+    <script src="{% static 'libs/tabulator/js/tabulator.min.js' %}"></script>
+    <script src="{% static 'js/modulos/inventario/informes/or_provedor.js' %}" data-url="{% url 'inventario:inventario_or_provedor' %}"></script>
+{% endblock %}

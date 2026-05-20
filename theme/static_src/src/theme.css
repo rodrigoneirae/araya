@@ -1,0 +1,406 @@
+@import "tailwindcss";
+
+@source "../../../**/*.{html,py,js}";
+
+/* ============================================
+   THEME VARIABLES
+   ============================================ */
+
+@theme {
+  /* BACKGROUNDS */
+  --color-aq-bg: 244 247 244;
+  --color-aq-surface: 255 255 255;
+  --color-aq-surface-2: 240 244 240;
+  --color-aq-border: 209 219 209;
+
+  /* TEXT */
+  --color-aq-text: 22 31 22;
+  --color-aq-muted: 95 108 95;
+
+  /* PRIMARY */
+  --color-aq-primary: 74 124 89;
+  --color-aq-primary-hover: 56 102 70;
+  --color-aq-primary-soft: 220 235 223;
+
+  /* ACCENT */
+  --color-aq-accent: 201 132 45;
+
+  /* FONT */
+  --font-sans: "Nunito Sans", "Roboto", system-ui, sans-serif;
+}
+
+/* ============================================
+   LIGHT MODE
+   ============================================ */
+
+:root {
+  --aq-bg: 244 247 244;
+  --aq-surface: 255 255 255;
+  --aq-surface-2: 240 244 240;
+  --aq-border: 209 219 209;
+
+  --aq-text: 22 31 22;
+  --aq-muted: 95 108 95;
+
+  --aq-primary: 74 124 89;
+  --aq-primary-hover: 56 102 70;
+  --aq-primary-soft: 220 235 223;
+
+  --aq-accent: 201 132 45;
+}
+
+/* ============================================
+   DARK MODE
+   ============================================ */
+
+html.dark {
+  --aq-bg: 12 16 20;
+  --aq-surface: 22 28 34;
+  --aq-surface-2: 30 38 44;
+  --aq-border: 60 70 80;
+
+  --aq-text: 230 235 240;
+  --aq-muted: 140 150 160;
+
+  --aq-primary: 74 140 90;
+  --aq-primary-hover: 100 160 110;
+  --aq-primary-soft: 40 65 48;
+
+  --aq-accent: 255 200 100;
+}
+
+/* ============================================
+   BODY
+   ============================================ */
+
+html,
+body {
+  background-color: rgb(var(--aq-bg));
+  color: rgb(var(--aq-text));
+  font-family: var(--font-sans);
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* ============================================
+   BACKGROUNDS
+   ============================================ */
+
+.bg-aq-bg {
+  background-color: rgb(var(--aq-bg));
+}
+
+.bg-aq-surface {
+  background-color: rgb(var(--aq-surface));
+}
+
+.bg-aq-surface-2 {
+  background-color: rgb(var(--aq-surface-2));
+}
+
+/* ============================================
+   TEXT
+   ============================================ */
+
+.text-aq-text {
+  color: rgb(var(--aq-text));
+}
+
+.text-aq-muted {
+  color: rgb(var(--aq-muted));
+}
+
+.text-aq-primary {
+  color: rgb(var(--aq-primary));
+}
+
+/* ============================================
+   BORDERS
+   ============================================ */
+
+.border-aq-border {
+  border-color: rgb(var(--aq-border));
+}
+
+/* ============================================
+   PRIMARY
+   ============================================ */
+
+.bg-aq-primary {
+  background-color: rgb(var(--aq-primary));
+}
+
+.bg-aq-primary-soft {
+  background-color: rgb(var(--aq-primary-soft));
+}
+
+/* ============================================
+   HOVERS
+   ============================================ */
+
+.hover\:bg-aq-surface-2:hover {
+  background-color: rgb(var(--aq-surface-2));
+}
+
+.hover\:bg-aq-primary-hover:hover {
+  background-color: rgb(var(--aq-primary-hover));
+}
+
+.hover\:bg-aq-primary-soft:hover {
+  background-color: rgb(var(--aq-primary-soft));
+}
+
+/* ============================================
+   INPUTS
+   ============================================ */
+
+input,
+textarea,
+select {
+  background-color: rgb(var(--aq-surface));
+  border: 1px solid rgb(var(--aq-border));
+  color: rgb(var(--aq-text));
+  appearance: none;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: rgb(var(--aq-primary));
+  box-shadow: 0 0 0 2px rgb(var(--aq-primary-soft));
+}
+
+::placeholder {
+  color: rgb(var(--aq-muted));
+}
+
+.dark input[type="date"] {
+  color-scheme: dark;
+}
+
+/* ============================================
+   ACTIVE LINKS
+   ============================================ */
+
+.active-link {
+  position: relative;
+
+  font-weight: 500;
+
+  color: rgb(var(--aq-primary));
+  background-color: rgb(var(--aq-primary-soft));
+
+  transition: all 0.2s ease;
+}
+
+.active-link::before {
+  content: "";
+
+  position: absolute;
+
+  top: 50%;
+  left: 0;
+
+  transform: translateY(-50%);
+
+  width: 3px;
+  height: 50%;
+
+  border-radius: 0 4px 4px 0;
+
+  background-color: rgb(var(--aq-primary));
+}
+
+html.dark .active-link {
+  color: white;
+}
+
+/* ============================================
+   PAGE LOADER
+   ============================================ */
+
+.page-loader {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background-color: rgba(var(--aq-bg), 0.95);
+
+  z-index: 50;
+
+  transition: opacity 0.3s ease;
+}
+
+.page-loader.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loader-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+
+  border: 4px solid rgb(var(--aq-border));
+  border-top-color: rgb(var(--aq-accent));
+
+  border-radius: 999px;
+
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+#spinnerInforme {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.3s ease;
+}
+
+#spinnerInforme.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ============================================
+   PASSWORD BUTTON
+   ============================================ */
+
+.password-toggle-btn {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* ============================================
+   REMOVE NUMBER SPINNERS
+   ============================================ */
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--aq-surface-2));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--aq-border));
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--aq-primary));
+}
+
+/* ============================================
+   TABS
+   ============================================ */
+
+.tab-btn {
+  flex: 1;
+
+  min-width: max-content;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  padding: 1rem 1.5rem;
+
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  color: rgb(var(--aq-muted));
+
+  border-bottom: 2px solid transparent;
+
+  background: transparent;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  color: rgb(var(--aq-primary));
+  background-color: rgb(var(--aq-primary-soft));
+}
+
+.tab-btn.active {
+  color: rgb(var(--aq-primary));
+  border-bottom-color: rgb(var(--aq-primary));
+}
+
+.tab-btn i {
+  font-size: 1.1rem;
+}
+
+.tab-content {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   DROPDOWNS HOVER (DESKTOP)
+   ============================================ */
+
+@media (min-width: 1024px) {
+  .dropdown:hover > .hidden {
+    display: block !important;
+  }
+}

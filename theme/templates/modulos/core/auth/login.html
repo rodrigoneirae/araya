@@ -1,0 +1,84 @@
+{% load static %}
+<!doctype html>
+<html lang="es" class="h-full light">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>{% block title %}Iniciar Sesión - Satelite{% endblock %}</title>
+
+    <script>
+        (function() {
+            const saved = localStorage.getItem("theme");
+            const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+            if (saved === "dark" || (!saved && prefersDark)) {
+                document.documentElement.classList.add("dark");
+            }
+        })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'libs/toastify/toastify.min.css' %}">
+    <link rel="stylesheet" href="{% static 'libs/boxicons/css/boxicons.min.css' %}">
+
+</head>
+
+<body class="h-full flex flex-col bg-aq-bg text-aq-text font-sans">
+    <button id="themeToggle" type="button" class="fixed top-4 right-4 p-2 rounded-lg bg-aq-surface border border-aq-border text-aq-text hover:bg-aq-border transition-colors" aria-label="Cambiar tema">
+        <i class="bx text-xl" id="themeIcon"></i>
+    </button>
+    <div class="flex-1 flex items-center justify-center px-4 py-6 login-container">
+        <div class="w-full max-w-sm rounded-2xl p-6 shadow-lg bg-aq-surface border border-aq-border">
+            <div class="text-center mb-4">
+                <img src="{% static 'assets/images/brand-logos/logo-home-grande.png' %}" alt="Satelite" class="h-12 mx-auto w-auto">
+            </div>
+            
+            <h2 class="text-xl font-semibold mb-5 text-center">Iniciar Sesión</h2>
+            
+            <form id="loginForm" class="space-y-4">
+                {% csrf_token %}
+                {% if next %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                {% endif %}
+
+                <div id="errorMessage" class="hidden p-3 rounded-lg text-sm bg-red-500/10 text-red-300"></div>
+
+                <div>
+                    <label for="signin-username" class="block text-sm font-medium mb-1">Usuario</label>
+                    <input id="signin-username" name="username" type="text" autocomplete="off" required
+                        class="w-full px-4 py-2.5 rounded-lg border text-sm bg-aq-bg border-aq-border text-aq-text"
+                        placeholder="Ingrese usuario">
+                </div>
+
+                <div>
+                    <label for="signin-password" class="block text-sm font-medium mb-1">Contraseña</label>
+                    <div class="relative">
+                        <input id="signin-password" name="password" type="password" autocomplete="current-password" required
+                            class="w-full px-4 py-2.5 rounded-lg border pr-10 text-sm bg-aq-bg border-aq-border text-aq-text"
+                            placeholder="Ingrese contraseña">
+                        <button type="button" onclick="togglePassword('signin-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-aq-muted">
+                            <i class="bx bx-hide text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="button" id="signin-btn" class="w-full py-3 rounded-lg font-semibold text-white text-sm transition-all bg-aq-primary hover:opacity-85">
+                    Entrar
+                </button>
+            </form>
+
+            <p class="text-center text-xs mt-5 text-aq-muted">
+                 version: {{ APP_VERSION }}
+            </p>
+        </div>
+    </div>
+
+    <script src="{% static 'libs/toastify/toastify-js.js' %}"></script>
+    <script src="{% static 'js/ui/password-toggle.js' %}"></script>
+    <script src="{% static 'js/init.js' %}"></script>
+    <script type="module" src="{% static 'js/modulos/core/auth/login.js' %}"></script>
+</body>
+</html>

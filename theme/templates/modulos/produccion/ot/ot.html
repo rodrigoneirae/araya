@@ -1,0 +1,537 @@
+{% extends 'plantilla/base/base.html' %}
+{% load static %}
+{% block content %}
+<div class="h-full w-full mx-auto px-4 py-2">
+    <div class="bg-aq-surface border border-aq-border rounded-xl shadow-lg h-full flex flex-col">
+        <div class="p-4 border-b border-aq-border">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-aq-text">Orden de Trabajo (OT)</h1>
+                <div class="flex gap-2">
+                    <button type="button" onclick="nuevaOt()" class="w-10 h-10 flex items-center justify-center rounded-lg bg-aq-primary text-white hover:opacity-85" title="Nuevo">
+                        <i class='bx bx-plus text-xl'></i>
+                    </button>
+                    <button type="button" onclick="guardarOt()" id="btnGuardarOt" class="w-10 h-10 flex items-center justify-center rounded-lg bg-aq-primary text-white hover:opacity-85 hidden" title="Guardar">
+                        <i class='bx bx-save text-xl'></i>
+                    </button>
+                    <button type="button" onclick="editarOt()" id="btnEditarOt" class="w-10 h-10 flex items-center justify-center rounded-lg bg-amber-500 text-white hover:opacity-85 hidden" title="Editar">
+                        <i class='bx bx-edit text-xl'></i>
+                    </button>
+                    <button type="button" onclick="eliminarOt()" id="btnEliminarOt" class="w-10 h-10 flex items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 hidden" title="Eliminar">
+                        <i class='bx bx-trash text-xl'></i>
+                    </button>
+                    <button type="button" onclick="imprimirOt()" id="btnImprimirOt" class="w-10 h-10 flex items-center justify-center rounded-lg bg-blue-500 text-white hover:opacity-85 hidden" title="Imprimir PDF">
+                        <i class='bx bx-printer text-xl'></i>
+                    </button>
+                    <a href="{% url 'home' %}" class="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-500 text-white hover:bg-gray-600" title="Salir">
+                        <i class='bx bx-exit text-lg'></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-b border-aq-border overflow-x-auto">
+            <nav class="flex -mb-px w-full lg:w-1/3 min-w-max" aria-label="Tabs">
+                <button onclick="cambiarTabOt('encabezado')" id="tab-encabezado" class="tab-btn flex-1">
+                    <i class='bx bx-file'></i>
+                    <span>Encabezado</span>
+                </button>
+                <button onclick="cambiarTabOt('detalle')" id="tab-detalle" class="tab-btn flex-1">
+                    <i class='bx bx-list-ul'></i>
+                    <span>Detalle</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="p-4 w-full flex-1 overflow-hidden flex flex-col">
+            <div id="contenido-encabezado" class="tab-content h-full">
+                <form id="otForm" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-aq-text mb-1">OT</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="otNumero" onchange="buscarFolioInput()" class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                                <button type="button" onclick="buscarOt()" class="px-3 py-2 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                    <i class='bx bx-search'></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-aq-text mb-1">Fecha</label>
+                            <input type="date" id="otFecha" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-aq-text mb-1">Encargado</label>
+                            <select id="otEncargado" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                                <option value="">--- Seleccionar ---</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-aq-text mb-1">Proceso</label>
+                            <select id="otProceso" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                                <option value="">--- Seleccionar ---</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-aq-text mb-1">Estado</label>
+                            <select id="otEstado" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                                <option value="">--- Seleccionar ---</option>
+                                <option value="Abierto">Abierto</option>
+                                <option value="En Proceso">En Proceso</option>
+                                <option value="Cerrado">Cerrado</option>
+                                <option value="Terminado">Terminado</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div id="contenido-detalle" class="tab-content hidden flex flex-col h-full">
+                <h3 class="text-lg font-semibold text-aq-text mb-3">Detalle de Insumos / Productos</h3>
+                <div class="w-full">
+                    <div class="flex gap-2 mb-3 flex-wrap items-start">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-xs text-aq-muted font-medium">Orden de Requisición (OR)</span>
+                            <div class="flex gap-1">
+                                <input type="text" id="inputOR" onclick="abrirModalORUnico()" readonly class="w-32 px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px] cursor-pointer hover:border-aq-primary" placeholder="-- Seleccionar --">
+                                <button type="button" onclick="abrirListaOR()" class="px-3 py-1.5 rounded-lg bg-amber-500 text-white hover:opacity-85 text-xs h-[34px]" title="Selección múltiple">
+                                    <i class='bx bx-checkbox-checked'></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <span class="text-xs text-aq-muted font-medium">Parte de Entrada (PE)</span>
+                            <div class="flex gap-1">
+                                <input type="text" id="inputPE" onclick="abrirModalPEUnico()" readonly class="w-32 px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px] cursor-pointer hover:border-aq-primary" placeholder="-- Seleccionar --">
+                                <button type="button" onclick="abrirListaPE()" class="px-3 py-1.5 rounded-lg bg-blue-500 text-white hover:opacity-85 text-xs h-[34px]" title="Selección múltiple">
+                                    <i class='bx bx-checkbox-checked'></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-full flex-1 overflow-auto min-h-0">
+                    <div class="overflow-x-auto min-w-0">
+                        <table class="w-full border-collapse min-w-[900px]">
+                            <thead>
+                                <tr class="bg-aq-surface-2 text-aq-text text-xs">
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">DocRef</th>
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">Tipo</th>
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">Fecha</th>
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">CodProv</th>
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">Código</th>
+                                    <th class="px-1 py-2 text-right whitespace-nowrap">Cantidad</th>
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">Bodega</th>
+                                    <th class="px-1 py-2 text-right whitespace-nowrap">CantTotal</th>
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">Estado</th>
+                                    <th class="px-1 py-2 text-right whitespace-nowrap">PUnit</th>
+                                    <th class="px-1 py-2 text-center whitespace-nowrap">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="otDetalle">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="resumenOt" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2 p-2 bg-aq-surface-2 rounded-lg text-xs">
+                    <div><span class="text-aq-text font-medium">Encargado:</span> <span id="resumenEncargado" class="text-aq-primary">-</span></div>
+                    <div><span class="text-aq-text font-medium">Proceso:</span> <span id="resumenProceso" class="text-aq-primary">-</span></div>
+                    <div><span class="text-aq-text font-medium">Estado:</span> <span id="resumenEstado">-</span></div>
+                    <div><span class="text-aq-text font-medium">Total Artículos:</span> <span id="resumenTotalArt">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalBusquedaOt" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-lg md:max-w-2xl border border-aq-border max-h-[90vh] flex flex-col">
+        <h3 class="text-lg font-semibold text-aq-text mb-4">Buscar OT</h3>
+        <input type="text" id="filtroBusquedaOt" onkeyup="filtrarOt()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar por N° OT...">
+        <div class="overflow-x-auto max-h-64 flex-1 min-h-0">
+            <table class="w-full min-w-[300px]">
+                <thead class="bg-aq-surface-2">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">OT</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Encargado</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Proceso</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaBusquedaOt" class="divide-y divide-aq-border"></tbody>
+            </table>
+        </div>
+        <div class="flex justify-end mt-4 pt-4 border-t border-aq-border">
+            <button onclick="document.getElementById('modalBusquedaOt').classList.add('hidden')" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="modalConfirmar" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-sm border border-aq-border">
+        <h3 id="modalConfirmarTitulo" class="text-lg font-semibold text-aq-text mb-4">Confirmar</h3>
+        <p id="modalConfirmarMensaje" class="text-aq-text mb-6"></p>
+        <div class="flex justify-end gap-2">
+            <button onclick="cerrarModalConfirmar()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cancelar
+            </button>
+            <button onclick="ejecutarModalConfirmar()" class="px-4 py-2 rounded-lg bg-aq-primary text-white hover:opacity-85">
+                Confirmar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="modalOR" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-2xl lg:max-w-5xl border border-aq-border max-h-[90vh] flex flex-col">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-semibold text-aq-text">Seleccionar Artículos de OR</h3>
+            <button type="button" onclick="document.getElementById('modalOR').classList.add('hidden')" class="text-aq-muted hover:text-aq-text">
+                <i class='bx bx-x text-xl'></i>
+            </button>
+        </div>
+        <input type="text" id="filtroOR" onkeyup="filtrarORArticulos()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar por N° OR, código o descripción...">
+        
+        <div id="orSeccionLista" class="flex-1 overflow-auto">
+            <div class="flex justify-between items-center mb-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="selectAllOR" onchange="toggleSelectAllOR()" class="w-4 h-4 rounded border-aq-border text-aq-primary focus:ring-aq-primary">
+                    <span class="text-sm text-aq-text">Seleccionar todos</span>
+                </label>
+                <button type="button" onclick="confirmarSeleccionMultipleOR()" class="px-3 py-1.5 rounded-lg bg-aq-primary text-white hover:opacity-85 text-xs hidden" id="btnConfirmarORMultiple">
+                    <i class='bx bx-check'></i> Agregar seleccionados
+                </button>
+            </div>
+            <table class="w-full min-w-[900px]">
+                <thead class="bg-aq-surface-2 sticky top-0">
+                    <tr>
+                        <th class="px-2 py-2 text-center text-aq-text font-semibold whitespace-nowrap w-10">
+                            <input type="checkbox" class="w-4 h-4 rounded border-aq-border text-aq-primary focus:ring-aq-primary" onchange="toggleSelectAllOR()">
+                        </th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">DocRef</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Descripción</th>
+                        <th class="px-3 py-2 text-right text-aq-text font-semibold whitespace-nowrap">Cant</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Bodega</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaOR" class="divide-y divide-aq-border"></tbody>
+            </table>
+        </div>
+
+        <div id="orSeccionDetalle" class="hidden border-t border-aq-border pt-4 mt-4">
+            <div class="flex justify-between items-center mb-2">
+                <h4 class="text-sm font-semibold text-aq-text">Detalle de OR N° <span id="orTituloNumero">-</span></h4>
+                <button type="button" onclick="volverListaOR()" class="text-xs text-aq-primary hover:underline">
+                    <i class='bx bx-arrow-left'></i> Volver a lista
+                </button>
+            </div>
+            <div class="overflow-x-auto max-h-48">
+                <table class="w-full min-w-[900px] text-xs">
+                    <thead class="bg-aq-surface-2 sticky top-0">
+                        <tr>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">DocRef</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">RUT</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                            <th class="px-2 py-1.5 text-right text-aq-text font-semibold whitespace-nowrap">Cant</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Bodega</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Proceso</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Encargado</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaORDetalle" class="divide-y divide-aq-border"></tbody>
+                </table>
+            </div>
+
+            <h4 class="text-sm font-semibold text-aq-text mt-4 mb-2">Historial de Saldos</h4>
+            <div class="overflow-x-auto max-h-48">
+                <table class="w-full min-w-[800px] text-xs">
+                    <thead class="bg-aq-surface-2 sticky top-0">
+                        <tr>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Descripción</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Numero</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Tipo</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Bodega</th>
+                            <th class="px-2 py-1.5 text-right text-aq-text font-semibold whitespace-nowrap">Cantidad</th>
+                            <th class="px-2 py-1.5 text-right text-aq-text font-semibold whitespace-nowrap">Suma Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaORHistorial" class="divide-y divide-aq-border"></tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-aq-border">
+                <button type="button" onclick="volverListaOR()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                    Cancelar
+                </button>
+                <button type="button" onclick="confirmarAgregarOR()" class="px-4 py-2 rounded-lg bg-aq-primary text-white hover:opacity-85">
+                    <i class='bx bx-check'></i> Confirmar
+                </button>
+            </div>
+        </div>
+
+        <div id="orFooterLista" class="flex justify-end mt-4 pt-4 border-t border-aq-border">
+            <button onclick="document.getElementById('modalOR').classList.add('hidden')" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="modalPE" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-2xl lg:max-w-5xl border border-aq-border max-h-[90vh] flex flex-col">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-semibold text-aq-text">Seleccionar Artículos de PE</h3>
+            <button type="button" onclick="document.getElementById('modalPE').classList.add('hidden')" class="text-aq-muted hover:text-aq-text">
+                <i class='bx bx-x text-xl'></i>
+            </button>
+        </div>
+        <input type="text" id="filtroPE" onkeyup="filtrarPEArticulos()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar por N° PE, código o descripción...">
+        
+        <div id="peSeccionLista" class="flex-1 overflow-auto">
+            <div class="flex justify-between items-center mb-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="selectAllPE" onchange="toggleSelectAllPE()" class="w-4 h-4 rounded border-aq-border text-aq-primary focus:ring-aq-primary">
+                    <span class="text-sm text-aq-text">Seleccionar todos</span>
+                </label>
+                <button type="button" onclick="confirmarSeleccionMultiplePE()" class="px-3 py-1.5 rounded-lg bg-aq-primary text-white hover:opacity-85 text-xs hidden" id="btnConfirmarPEMultiple">
+                    <i class='bx bx-check'></i> Agregar seleccionados
+                </button>
+            </div>
+            <table class="w-full min-w-[900px]">
+                <thead class="bg-aq-surface-2 sticky top-0">
+                    <tr>
+                        <th class="px-2 py-2 text-center text-aq-text font-semibold whitespace-nowrap w-10">
+                            <input type="checkbox" class="w-4 h-4 rounded border-aq-border text-aq-primary focus:ring-aq-primary" onchange="toggleSelectAllPE()">
+                        </th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">DocRef</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Descripción</th>
+                        <th class="px-3 py-2 text-right text-aq-text font-semibold whitespace-nowrap">Cant</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Bodega</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaPE" class="divide-y divide-aq-border"></tbody>
+            </table>
+        </div>
+
+        <div id="peSeccionDetalle" class="hidden border-t border-aq-border pt-4 mt-4">
+            <div class="flex justify-between items-center mb-2">
+                <h4 class="text-sm font-semibold text-aq-text">Detalle de PE N° <span id="peTituloNumero">-</span></h4>
+                <button type="button" onclick="volverListaPE()" class="text-xs text-aq-primary hover:underline">
+                    <i class='bx bx-arrow-left'></i> Volver a lista
+                </button>
+            </div>
+            <div class="overflow-x-auto max-h-48">
+                <table class="w-full min-w-[900px] text-xs">
+                    <thead class="bg-aq-surface-2 sticky top-0">
+                        <tr>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">DocRef</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">RUT</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                            <th class="px-2 py-1.5 text-right text-aq-text font-semibold whitespace-nowrap">Cant</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Bodega</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Proceso</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Encargado</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaPEDetalle" class="divide-y divide-aq-border"></tbody>
+                </table>
+            </div>
+
+            <h4 class="text-sm font-semibold text-aq-text mt-4 mb-2">Historial de Saldos</h4>
+            <div class="overflow-x-auto max-h-48">
+                <table class="w-full min-w-[800px] text-xs">
+                    <thead class="bg-aq-surface-2 sticky top-0">
+                        <tr>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Descripción</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Numero</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Tipo</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Bodega</th>
+                            <th class="px-2 py-1.5 text-right text-aq-text font-semibold whitespace-nowrap">Cantidad</th>
+                            <th class="px-2 py-1.5 text-right text-aq-text font-semibold whitespace-nowrap">Suma Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaPEHistorial" class="divide-y divide-aq-border"></tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-aq-border">
+                <button type="button" onclick="volverListaPE()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                    Cancelar
+                </button>
+                <button type="button" onclick="confirmarAgregarPE()" class="px-4 py-2 rounded-lg bg-aq-primary text-white hover:opacity-85">
+                    <i class='bx bx-check'></i> Confirmar
+                </button>
+            </div>
+        </div>
+
+        <div id="peFooterLista" class="flex justify-end mt-4 pt-4 border-t border-aq-border">
+            <button onclick="document.getElementById('modalPE').classList.add('hidden')" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="modalORUnico" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-2xl lg:max-w-5xl border border-aq-border max-h-[90vh] flex flex-col">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-semibold text-aq-text">Seleccionar Orden de Requisición (OR)</h3>
+            <button type="button" onclick="document.getElementById('modalORUnico').classList.add('hidden')" class="text-aq-muted hover:text-aq-text">
+                <i class='bx bx-x text-xl'></i>
+            </button>
+        </div>
+        <input type="text" id="filtroORUnico" onkeyup="filtrarORUnico()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar por N° OR, código o fecha...">
+
+        <div id="orUnicoSeccionLista" class="flex-1 overflow-auto">
+            <table class="w-full min-w-[600px]">
+                <thead class="bg-aq-surface-2 sticky top-0">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">N° OR</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Proceso</th>
+                        <th class="px-3 py-2 text-right text-aq-text font-semibold whitespace-nowrap">Cant</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Bodega</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaORUnico" class="divide-y divide-aq-border"></tbody>
+            </table>
+        </div>
+
+        <div id="orUnicoSeccionDetalle" class="hidden border-t border-aq-border pt-4 mt-4">
+            <div class="flex justify-between items-center mb-2">
+                <h4 class="text-sm font-semibold text-aq-text">Detalle de OR N° <span id="orUnicoTituloNumero">-</span></h4>
+                <button type="button" onclick="volverListaORUnico()" class="text-xs text-aq-primary hover:underline">
+                    <i class='bx bx-arrow-left'></i> Volver a lista
+                </button>
+            </div>
+            <p class="text-xs text-aq-muted mb-2">Haga clic en una fila para seleccionar el artículo</p>
+            <div class="overflow-x-auto max-h-48">
+                <table class="w-full min-w-[900px] text-xs">
+                    <thead class="bg-aq-surface-2 sticky top-0">
+                        <tr>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">DocRef</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                            <th class="px-2 py-1.5 text-right text-aq-text font-semibold whitespace-nowrap">Cant</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Bodega</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Proceso</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaORUnicoDetalle" class="divide-y divide-aq-border"></tbody>
+                </table>
+            </div>
+
+            <h4 class="text-sm font-semibold text-aq-text mt-4 mb-2">Historial de Saldos</h4>
+            <div class="overflow-x-auto max-h-48">
+                <table class="w-full min-w-[800px] text-xs">
+                    <thead class="bg-aq-surface-2 sticky top-0">
+                        <tr>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Descripción</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Numero</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Tipo</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Bodega</th>
+                            <th class="px-2 py-1.5 text-right text-aq-text font-semibold whitespace-nowrap">Cantidad</th>
+                            <th class="px-2 py-1.5 text-right text-aq-text font-semibold whitespace-nowrap">Suma Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaORUnicoHistorial" class="divide-y divide-aq-border"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalPEUnico" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-2xl lg:max-w-5xl border border-aq-border max-h-[90vh] flex flex-col">
+        <h3 class="text-lg font-semibold text-aq-text mb-2">Seleccionar Parte de Entrada (PE)</h3>
+        <input type="text" id="filtroPEUnico" onkeyup="filtrarPEUnico()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar por N° PE, código o fecha...">
+
+        <div id="peUnicoSeccionLista" class="flex-1 overflow-auto">
+            <table class="w-full min-w-[600px]">
+                <thead class="bg-aq-surface-2 sticky top-0">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">N° PE</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Proceso</th>
+                        <th class="px-3 py-2 text-right text-aq-text font-semibold whitespace-nowrap">Cant</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Bodega</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaPEUnico" class="divide-y divide-aq-border"></tbody>
+            </table>
+        </div>
+
+        <div id="peUnicoSeccionDetalle" class="hidden border-t border-aq-border pt-4 mt-4">
+            <div class="flex justify-between items-center mb-2">
+                <h4 class="text-sm font-semibold text-aq-text">Detalle de PE N° <span id="peUnicoTituloNumero">-</span></h4>
+                <button type="button" onclick="volverListaPEUnico()" class="text-xs text-aq-primary hover:underline">
+                    <i class='bx bx-arrow-left'></i> Volver a lista
+                </button>
+            </div>
+            <p class="text-xs text-aq-muted mb-2">Haga clic en una fila para seleccionar el artículo</p>
+            <div class="overflow-x-auto max-h-48">
+                <table class="w-full min-w-[900px] text-xs">
+                    <thead class="bg-aq-surface-2 sticky top-0">
+                        <tr>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">DocRef</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                            <th class="px-2 py-1.5 text-right text-aq-text font-semibold whitespace-nowrap">Cant</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Bodega</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Proceso</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaPEUnicoDetalle" class="divide-y divide-aq-border"></tbody>
+                </table>
+            </div>
+
+            <h4 class="text-sm font-semibold text-aq-text mt-4 mb-2">Historial de Saldos</h4>
+            <div class="overflow-x-auto max-h-48">
+                <table class="w-full min-w-[800px] text-xs">
+                    <thead class="bg-aq-surface-2 sticky top-0">
+                        <tr>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Descripción</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Numero</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Tipo</th>
+                            <th class="px-2 py-1.5 text-left text-aq-text font-semibold whitespace-nowrap">Bodega</th>
+                            <th class="px-2 py-1.5 text-right text-aq-text font-semibold whitespace-nowrap">Cantidad</th>
+                            <th class="px-2 py-1.5 text-right text-aq-text font-semibold whitespace-nowrap">Suma Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaPEUnicoHistorial" class="divide-y divide-aq-border"></tbody>
+                </table>
+            </div>
+
+            
+            <button onclick="cerrarModalPEUnico()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/modulos/produccion/ot.js' %}" data-url="{% url 'produccion:produccion_ingreso_ot' %}" data-csrf-token="{{ csrf_token }}"></script>
+
+{% endblock %}

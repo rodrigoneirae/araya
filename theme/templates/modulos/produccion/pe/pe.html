@@ -1,0 +1,261 @@
+{% extends 'plantilla/base/base.html' %}
+{% load static %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'libs/tabulator/css/tabulator.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="h-full w-full mx-auto px-4 py-2">
+    <div class="bg-aq-surface border border-aq-border rounded-xl shadow-lg h-full flex flex-col">
+        <div class="p-4 border-b border-aq-border">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-aq-text">Parte de Entrada (Producción)</h1>
+                <div class="flex gap-2">
+                    <button type="button" onclick="nuevoPE()" class="w-10 h-10 flex items-center justify-center rounded-lg bg-aq-primary text-white hover:opacity-85" title="Nuevo">
+                        <i class='bx bx-plus text-xl'></i>
+                    </button>
+                    <button type="button" onclick="guardarPE()" id="btnGuardarPE" class="w-10 h-10 flex items-center justify-center rounded-lg bg-aq-primary text-white hover:opacity-85 hidden" title="Guardar">
+                        <i class='bx bx-save text-xl'></i>
+                    </button>
+                    <button type="button" onclick="editarPE()" id="btnEditarPE" class="w-10 h-10 flex items-center justify-center rounded-lg bg-amber-500 text-white hover:opacity-85 hidden" title="Editar">
+                        <i class='bx bx-edit text-xl'></i>
+                    </button>
+                    <button type="button" onclick="eliminarPE()" id="btnEliminarPE" class="w-10 h-10 flex items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 hidden" title="Eliminar">
+                        <i class='bx bx-trash text-xl'></i>
+                    </button>
+                    <a href="{% url 'home' %}" class="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-500 text-white hover:bg-gray-600" title="Salir">
+                        <i class='bx bx-exit text-lg'></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-b border-aq-border overflow-x-auto">
+            <nav class="flex -mb-px w-full lg:w-1/3 min-w-max" aria-label="Tabs">
+                <button onclick="cambiarTabPE('encabezado')" id="tab-encabezado" class="tab-btn active flex-1">
+                    <i class='bx bx-file'></i>
+                    <span>Encabezado</span>
+                </button>
+                <button onclick="cambiarTabPE('detalle')" id="tab-detalle" class="tab-btn flex-1 pointer-events-none opacity-50">
+                    <i class='bx bx-list-ul'></i>
+                    <span>Detalle</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="p-4 w-full flex-1 overflow-hidden flex flex-col">
+            <div id="contenido-encabezado" class="tab-content h-full">
+                <form id="peForm" class="space-y-2">
+                    <div class="flex flex-wrap items-end gap-2">
+                        <div class="w-24 sm:w-28">
+                            <label class="block text-xs font-medium text-aq-text mb-1">PE</label>
+                            <div class="flex gap-1">
+                                <input type="text" id="peNumero" onchange="buscarPEInput()" class="w-full px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                                <button type="button" onclick="abrirBusquedaPE()" class="px-2 py-1.5 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                    <i class='bx bx-search text-sm'></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="w-28 sm:w-32">
+                            <label class="block text-xs font-medium text-aq-text mb-1">Fecha</label>
+                            <input type="date" id="peFecha" class="w-full px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                        </div>
+                        <div class="w-24 sm:w-28">
+                            <label class="block text-xs font-medium text-aq-text mb-1">OT</label>
+                            <div class="flex gap-1">
+                                <input type="text" id="peOT" onchange="buscarOTInput()" onkeyup="sincronizarPEconOT()" class="w-full px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                                <button type="button" onclick="abrirBusquedaOT()" class="px-2 py-1.5 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar OT">
+                                    <i class='bx bx-search text-sm'></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="w-[200px] sm:w-[220px]">
+                            <label class="block text-xs font-medium text-aq-text mb-1">Proceso</label>
+                            <select id="peProceso" class="w-full px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                                <option value="">--- Seleccionar ---</option>
+                            </select>
+                        </div>
+                        <div class="w-[220px] sm:w-[250px]">
+                            <label class="block text-xs font-medium text-aq-text mb-1">Encargado</label>
+                            <select id="peEncargado" class="w-full px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                                <option value="">--- Seleccionar ---</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="mt-3 space-y-2">
+                    <div class="bg-aq-surface-2 rounded-lg p-2">
+                        <h4 class="text-xs font-semibold text-aq-text mb-1.5">Artículos de VC (SubVC_Ref)</h4>
+                        <div id="tabulatorSubVCRef" class="w-full"></div>
+                    </div>
+                    <div class="bg-aq-surface-2 rounded-lg p-2">
+                        <h4 class="text-xs font-semibold text-aq-text mb-1.5">Artículos de OT (SubOT_Ref)</h4>
+                        <div id="tabulatorSubOTRef" class="w-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="contenido-detalle" class="tab-content hidden flex flex-col h-full">
+                <h3 class="text-lg font-semibold text-aq-text mb-3">Detalle de Artículos</h3>
+                <div class="w-full overflow-x-auto">
+                    <div class="flex gap-2 mb-3 flex-wrap items-end min-w-[550px]">
+                        <div class="w-24 sm:w-28 md:w-32">
+                            <div class="flex h-[34px]">
+                                <input type="text" id="peArtCod" onchange="buscarArticuloPEInput()" class="w-full px-2 py-1.5 rounded-l-lg border border-aq-border bg-aq-bg text-aq-text text-xs" placeholder="Código">
+                                <button type="button" onclick="abrirListaArticulosPE()" class="px-2 py-1.5 rounded-r-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white border border-l-0 border-aq-border" title="Buscar">
+                                    <i class='bx bx-search text-xs'></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="w-16 sm:w-20">
+                            <input type="number" id="peArtCant" class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="Cant">
+                        </div>
+                        <div class="w-20 sm:w-24">
+                            <input type="number" id="peArtPUnit" class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="P.Unit">
+                        </div>
+                        <div class="w-16 sm:w-20">
+                            <input type="text" id="peArtUM" class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="UM" readonly>
+                        </div>
+                        <div class="w-20 sm:w-24 md:w-28">
+                            <select id="peArtBodega" class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
+                                <option value="">Bodega</option>
+                            </select>
+                        </div>
+                        <div class="w-28 sm:w-32">
+                            <input type="date" id="peArtFecha" class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
+                        </div>
+                        <button type="button" onclick="agregarDetallePE()" class="px-3 py-1.5 rounded-lg bg-aq-primary text-white hover:opacity-85 text-xs h-[34px]" title="Agregar">
+                            <i class='bx bx-plus'></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="w-full flex-1 overflow-auto min-h-0">
+                    <div class="overflow-x-auto min-w-0">
+<table class="w-full border-collapse min-w-[800px]">
+                                <thead>
+                                    <tr class="bg-aq-surface-2 text-aq-text text-xs">
+                                        <th class="px-1 py-2 text-left whitespace-nowrap">Código</th>
+                                        <th class="px-1 py-2 text-left whitespace-nowrap">Bodega</th>
+                                        <th class="px-1 py-2 text-right whitespace-nowrap">Cant</th>
+                                        <th class="px-1 py-2 text-left whitespace-nowrap">UM</th>
+                                        <th class="px-1 py-2 text-left whitespace-nowrap">Descripción</th>
+                                        <th class="px-1 py-2 text-right whitespace-nowrap">P.Unit</th>
+                                        <th class="px-1 py-2 text-left whitespace-nowrap">Fecha</th>
+                                        <th class="px-1 py-2 text-left whitespace-nowrap">Estado</th>
+                                        <th class="px-1 py-2 text-center whitespace-nowrap">Acción</th>
+                                    </tr>
+                                </thead>
+                            <tbody id="peDetalle">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="resumenPE" class="flex flex-wrap gap-2 sm:gap-4 mt-2 px-2 py-1.5 bg-aq-surface-2 rounded-lg text-xs">
+                    <div><span class="text-aq-text font-medium">OT:</span> <span id="resumenOT" class="text-aq-primary">-</span></div>
+                    <div><span class="text-aq-text font-medium">Proceso:</span> <span id="resumenProceso" class="text-aq-primary">-</span></div>
+                    <div><span class="text-aq-text font-medium">Total Artículos:</span> <span id="resumenTotalArt">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalBusquedaPE" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-lg md:max-w-2xl border border-aq-border max-h-[90vh] flex flex-col">
+        <h3 class="text-lg font-semibold text-aq-text mb-4">Buscar PE</h3>
+        <input type="text" id="filtroBusquedaPE" onkeyup="filtrarPE()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar por N° PE...">
+        <div class="overflow-x-auto max-h-64 flex-1 min-h-0">
+            <table class="w-full min-w-[300px]">
+                <thead class="bg-aq-surface-2">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">PE</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">OT</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Proceso</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaBusquedaPE" class="divide-y divide-aq-border"></tbody>
+            </table>
+        </div>
+        <div class="flex justify-end mt-4 pt-4 border-t border-aq-border">
+            <button onclick="document.getElementById('modalBusquedaPE').classList.add('hidden')" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="modalBusquedaOT" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-lg md:max-w-2xl border border-aq-border max-h-[90vh] flex flex-col">
+        <h3 class="text-lg font-semibold text-aq-text mb-4">Buscar Orden de Trabajo (OT)</h3>
+        <input type="text" id="filtroBusquedaOT" onkeyup="filtrarOT()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar por N° OT...">
+        <div class="overflow-x-auto max-h-64 flex-1 min-h-0">
+            <table class="w-full min-w-[300px]">
+                <thead class="bg-aq-surface-2">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">OT</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Fecha</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Encargado</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Proceso</th>
+                        <th class="px-3 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaBusquedaOT" class="divide-y divide-aq-border"></tbody>
+            </table>
+        </div>
+        <div class="flex justify-end mt-4 pt-4 border-t border-aq-border">
+            <button onclick="document.getElementById('modalBusquedaOT').classList.add('hidden')" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="modalConfirmar" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-sm border border-aq-border">
+        <h3 id="modalConfirmarTitulo" class="text-lg font-semibold text-aq-text mb-4">Confirmar</h3>
+        <p id="modalConfirmarMensaje" class="text-aq-text mb-6"></p>
+        <div class="flex justify-end gap-2">
+            <button onclick="cerrarModalConfirmar()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cancelar
+            </button>
+            <button onclick="ejecutarModalConfirmar()" class="px-4 py-2 rounded-lg bg-aq-primary text-white hover:opacity-85">
+                Confirmar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="modalArticulosPE" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-3xl border border-aq-border max-h-[90vh] flex flex-col">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-semibold text-aq-text">Seleccionar Artículo</h3>
+            <button type="button" onclick="document.getElementById('modalArticulosPE').classList.add('hidden')" class="text-aq-muted hover:text-aq-text">
+                <i class='bx bx-x text-xl'></i>
+            </button>
+        </div>
+        <input type="text" id="filtroArticulosPE" onkeyup="filtrarArticulosPE()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar por código, descripción, tipo o proceso...">
+
+        <div class="flex-1 overflow-auto">
+            <table class="w-full min-w-[550px]">
+                <thead class="bg-aq-surface-2 sticky top-0">
+                    <tr>
+                        <th class="px-2 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Código</th>
+                        <th class="px-2 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Descripción</th>
+                        <th class="px-2 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Tipo</th>
+                        <th class="px-2 py-2 text-left text-aq-text font-semibold whitespace-nowrap">Proceso</th>
+                        <th class="px-2 py-2 text-left text-aq-text font-semibold whitespace-nowrap">UM</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaArticulosPE" class="divide-y divide-aq-border"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'libs/tabulator/js/tabulator.min.js' %}"></script>
+<script src="{% static 'js/modulos/produccion/pe.js' %}" data-url="{% url 'produccion:produccion_ingreso_pe' %}" data-csrf-token="{{ csrf_token }}"></script>
+
+{% endblock %}

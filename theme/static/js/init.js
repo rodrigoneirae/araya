@@ -53,27 +53,41 @@
      * ========================= */
 
     window.downloadBlobTauri = async function(blob, filename) {
-    const isLocalTauri =
-        window.__TAURI__ !== undefined &&
-        (window.location.protocol === 'file:' ||
-         window.location.hostname === '127.0.0.1');
+    Toastify({
+        text: `🔄 Preparando descarga: ${filename}`,
+        duration: 2000,
+        style: { background: '#2196F3' }
+    }).showToast();
 
-    if (isLocalTauri && window.__TAURI__) {
+    console.log('=== downloadBlobTauri ===');
+    console.log('isTauri:', isTauri);
+    console.log('location:', window.location.href);
+
+    const canUseTauri = isTauri &&
+                        window.__TAURI__ != null &&
+                        window.location.hostname === '127.0.0.1';
+
+    console.log('canUseTauri:', canUseTauri);
+
+    if (canUseTauri) {
+        Toastify({
+            text: '🚀 Usando Tauri para descargar...',
+            duration: 2000,
+            style: { background: '#FF9800' }
+        }).showToast();
+
         try {
-            const { downloadDir } = window.__TAURI__.path;
-            const { writeFile } = window.__TAURI__.fs;
-            const { open } = window.__TAURI__.shell;
-
             const arrayBuffer = await blob.arrayBuffer();
             const uint8Array = new Uint8Array(arrayBuffer);
+            const { invoke } = window.__TAURI__.core;
 
-            const dir = await downloadDir();
-            const tmpPath = `${dir}\\${filename}`;
+            const savedPath = await invoke('save_to_downloads', {
+                filename: filename,
+                data: Array.from(uint8Array)
+            });
 
-            await writeFile(tmpPath, uint8Array);
+            console.log('Saved to:', savedPath);
 
-            const fileUrl = 'file:///' + tmpPath.replace(/\\/g, '/');
-            
             Toastify({
                 text: '✅ Guardado en Downloads\n' + filename,
                 duration: 5000,
@@ -82,15 +96,12 @@
                     whiteSpace: 'pre-wrap'
                 }
             }).showToast();
-            
-            // Abrir archivo con comando del sistema
+
             try {
-                const { invoke } = window.__TAURI__.core;
-                await invoke('open_file', { path: tmpPath });
+                await invoke('open_file', { path: savedPath });
             } catch (openErr) {
-                console.error('Error abriendo archivo:', openErr);
                 Toastify({
-                    text: '📂 ' + tmpPath,
+                    text: '📂 ' + savedPath,
                     duration: 10000,
                     style: {
                         background: '#2196F3',
@@ -100,24 +111,38 @@
             }
 
         } catch (err) {
-            console.error('Error Tauri:', err);
-
+            console.error('Error:', err);
             Toastify({
-                text: 'Error: ' + err.message,
-                style: { background: '#f44336' }
+                text: '⚠️ Error al guardar: ' + (err.message || err.toString()),
+                duration: 8000,
+                style: { background: '#f44336', whiteSpace: 'pre-wrap' }
             }).showToast();
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
     } else {
-        const url = URL.createObjectURL(blob);
+        Toastify({
+            text: '🌐 Fallback a descarga nativa',
+            duration: 2000,
+            style: { background: '#9C27B0' }
+        }).showToast();
 
+        console.log('Falling back to native download');
+
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
         link.download = filename;
-
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-
         URL.revokeObjectURL(url);
     }
 };

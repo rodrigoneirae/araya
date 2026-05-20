@@ -43,6 +43,19 @@ async fn open_file(path: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+async fn save_to_downloads(filename: String, data: Vec<u8>) -> Result<String, String> {
+    use std::path::PathBuf;
+
+    let downloads = std::env::var("USERPROFILE")
+        .map(|p| PathBuf::from(p).join("Downloads"))
+        .map_err(|e| e.to_string())?;
+
+    let file_path = downloads.join(&filename);
+    std::fs::write(&file_path, &data).map_err(|e| e.to_string())?;
+    Ok(file_path.to_string_lossy().to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(Mutex::new(None::<Child>))
@@ -267,7 +280,7 @@ fn main() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![open_file])
+        .invoke_handler(tauri::generate_handler![open_file, save_to_downloads])
         .build(tauri::generate_context!())
         .expect("error building tauri app")
         .run(|app_handle, e| {

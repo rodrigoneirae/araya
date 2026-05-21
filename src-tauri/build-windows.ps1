@@ -42,28 +42,17 @@ if (Test-Path $COPIA_BINARIO) {
 New-Item -ItemType Directory -Path $COPIA_BINARIO | Out-Null
 
 # ------------------------------------------------------------
-# COPY NUITKA EXECUTABLE
+# COPY NUITKA DIST (standalone: exe + DLLs + .pyd)
 # ------------------------------------------------------------
 
-$nuitkaExe = Get-ChildItem `
-    -Path $BINARIO_NUITKA `
-    -Filter "*.exe" |
-    Select-Object -First 1
-
-if ($nuitkaExe) {
-
-    Copy-Item `
-        -Path $nuitkaExe.FullName `
-        -Destination $COPIA_BINARIO `
-        -Force
-
-    Write-Host "Copied Nuitka exe: $($nuitkaExe.Name)"
-
-} else {
-
-    Write-Error "Nuitka executable not found at: $BINARIO_NUITKA"
+if (-Not (Test-Path $BINARIO_NUITKA)) {
+    Write-Error "Nuitka output not found at: $BINARIO_NUITKA"
     exit 1
 }
+
+Copy-Item -Path "$BINARIO_NUITKA\*" -Destination $COPIA_BINARIO -Recurse -Force
+
+Write-Host "Copied Nuitka dist: $((Get-ChildItem -Path $COPIA_BINARIO -Recurse | Measure-Object).Count) archivos"
 
 # ------------------------------------------------------------
 # COPY OPTIONAL ENV FILE

@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Araya Ltda",
   "version": "0.1.0",
-  "identifier": "cl.rodrigoneira.araya-ltda",
+  "identifier": "Rodrigo-Neira-SpA",
   "build": {
     "devUrl": "http://127.0.0.1:1111",
     "beforeDevCommand": "",

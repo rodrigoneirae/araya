@@ -115,7 +115,7 @@ fn main() {
             println!("🔍 Modo: {}", if use_dev_mode { "Desarrollo (servidor externo)" } else { "Normal" });
 
             if use_dev_mode {
-                println!("⚠️ Modo dev: esperando servidor en http://127.0.0.1:1111/");
+                println!("Modo dev: esperando servidor en http://127.0.0.1:1111/");
 
                 if let Some(win) = handle.get_webview_window("main") {
                     let js = r#"
@@ -151,7 +151,7 @@ fn main() {
                             if let Ok(response) = client.get("http://127.0.0.1:1111/").send() {
                                 let status = response.status().as_u16();
                                 if status == 200 || status == 302 || status == 301 {
-                                    println!("✅ Servidor listo!");
+                                    println!("Servidor listo!");
                                     if let Some(win) = window.get_webview_window("main") {
                                         win.eval("window.location.href = 'http://127.0.0.1:1111/';").ok();
                                     }
@@ -169,16 +169,7 @@ fn main() {
                 }
 
                 let backend_exec_abs = fs::canonicalize(&backend_exec).unwrap_or(backend_exec.clone());
-                let backend_dir = backend_exec_abs.parent().unwrap().to_path_buf();
-
-                #[cfg(unix)]
-                {
-                    if let Ok(metadata) = fs::metadata(&backend_exec_abs) {
-                        let mut perms = metadata.permissions();
-                        perms.set_mode(0o755);
-                        let _ = fs::set_permissions(&backend_exec_abs, perms);
-                    }
-                }
+                let resource_bin_dir = backend_exec_abs.parent().unwrap().to_path_buf();
 
                 if !app_dir.exists() {
                     fs::create_dir_all(&app_dir).ok();
@@ -189,6 +180,35 @@ fn main() {
                     fs::create_dir_all(&logs_dir).expect("No se pudo crear directorio de logs");
                 }
 
+                let backend_dest = app_dir.join("backend");
+                if backend_dest.exists() {
+                    fs::remove_dir_all(&backend_dest).ok();
+                }
+                fs::create_dir_all(&backend_dest).ok();
+
+                if let Ok(entries) = fs::read_dir(&resource_bin_dir) {
+                    for entry in entries.flatten() {
+                        if entry.file_type().map(|t| t.is_file()).unwrap_or(false) {
+                            let dest = backend_dest.join(entry.file_name());
+                            fs::copy(entry.path(), &dest).ok();
+                        }
+                    }
+                }
+
+                #[cfg(windows)]
+                let backend_exe = backend_dest.join("araya-backend.exe");
+                #[cfg(not(windows))]
+                let backend_exe = backend_dest.join("araya-backend");
+
+                #[cfg(unix)]
+                {
+                    if let Ok(metadata) = fs::metadata(&backend_exe) {
+                        let mut perms = metadata.permissions();
+                        perms.set_mode(0o755);
+                        let _ = fs::set_permissions(&backend_exe, perms);
+                    }
+                }
+
                 let stdout_log = logs_dir.join("backend_stdout.log");
                 let stderr_log = logs_dir.join("backend_stderr.log");
 
@@ -196,9 +216,10 @@ fn main() {
                 let stderr_file = fs::File::create(&stderr_log).expect("No se pudo crear stderr.log");
 
                 println!("📂 Logs en: {:?}", logs_dir);
+                println!("📂 Backend copiado a: {:?}", backend_dest);
 
-                let mut cmd = Command::new(&backend_exec_abs);
-                cmd.current_dir(backend_dir)
+                let mut cmd = Command::new(&backend_exe);
+                cmd.current_dir(&backend_dest)
                     .env("DJANGO_SETTINGS_MODULE", "araya.settings.desktop")
                     .env("AQUAI_BASE_DIR", &app_dir)
                     .env("PYTHONUNBUFFERED", "1")
@@ -206,7 +227,7 @@ fn main() {
                     .stderr(Stdio::from(stderr_file));
 
                 #[cfg(target_os = "linux")]
-                cmd.env("LD_LIBRARY_PATH", backend_dir);
+                cmd.env("LD_LIBRARY_PATH", &backend_dest);
 
                 match cmd.spawn() {
                     Ok(child) => {

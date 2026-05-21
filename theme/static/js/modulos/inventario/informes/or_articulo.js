@@ -382,13 +382,17 @@ function _fetchYDescargar(formdata, filename) {
     })
     .then(blob => {
         ocultarSpinner();
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
+        if (typeof window.downloadBlobTauri === 'function') {
+            window.downloadBlobTauri(blob, filename);
+        } else {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
     })
     .catch(err => {
         ocultarSpinner();

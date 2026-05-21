@@ -155,6 +155,32 @@ function actualizarResumen(data, saldoFinal) {
     document.getElementById('resumenAux').classList.remove('hidden');
 }
 
+function _fetchYSumarAux(formData, filename) {
+    return fetch(urlAux, { method: 'POST', body: formData })
+    .then(res => {
+        if (!res.ok) throw new Error('Error HTTP ' + res.status);
+        return res.blob();
+    })
+    .then(blob => {
+        if (typeof window.downloadBlobTauri === 'function') {
+            window.downloadBlobTauri(blob, filename);
+        } else {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        Toastify({text: 'Error al generar informe: ' + err.message, style: {background: '#f44336'}}).showToast();
+    });
+}
+
 function generarPDF() {
     const codigo = document.getElementById('auxArtCod').value.trim();
     if (!codigo) {
@@ -163,12 +189,12 @@ function generarPDF() {
     }
     const fecha_desde = document.getElementById('auxFechaDesde').value;
     const fecha_corte = document.getElementById('auxFechaCorte').value;
-   const saldo_ant =
-    document.getElementById('resumenSaldoFinal')
-    .textContent
-    .replace(/\./g, '')
-    .replace(',', '.')
-    .trim();
+    const saldo_ant =
+        document.getElementById('resumenSaldoFinal')
+        .textContent
+        .replace(/\./g, '')
+        .replace(',', '.')
+        .trim();
 
     function getCookie(name) {
         let cookieValue = null;
@@ -193,24 +219,7 @@ function generarPDF() {
     formData.append('fecha_corte', fecha_corte);
     formData.append('saldo_ant', saldo_ant);
 
-    fetch(urlAux, { method: 'POST', body: formData })
-    .then(res => {
-        if (!res.ok) throw new Error('Error al generar PDF');
-        return res.blob();
-    })
-    .then(blob => {
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `aux_existencia_${codigo}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
-    })
-    .catch(err => {
-        console.error('Error:', err);
-        Toastify({text: 'Error al generar PDF: ' + err.message, style: {background: '#f44336'}}).showToast();
-    });
+    _fetchYSumarAux(formData, `aux_existencia_${codigo}.pdf`);
 }
 
 function generarEXCEL() {
@@ -222,11 +231,11 @@ function generarEXCEL() {
     const fecha_desde = document.getElementById('auxFechaDesde').value;
     const fecha_corte = document.getElementById('auxFechaCorte').value;
     const saldo_ant =
-     document.getElementById('resumenSaldoFinal')
-     .textContent
-     .replace(/\./g, '')
-     .replace(',', '.')
-     .trim();
+        document.getElementById('resumenSaldoFinal')
+        .textContent
+        .replace(/\./g, '')
+        .replace(',', '.')
+        .trim();
 
     function getCookie(name) {
         let cookieValue = null;
@@ -251,24 +260,7 @@ function generarEXCEL() {
     formData.append('fecha_corte', fecha_corte);
     formData.append('saldo_ant', saldo_ant);
 
-    fetch(urlAux, { method: 'POST', body: formData })
-    .then(res => {
-        if (!res.ok) throw new Error('Error al generar Excel');
-        return res.blob();
-    })
-    .then(blob => {
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `aux_existencia_${codigo}.xlsx`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
-    })
-    .catch(err => {
-        console.error('Error:', err);
-        Toastify({text: 'Error al generar Excel: ' + err.message, style: {background: '#f44336'}}).showToast();
-    });
+    _fetchYSumarAux(formData, `aux_existencia_${codigo}.xlsx`);
 }
 
 function consultar() {

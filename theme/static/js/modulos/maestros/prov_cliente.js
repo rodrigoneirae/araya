@@ -1,12 +1,21 @@
 const urlProvCliente = (document.currentScript && document.currentScript.dataset.url) || '/';
 const csrfToken = document.currentScript?.dataset.csrfToken || '';
-let listaClientes = [];
+
 let modoEdicion = false;
 let modoNuevo = false;
+let tipoOriginal = '';
 
 document.addEventListener('DOMContentLoaded', function() {
     cargarTipos();
     cargarCpagos();
+
+    const btnEliminar = document.getElementById('btnEliminar');
+    if (btnEliminar) {
+        btnEliminar.title = 'Desactivar';
+        btnEliminar.querySelector('i').className = 'bx bx-no-entry text-xl';
+        btnEliminar.classList.remove('bg-red-500', 'hover:bg-red-600');
+        btnEliminar.classList.add('bg-amber-500', 'hover:bg-amber-600');
+    }
 
     const rutInput = document.getElementById('rut');
     if (rutInput) {
@@ -63,54 +72,28 @@ function cargarCpagos() {
 }
 
 function abrirListaClientes() {
-    console.log('Abriendo lista clientes...');
     buscarXHR('listar_ruts', {}, function(data) {
-        console.log('Respuesta:', data);
-        listaClientes = data.clientes || [];
-        const modal = document.getElementById('modalClientes');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
-        const filtro = document.getElementById('filtroClientes');
-        if (filtro) {
-            filtro.value = '';
-        }
-        renderizarClientes(listaClientes);
+        abrirModalBusqueda({
+            titulo: 'Lista de Clientes/Proveedores',
+            columnas: [
+                { title: 'RUT', field: 'rut', width: 140 },
+                { title: 'Nombre', field: 'nombre' },
+                { title: 'Tipo', field: 'tipo', width: 120 },
+            ],
+            data: data.clientes || [],
+            filtroCampos: ['rut', 'nombre', 'tipo'],
+            onSelect: function(row) {
+                document.getElementById('rut').value = row.rut;
+                buscarPorRut();
+            },
+            onRefresh: function(opts) {
+                buscarXHR('listar_ruts', {}, function(data) {
+                    opts.data = data.clientes || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
-}
-
-function cerrarListaClientes() {
-    const modal = document.getElementById('modalClientes');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-}
-
-function renderizarClientes(clientes) {
-    const tbody = document.getElementById('tablaClientes');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    clientes.forEach(c => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            const rutInput = document.getElementById('rut');
-            if (rutInput) rutInput.value = c.rut;
-            buscarPorRut();
-            cerrarListaClientes();
-        };
-        tr.innerHTML = `<td class="px-3 py-2 text-aq-text">${c.rut}</td><td class="px-3 py-2 text-aq-text">${c.nombre}</td><td class="px-3 py-2 text-aq-text">${c.tipo}</td>`;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarClientes() {
-    const filtro = document.getElementById('filtroClientes').value.toLowerCase();
-    const filtrados = listaClientes.filter(c =>
-        (c.rut && c.rut.toLowerCase().includes(filtro)) ||
-        (c.nombre && c.nombre.toLowerCase().includes(filtro))
-    );
-    renderizarClientes(filtrados);
 }
 
 function buscarPorRut() {
@@ -128,17 +111,27 @@ function buscarPorRut() {
 
     buscarXHR('buscar', {rut: rut}, function(data) {
         if (data.success && data.data) {
+            document.getElementById('rut').value = data.data.rut || '';
+            document.getElementById('dig_ver').value = data.data.dig_ver || '';
             document.getElementById('nombre').value = data.data.nombre || '';
             document.getElementById('tipo').value = data.data.tipo || '';
+            document.getElementById('sigla').value = data.data.sigla || '';
+            document.getElementById('giro').value = data.data.giro || '';
             document.getElementById('direccion').value = data.data.direccion || '';
+            document.getElementById('comuna').value = data.data.comuna || '';
+            document.getElementById('ciudad').value = data.data.ciudad || '';
             document.getElementById('fono').value = data.data.fono || '';
+            document.getElementById('fax').value = data.data.fax || '';
             document.getElementById('email').value = data.data.email || '';
-            document.getElementById('contacto').value = data.data.contacto || '';
             document.getElementById('cpago').value = data.data.cpago || '';
+            document.getElementById('contacto').value = data.data.contacto || '';
+            document.getElementById('emailcontacto').value = data.data.emailcontacto || '';
             setCamposDisabled(true);
+            tipoOriginal = data.data.tipo || '';
             document.getElementById('btnGuardar').classList.add('hidden');
             document.getElementById('btnEditar').classList.remove('hidden');
             document.getElementById('btnEliminar').classList.remove('hidden');
+            actualizarBtnEliminar();
             modoEdicion = false;
             resetBtnEditar();
         } else {
@@ -155,7 +148,7 @@ function buscarPorRut() {
 }
 
 function setCamposDisabled(disabled) {
-    ['nombre', 'tipo', 'direccion', 'fono', 'email', 'contacto', 'cpago'].forEach(id => {
+    ['rut', 'dig_ver', 'nombre', 'tipo', 'sigla', 'giro', 'direccion', 'comuna', 'ciudad', 'fono', 'fax', 'email', 'cpago', 'contacto', 'emailcontacto'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.disabled = disabled;
     });
@@ -218,13 +211,20 @@ function guardarCliente() {
 
     buscarXHR('nuevo', {
         rut: rut,
+        dig_ver: document.getElementById('dig_ver').value,
         nombre: nombre,
         tipo: document.getElementById('tipo').value,
+        sigla: document.getElementById('sigla').value,
+        giro: document.getElementById('giro').value,
         direccion: document.getElementById('direccion').value,
+        comuna: document.getElementById('comuna').value,
+        ciudad: document.getElementById('ciudad').value,
         fono: document.getElementById('fono').value,
+        fax: document.getElementById('fax').value,
         email: document.getElementById('email').value,
+        cpago: document.getElementById('cpago').value,
         contacto: document.getElementById('contacto').value,
-        cpago: document.getElementById('cpago').value
+        emailcontacto: document.getElementById('emailcontacto').value
     }, function(data) {
         if (data.success) {
             Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
@@ -255,13 +255,20 @@ function editarCliente() {
 
         buscarXHR('editar', {
             rut: rut,
+            dig_ver: document.getElementById('dig_ver').value,
             nombre: document.getElementById('nombre').value,
             tipo: document.getElementById('tipo').value,
+            sigla: document.getElementById('sigla').value,
+            giro: document.getElementById('giro').value,
             direccion: document.getElementById('direccion').value,
+            comuna: document.getElementById('comuna').value,
+            ciudad: document.getElementById('ciudad').value,
             fono: document.getElementById('fono').value,
+            fax: document.getElementById('fax').value,
             email: document.getElementById('email').value,
+            cpago: document.getElementById('cpago').value,
             contacto: document.getElementById('contacto').value,
-            cpago: document.getElementById('cpago').value
+            emailcontacto: document.getElementById('emailcontacto').value
         }, function(data) {
             if (data.success) {
                 Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
@@ -276,32 +283,47 @@ function editarCliente() {
     }
 }
 
+function actualizarBtnEliminar() {
+    const btn = document.getElementById('btnEliminar');
+    if (!btn) return;
+    const activo = tipoOriginal !== 'Inactivo';
+    btn.title = activo ? 'Desactivar' : 'Activar';
+    btn.querySelector('i').className = activo ? 'bx bx-no-entry text-xl' : 'bx bx-check-circle text-xl';
+    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'bg-amber-500', 'hover:bg-amber-600', 'bg-green-500', 'hover:bg-green-600');
+    btn.classList.add(activo ? 'bg-amber-500' : 'bg-green-500', activo ? 'hover:bg-amber-600' : 'hover:bg-green-600');
+}
+
 function eliminarCliente() {
     const rut = document.getElementById('rut').value.trim().toUpperCase();
     if (!rut) {
         Toastify({text: 'Seleccione un RUT', style: {background: '#f44336'}}).showToast();
         return;
     }
-    document.getElementById('eliminarRut').textContent = rut;
-    document.getElementById('modalConfirmar').classList.remove('hidden');
-    window.rutAEliminar = rut;
-}
-
-function cerrarConfirmar() {
-    document.getElementById('modalConfirmar').classList.add('hidden');
-    window.rutAEliminar = '';
-}
-
-function confirmarEliminar() {
-    if (!window.rutAEliminar) return;
-
-    buscarXHR('eliminar', {rut: window.rutAEliminar}, function(data) {
-        if (data.success) {
-            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-            cerrarConfirmar();
-            nuevoCliente();
-        } else {
-            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+    const activo = tipoOriginal !== 'Inactivo';
+    mostrarModalConfirm({
+        datos: [
+            { label: 'RUT', value: rut },
+            { label: 'Nombre', value: document.getElementById('nombre').value || '—' },
+        ],
+        titulo: activo ? 'Desactivar Cliente/Proveedor' : 'Activar Cliente/Proveedor',
+        mensaje: activo ? '¿Está seguro de desactivar este registro?' : '¿Está seguro de activar este registro?',
+        icono: activo ? 'bx bx-no-entry text-xl sm:text-2xl text-amber-500' : 'bx bx-check-circle text-xl sm:text-2xl text-green-500',
+        textoBoton: activo ? 'Desactivar' : 'Activar',
+        colorBoton: activo ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-green-500 text-white hover:bg-green-600',
+        onConfirm: function() {
+            const action = activo ? 'desactivar' : 'activar';
+            buscarXHR(action, {rut: rut}, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    if (activo) {
+                        nuevoCliente();
+                    } else {
+                        buscarPorRut();
+                    }
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
         }
     });
 }

@@ -49,6 +49,7 @@
         </div>
     </div>
 </div>
-
-<script src="{% static 'js/modulos/produccion/informes/vc_encargado.js' %}" data-url="{% url 'produccion:produccion_informe_vc_encargado' %}"></script>
+{% endblock %}
+{% block extra_js %}
+    <script src="{% static 'js/modulos/produccion/informes/vc_encargado.js' %}" data-url="{% url 'produccion:produccion_informe_vc_encargado' %}"></script>
 {% endblock %}

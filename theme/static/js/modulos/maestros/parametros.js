@@ -34,7 +34,6 @@ function buscarXHRBodega(action, datos, callback) {
     .catch(err => console.error('Error:', err));
 }
 
-let listaBodegas = [];
 let modoEdicionBodega = false;
 let modoNuevoBodega = false;
 let codigoBodegaEliminar = null;
@@ -177,70 +176,42 @@ function eliminarBodega() {
         Toastify({text: 'Seleccione una bodega', style: {background: '#f44336'}}).showToast();
         return;
     }
-    document.getElementById('eliminarCodBodega').textContent = cod;
-    codigoBodegaEliminar = cod;
-    document.getElementById('modalConfirmarBodega').classList.remove('hidden');
-}
-
-function cerrarConfirmarBodega() {
-    document.getElementById('modalConfirmarBodega').classList.add('hidden');
-    codigoBodegaEliminar = null;
-}
-
-function confirmarEliminarBodega() {
-    if (!codigoBodegaEliminar) return;
-    buscarXHRBodega('eliminar_bodega', {cod: codigoBodegaEliminar}, function(data) {
-        if (data.success) {
-            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-            cerrarConfirmarBodega();
-            nuevaBodega();
-        } else {
-            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+    mostrarModalConfirm({
+        mensaje: '¿Está seguro de eliminar la bodega código "' + cod + '"?',
+        onConfirm: function() {
+            buscarXHRBodega('eliminar_bodega', {cod: cod}, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    nuevaBodega();
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
         }
     });
 }
 
 function abrirListaBodegas() {
     buscarXHRBodega('listar_bodegas', {}, function(data) {
-        listaBodegas = data.bodegas || [];
-        document.getElementById('modalBodegas').classList.remove('hidden');
-        document.getElementById('filtroBodegas').value = '';
-        renderizarListaBodegas(listaBodegas);
-    });
-}
-
-function cerrarListaBodegas() {
-    document.getElementById('modalBodegas').classList.add('hidden');
-}
-
-function renderizarListaBodegas(bodegas) {
-    const tbody = document.getElementById('tablaListaBodegas');
-    tbody.innerHTML = '';
-    bodegas.forEach(b => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            seleccionarBodega(b.cod, b.nombre, b.glosa);
-            cerrarListaBodegas();
-        };
-        tr.innerHTML = `<td class="px-3 py-2 text-aq-text">${b.cod}</td><td class="px-3 py-2 text-aq-text">${b.nombre}</td><td class="px-3 py-2 text-aq-text">${b.glosa || '-'}</td>`;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarBodegas() {
-    const filtro = document.getElementById('filtroBodegas').value.toLowerCase();
-    const filtradas = listaBodegas.filter(b =>
-        (b.cod && b.cod.toString().toLowerCase().includes(filtro)) ||
-        (b.nombre && b.nombre.toLowerCase().includes(filtro))
-    );
-    renderizarListaBodegas(filtradas);
-}
-
-function recargarBodegas() {
-    buscarXHRBodega('listar_bodegas', {}, function(data) {
-        listaBodegas = data.bodegas || [];
-        renderizarListaBodegas(listaBodegas);
+        abrirModalBusqueda({
+            titulo: 'Lista de Bodegas',
+            columnas: [
+                { title: 'Código', field: 'cod', width: 100 },
+                { title: 'Nombre', field: 'nombre' },
+            ],
+            data: data.bodegas || [],
+            filtroCampos: ['cod', 'nombre'],
+            onSelect: function(row) {
+                document.getElementById('bodegaCod').value = row.cod;
+                buscarPorCodigoBodega();
+            },
+            onRefresh: function(opts) {
+                buscarXHRBodega('listar_bodegas', {}, function(data) {
+                    opts.data = data.bodegas || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
 }
 
@@ -259,7 +230,6 @@ function seleccionarBodega(cod, nombre, glosa) {
     document.getElementById('btnNuevoBodega').title = 'Nueva';
 }
 
-let listaDocs = [];
 let modoEdicionDoc = false;
 let modoNuevoDoc = false;
 let codigoDocEliminar = null;
@@ -416,70 +386,43 @@ function eliminarDoc() {
         Toastify({text: 'Seleccione un documento', style: {background: '#f44336'}}).showToast();
         return;
     }
-    document.getElementById('eliminarCodDoc').textContent = cod;
-    codigoDocEliminar = cod;
-    document.getElementById('modalConfirmarDoc').classList.remove('hidden');
-}
-
-function cerrarConfirmarDoc() {
-    document.getElementById('modalConfirmarDoc').classList.add('hidden');
-    codigoDocEliminar = null;
-}
-
-function confirmarEliminarDoc() {
-    if (!codigoDocEliminar) return;
-    buscarXHRDoc('eliminar_doc', {cod: codigoDocEliminar}, function(data) {
-        if (data.success) {
-            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-            cerrarConfirmarDoc();
-            nuevaDoc();
-        } else {
-            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+    mostrarModalConfirm({
+        mensaje: '¿Está seguro de eliminar el documento código "' + cod + '"?',
+        onConfirm: function() {
+            buscarXHRDoc('eliminar_doc', {cod: cod}, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    nuevaDoc();
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
         }
     });
 }
 
 function abrirListaDocs() {
     buscarXHRDoc('listar_docs', {}, function(data) {
-        listaDocs = data.docs || [];
-        document.getElementById('modalDocs').classList.remove('hidden');
-        document.getElementById('filtroDocs').value = '';
-        renderizarListaDocs(listaDocs);
-    });
-}
-
-function cerrarListaDocs() {
-    document.getElementById('modalDocs').classList.add('hidden');
-}
-
-function renderizarListaDocs(docs) {
-    const tbody = document.getElementById('tablaListaDocs');
-    tbody.innerHTML = '';
-    docs.forEach(d => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            seleccionarDoc(d.cod, d.nombre, d.signo);
-            cerrarListaDocs();
-        };
-        tr.innerHTML = `<td class="px-3 py-2 text-aq-text">${d.cod}</td><td class="px-3 py-2 text-aq-text">${d.nombre}</td><td class="px-3 py-2 text-aq-text">${d.signo || '-'}</td>`;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarDocs() {
-    const filtro = document.getElementById('filtroDocs').value.toLowerCase();
-    const filtradas = listaDocs.filter(d =>
-        (d.cod && d.cod.toString().toLowerCase().includes(filtro)) ||
-        (d.nombre && d.nombre.toLowerCase().includes(filtro))
-    );
-    renderizarListaDocs(filtradas);
-}
-
-function recargarDocs() {
-    buscarXHRDoc('listar_docs', {}, function(data) {
-        listaDocs = data.docs || [];
-        renderizarListaDocs(listaDocs);
+        abrirModalBusqueda({
+            titulo: 'Lista de Documentos',
+            columnas: [
+                { title: 'Código', field: 'cod', width: 100 },
+                { title: 'Nombre', field: 'nombre' },
+                { title: 'Signo', field: 'signo', width: 80 },
+            ],
+            data: data.docs || [],
+            filtroCampos: ['cod', 'nombre'],
+            onSelect: function(row) {
+                document.getElementById('docCod').value = row.cod;
+                buscarPorCodigoDoc();
+            },
+            onRefresh: function(opts) {
+                buscarXHRDoc('listar_docs', {}, function(data) {
+                    opts.data = data.docs || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
 }
 
@@ -498,7 +441,6 @@ function seleccionarDoc(cod, nombre, signo) {
     document.getElementById('btnNuevoDoc').title = 'Nueva';
 }
 
-let listaProcesos = [];
 let modoEdicionProceso = false;
 let modoNuevoProceso = false;
 let codigoProcesoEliminar = null;
@@ -655,70 +597,42 @@ function eliminarProceso() {
         Toastify({text: 'Seleccione un proceso', style: {background: '#f44336'}}).showToast();
         return;
     }
-    document.getElementById('eliminarCodProceso').textContent = cod;
-    codigoProcesoEliminar = cod;
-    document.getElementById('modalConfirmarProceso').classList.remove('hidden');
-}
-
-function cerrarConfirmarProceso() {
-    document.getElementById('modalConfirmarProceso').classList.add('hidden');
-    codigoProcesoEliminar = null;
-}
-
-function confirmarEliminarProceso() {
-    if (!codigoProcesoEliminar) return;
-    buscarXHRProceso('eliminar_proceso', {cod: codigoProcesoEliminar}, function(data) {
-        if (data.success) {
-            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-            cerrarConfirmarProceso();
-            nuevoProceso();
-        } else {
-            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+    mostrarModalConfirm({
+        mensaje: '¿Está seguro de eliminar el proceso código "' + cod + '"?',
+        onConfirm: function() {
+            buscarXHRProceso('eliminar_proceso', {cod: cod}, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    nuevoProceso();
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
         }
     });
 }
 
 function abrirListaProcesos() {
     buscarXHRProceso('listar_procesos', {}, function(data) {
-        listaProcesos = data.procesos || [];
-        document.getElementById('modalProcesos').classList.remove('hidden');
-        document.getElementById('filtroProcesos').value = '';
-        renderizarListaProcesos(listaProcesos);
-    });
-}
-
-function cerrarListaProcesos() {
-    document.getElementById('modalProcesos').classList.add('hidden');
-}
-
-function renderizarListaProcesos(procesos) {
-    const tbody = document.getElementById('tablaListaProcesos');
-    tbody.innerHTML = '';
-    procesos.forEach(p => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            seleccionarProceso(p.cod, p.nombre, p.glosa);
-            cerrarListaProcesos();
-        };
-        tr.innerHTML = `<td class="px-3 py-2 text-aq-text">${p.cod}</td><td class="px-3 py-2 text-aq-text">${p.nombre}</td><td class="px-3 py-2 text-aq-text">${p.glosa || '-'}</td>`;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarProcesos() {
-    const filtro = document.getElementById('filtroProcesos').value.toLowerCase();
-    const filtradas = listaProcesos.filter(p =>
-        (p.cod && p.cod.toString().toLowerCase().includes(filtro)) ||
-        (p.nombre && p.nombre.toLowerCase().includes(filtro))
-    );
-    renderizarListaProcesos(filtradas);
-}
-
-function recargarProcesos() {
-    buscarXHRProceso('listar_procesos', {}, function(data) {
-        listaProcesos = data.procesos || [];
-        renderizarListaProcesos(listaProcesos);
+        abrirModalBusqueda({
+            titulo: 'Lista de Procesos',
+            columnas: [
+                { title: 'Código', field: 'cod', width: 100 },
+                { title: 'Nombre', field: 'nombre' },
+            ],
+            data: data.procesos || [],
+            filtroCampos: ['cod', 'nombre'],
+            onSelect: function(row) {
+                document.getElementById('procesoCod').value = row.cod;
+                buscarPorCodigoProceso();
+            },
+            onRefresh: function(opts) {
+                buscarXHRProceso('listar_procesos', {}, function(data) {
+                    opts.data = data.procesos || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
 }
 
@@ -737,7 +651,6 @@ function seleccionarProceso(cod, nombre, glosa) {
     document.getElementById('btnNuevoProceso').title = 'Nuevo';
 }
 
-let listaEmpleados = [];
 let modoEdicionEmpleado = false;
 let modoNuevoEmpleado = false;
 let codigoEmpleadoEliminar = null;
@@ -894,70 +807,42 @@ function eliminarEmpleado() {
         Toastify({text: 'Seleccione un empleado', style: {background: '#f44336'}}).showToast();
         return;
     }
-    document.getElementById('eliminarCodEmpleado').textContent = cod;
-    codigoEmpleadoEliminar = cod;
-    document.getElementById('modalConfirmarEmpleado').classList.remove('hidden');
-}
-
-function cerrarConfirmarEmpleado() {
-    document.getElementById('modalConfirmarEmpleado').classList.add('hidden');
-    codigoEmpleadoEliminar = null;
-}
-
-function confirmarEliminarEmpleado() {
-    if (!codigoEmpleadoEliminar) return;
-    buscarXHREmpleado('eliminar_empleado', {cod: codigoEmpleadoEliminar}, function(data) {
-        if (data.success) {
-            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-            cerrarConfirmarEmpleado();
-            nuevoEmpleado();
-        } else {
-            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+    mostrarModalConfirm({
+        mensaje: '¿Está seguro de eliminar el empleado código "' + cod + '"?',
+        onConfirm: function() {
+            buscarXHREmpleado('eliminar_empleado', {cod: cod}, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    nuevoEmpleado();
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
         }
     });
 }
 
 function abrirListaEmpleados() {
     buscarXHREmpleado('listar_empleados', {}, function(data) {
-        listaEmpleados = data.empleados || [];
-        document.getElementById('modalEmpleados').classList.remove('hidden');
-        document.getElementById('filtroEmpleados').value = '';
-        renderizarListaEmpleados(listaEmpleados);
-    });
-}
-
-function cerrarListaEmpleados() {
-    document.getElementById('modalEmpleados').classList.add('hidden');
-}
-
-function renderizarListaEmpleados(empleados) {
-    const tbody = document.getElementById('tablaListaEmpleados');
-    tbody.innerHTML = '';
-    empleados.forEach(e => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            seleccionarEmpleado(e.cod, e.nombre, e.glosa);
-            cerrarListaEmpleados();
-        };
-        tr.innerHTML = `<td class="px-3 py-2 text-aq-text">${e.cod}</td><td class="px-3 py-2 text-aq-text">${e.nombre}</td><td class="px-3 py-2 text-aq-text">${e.glosa || '-'}</td>`;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarEmpleados() {
-    const filtro = document.getElementById('filtroEmpleados').value.toLowerCase();
-    const filtradas = listaEmpleados.filter(e =>
-        (e.cod && e.cod.toString().toLowerCase().includes(filtro)) ||
-        (e.nombre && e.nombre.toLowerCase().includes(filtro))
-    );
-    renderizarListaEmpleados(filtradas);
-}
-
-function recargarEmpleados() {
-    buscarXHREmpleado('listar_empleados', {}, function(data) {
-        listaEmpleados = data.empleados || [];
-        renderizarListaEmpleados(listaEmpleados);
+        abrirModalBusqueda({
+            titulo: 'Lista de Empleados',
+            columnas: [
+                { title: 'Código', field: 'cod', width: 100 },
+                { title: 'Nombre', field: 'nombre' },
+            ],
+            data: data.empleados || [],
+            filtroCampos: ['cod', 'nombre'],
+            onSelect: function(row) {
+                document.getElementById('empleadoCod').value = row.cod;
+                buscarPorCodigoEmpleado();
+            },
+            onRefresh: function(opts) {
+                buscarXHREmpleado('listar_empleados', {}, function(data) {
+                    opts.data = data.empleados || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
 }
 
@@ -976,7 +861,6 @@ function seleccionarEmpleado(cod, nombre, glosa) {
     document.getElementById('btnNuevoEmpleado').title = 'Nuevo';
 }
 
-let listaCpagos = [];
 let modoEdicionCpago = false;
 let modoNuevoCpago = false;
 let codigoCpagoEliminar = null;
@@ -1136,70 +1020,42 @@ function eliminarCpago() {
         Toastify({text: 'Seleccione una condición de pago', style: {background: '#f44336'}}).showToast();
         return;
     }
-    document.getElementById('eliminarCodCpago').textContent = cod;
-    codigoCpagoEliminar = cod;
-    document.getElementById('modalConfirmarCpago').classList.remove('hidden');
-}
-
-function cerrarConfirmarCpago() {
-    document.getElementById('modalConfirmarCpago').classList.add('hidden');
-    codigoCpagoEliminar = null;
-}
-
-function confirmarEliminarCpago() {
-    if (!codigoCpagoEliminar) return;
-    buscarXRHCpago('eliminar_cpago', {cod: codigoCpagoEliminar}, function(data) {
-        if (data.success) {
-            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-            cerrarConfirmarCpago();
-            nuevoCpago();
-        } else {
-            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+    mostrarModalConfirm({
+        mensaje: '¿Está seguro de eliminar la condición de pago código "' + cod + '"?',
+        onConfirm: function() {
+            buscarXRHCpago('eliminar_cpago', {cod: cod}, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    nuevoCpago();
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
         }
     });
 }
 
 function abrirListaCpagos() {
     buscarXRHCpago('listar_cpagos', {}, function(data) {
-        listaCpagos = data.cpagos || [];
-        document.getElementById('modalCpagos').classList.remove('hidden');
-        document.getElementById('filtroCpagos').value = '';
-        renderizarListaCpagos(listaCpagos);
-    });
-}
-
-function cerrarListaCpagos() {
-    document.getElementById('modalCpagos').classList.add('hidden');
-}
-
-function renderizarListaCpagos(cpagos) {
-    const tbody = document.getElementById('tablaListaCpagos');
-    tbody.innerHTML = '';
-    cpagos.forEach(c => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            seleccionarCpago(c.cod, c.descr, c.glosa, c.dias);
-            cerrarListaCpagos();
-        };
-        tr.innerHTML = `<td class="px-3 py-2 text-aq-text">${c.cod}</td><td class="px-3 py-2 text-aq-text">${c.descr || '-'}</td><td class="px-3 py-2 text-aq-text">${c.dias || '-'}</td><td class="px-3 py-2 text-aq-text">${c.glosa || '-'}</td>`;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarCpagos() {
-    const filtro = document.getElementById('filtroCpagos').value.toLowerCase();
-    const filtradas = listaCpagos.filter(c =>
-        (c.cod && c.cod.toString().toLowerCase().includes(filtro)) ||
-        (c.descr && c.descr.toLowerCase().includes(filtro))
-    );
-    renderizarListaCpagos(filtradas);
-}
-
-function recargarCpagos() {
-    buscarXRHCpago('listar_cpagos', {}, function(data) {
-        listaCpagos = data.cpagos || [];
-        renderizarListaCpagos(listaCpagos);
+        abrirModalBusqueda({
+            titulo: 'Lista de Condiciones de Pago',
+            columnas: [
+                { title: 'Código', field: 'cod', width: 100 },
+                { title: 'Descripción', field: 'descr' },
+            ],
+            data: data.cpagos || [],
+            filtroCampos: ['cod', 'descr'],
+            onSelect: function(row) {
+                document.getElementById('cpagoCod').value = row.cod;
+                buscarPorCodigoCpago();
+            },
+            onRefresh: function(opts) {
+                buscarXRHCpago('listar_cpagos', {}, function(data) {
+                    opts.data = data.cpagos || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
 }
 
@@ -1219,7 +1075,6 @@ function seleccionarCpago(cod, descr, glosa, dias) {
     document.getElementById('btnNuevoCpago').title = 'Nueva';
 }
 
-let listaTransportistas = [];
 let modoEdicionTransportista = false;
 let modoNuevoTransportista = false;
 let rutTransportistaEliminar = null;
@@ -1380,70 +1235,42 @@ function eliminarTransportista() {
         Toastify({text: 'Seleccione un transportista', style: {background: '#f44336'}}).showToast();
         return;
     }
-    document.getElementById('eliminarRutTransportista').textContent = rut;
-    rutTransportistaEliminar = rut;
-    document.getElementById('modalConfirmarTransportista').classList.remove('hidden');
-}
-
-function cerrarConfirmarTransportista() {
-    document.getElementById('modalConfirmarTransportista').classList.add('hidden');
-    rutTransportistaEliminar = null;
-}
-
-function confirmarEliminarTransportista() {
-    if (!rutTransportistaEliminar) return;
-    buscarXHRTransportista('eliminar_transportista', {rut: rutTransportistaEliminar}, function(data) {
-        if (data.success) {
-            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-            cerrarConfirmarTransportista();
-            nuevoTransportista();
-        } else {
-            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+    mostrarModalConfirm({
+        mensaje: '¿Está seguro de eliminar el transportista RUT "' + rut + '"?',
+        onConfirm: function() {
+            buscarXHRTransportista('eliminar_transportista', {rut: rut}, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    nuevoTransportista();
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
         }
     });
 }
 
 function abrirListaTransportistas() {
     buscarXHRTransportista('listar_transportistas', {}, function(data) {
-        listaTransportistas = data.transportistas || [];
-        document.getElementById('modalTransportistas').classList.remove('hidden');
-        document.getElementById('filtroTransportistas').value = '';
-        renderizarListaTransportistas(listaTransportistas);
-    });
-}
-
-function cerrarListaTransportistas() {
-    document.getElementById('modalTransportistas').classList.add('hidden');
-}
-
-function renderizarListaTransportistas(transportistas) {
-    const tbody = document.getElementById('tablaListaTransportistas');
-    tbody.innerHTML = '';
-    transportistas.forEach(t => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            seleccionarTransportista(t.rut, t.nombre);
-            cerrarListaTransportistas();
-        };
-        tr.innerHTML = `<td class="px-3 py-2 text-aq-text">${t.rut}</td><td class="px-3 py-2 text-aq-text">${t.nombre}</td>`;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarTransportistas() {
-    const filtro = document.getElementById('filtroTransportistas').value.toLowerCase();
-    const filtradas = listaTransportistas.filter(t =>
-        (t.rut && t.rut.toLowerCase().includes(filtro)) ||
-        (t.nombre && t.nombre.toLowerCase().includes(filtro))
-    );
-    renderizarListaTransportistas(filtradas);
-}
-
-function recargarTransportistas() {
-    buscarXHRTransportista('listar_transportistas', {}, function(data) {
-        listaTransportistas = data.transportistas || [];
-        renderizarListaTransportistas(listaTransportistas);
+        abrirModalBusqueda({
+            titulo: 'Lista de Transportistas',
+            columnas: [
+                { title: 'RUT', field: 'rut', width: 120 },
+                { title: 'Nombre', field: 'nombre' },
+            ],
+            data: data.transportistas || [],
+            filtroCampos: ['rut', 'nombre'],
+            onSelect: function(row) {
+                document.getElementById('transportistaRut').value = row.rut;
+                buscarPorRutTransportista();
+            },
+            onRefresh: function(opts) {
+                buscarXHRTransportista('listar_transportistas', {}, function(data) {
+                    opts.data = data.transportistas || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
 }
 
@@ -1527,29 +1354,21 @@ function confirmarAgregarPatente() {
 let patenteIdEliminar = null;
 
 function eliminarPatente(id, btn) {
-    patenteIdEliminar = id;
     const patenteText = btn.closest('tr')?.querySelector('td')?.textContent || '';
-    document.getElementById('eliminarPatenteTexto').textContent = patenteText;
-    document.getElementById('modalConfirmarPatente').classList.remove('hidden');
-}
-
-function cerrarConfirmarPatente() {
-    document.getElementById('modalConfirmarPatente').classList.add('hidden');
-    patenteIdEliminar = null;
-}
-
-function confirmarEliminarPatente() {
-    if (!patenteIdEliminar) return;
-    buscarXHRTransportista('eliminar_patente', {id: patenteIdEliminar}, function(data) {
-        if (data.success) {
-            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-            cerrarConfirmarPatente();
-            const rut = document.getElementById('transportistaRut').value.trim();
-            buscarXHRTransportista('buscar_transportista', {rut: rut}, function(d) {
-                renderizarPatentes(d.data?.patentes || []);
+    mostrarModalConfirm({
+        mensaje: '¿Está seguro de eliminar la patente "' + patenteText + '"?',
+        onConfirm: function() {
+            buscarXHRTransportista('eliminar_patente', {id: id}, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    const rut = document.getElementById('transportistaRut').value.trim();
+                    buscarXHRTransportista('buscar_transportista', {rut: rut}, function(d) {
+                        renderizarPatentes(d.data?.patentes || []);
+                    });
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
             });
-        } else {
-            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
         }
     });
 }

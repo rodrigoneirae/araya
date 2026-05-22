@@ -1,7 +1,6 @@
 {% extends 'plantilla/base/base.html' %}
 {% load static %}
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'libs/tabulator/css/tabulator.min.css' %}">
 <style>
     .tabulator { border: 1px solid theme(border aq-border); font-size: 0.75rem; }
     .tabulator .tabulator-header { background-color: rgb(var(--aq-surface-2)); color: rgb(var(--aq-text)); }
@@ -17,45 +16,7 @@
     </div>
 </div>
 
-<div class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4" id="modalOT">
-    <div class="bg-aq-surface rounded-xl shadow-2xl w-full max-w-3xl border border-aq-border max-h-[85vh] flex flex-col overflow-hidden">
-        <div class="p-4 border-b border-aq-border bg-gradient-to-r from-aq-primary to-aq-primary-hover">
-            <div class="flex justify-between items-center">
-                <h3 class="text-lg font-bold text-white">Buscar Orden de Trabajo</h3>
-                <button onclick="cerrarModalOT()" class="text-white/80 hover:text-white hover:bg-white/20 rounded-lg p-1">
-                    <i class='bx bx-x text-xl'></i>
-                </button>
-            </div>
-        </div>
-        <div class="p-4 border-b border-aq-border">
-            <div class="relative">
-                <i class='bx bx-search absolute left-3 top-1/2 -translate-y-1/2 text-aq-muted'></i>
-                <input type="text" id="busquedaOT" placeholder="Buscar por número, proceso, fecha o encargado..." 
-                    class="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text focus:border-aq-primary focus:ring-1 focus:ring-aq-primary outline-none">
-            </div>
-        </div>
-        <div class="flex-1 overflow-auto" style="max-height: 450px;">
-            <table class="w-full text-sm">
-                <thead class="bg-aq-surface-2 text-aq-text sticky top-0 z-10">
-                    <tr>
-                        <th class="px-4 py-3 text-left font-semibold">N° OT</th>
-                        <th class="px-4 py-3 text-left font-semibold">Fecha</th>
-                        <th class="px-4 py-3 text-left font-semibold">Proceso</th>
-                        <th class="px-4 py-3 text-left font-semibold">Encargado</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaBusquedaOT" class="divide-y divide-aq-border"></tbody>
-            </table>
-            <div id="sinResultados" class="hidden p-8 text-center text-aq-muted">
-                <i class='bx bx-search-alt text-4xl mb-2 block'></i>
-                No se encontraron órdenes de trabajo
-            </div>
-        </div>
-        <div class="p-3 border-t border-aq-border bg-aq-surface-2 text-xs text-aq-muted text-center">
-            Selecciona una orden de trabajo para ver los detalles
-        </div>
-    </div>
-</div>
+
 
 <div class="h-full w-full mx-auto px-4 py-2">
     <div class="bg-aq-surface border border-aq-border rounded-xl shadow-lg h-full flex flex-col">
@@ -146,7 +107,7 @@
         </div>
     </div>
 </div>
-
-<script src="{% static 'libs/tabulator/js/tabulator.min.js' %}"></script>
-<script src="{% static 'js/modulos/produccion/informes/resumen_ots.js' %}" data-url="{% url 'produccion:produccion_informe_resumen_ots' %}"></script>
+{% endblock %}
+{% block extra_js %}
+    <script src="{% static 'js/modulos/produccion/informes/resumen_ots.js' %}" data-url="{% url 'produccion:produccion_informe_resumen_ots' %}"></script>
 {% endblock %}

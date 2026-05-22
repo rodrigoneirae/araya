@@ -318,45 +318,28 @@ function cargarInformeMensual() {
 
 function abrirListaArticulos() {
     buscarXHROr('listar_articulos', {}, function(data) {
-        window.listaArticulos = data.articulos || [];
-        document.getElementById('modalArticulos').classList.remove('hidden');
-        document.getElementById('filtroArticulos').value = '';
-        renderizarListaArticulos(window.listaArticulos);
+        abrirModalBusqueda({
+            titulo: 'Buscar Artículo',
+            columnas: [
+                { title: 'Código', field: 'codigo', width: 100 },
+                { title: 'Nombre', field: 'descr' },
+                { title: 'UM', field: 'um', width: 80 },
+            ],
+            data: data.articulos || [],
+            filtroCampos: ['codigo', 'descr'],
+            onSelect: function(row) {
+                document.getElementById('oarCodigo').value = row.codigo;
+                setSpan('oarNombre', row.descr);
+                consultarActual();
+            },
+            onRefresh: function(opts) {
+                buscarXHROr('listar_articulos', {}, function(data) {
+                    opts.data = data.articulos || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
-}
-
-function cerrarListaArticulos() {
-    document.getElementById('modalArticulos').classList.add('hidden');
-}
-
-function renderizarListaArticulos(lista) {
-    const tbody = document.getElementById('tablaListaArticulos');
-    tbody.innerHTML = '';
-    lista.forEach(a => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('oarCodigo').value = a.codigo;
-            setSpan('oarNombre', a.descr);
-            cerrarListaArticulos();
-            consultarActual();
-        };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text">${a.codigo}</td>
-            <td class="px-3 py-2 text-aq-text">${a.descr || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${a.um || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarArticulos() {
-    const filtro = document.getElementById('filtroArticulos').value.toLowerCase();
-    const filtradas = window.listaArticulos.filter(a =>
-        (a.codigo && a.codigo.toLowerCase().includes(filtro)) ||
-        (a.descr && a.descr.toLowerCase().includes(filtro))
-    );
-    renderizarListaArticulos(filtradas);
 }
 
 function buscarArticulo() {

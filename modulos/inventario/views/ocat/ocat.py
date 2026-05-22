@@ -29,6 +29,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
     def _get_action_handler(self, action: str):
         handlers = {
             "nuevo": self._guardar_ocat,
+            "editar_estado": self._editar_estado,
             "buscar": lambda d: self._buscar_ocat(d.get("numero")),
             "eliminar": lambda d: self._eliminar_ocat(d.get("numero")),
             "listar_proveedores": lambda _: self._listar_proveedores(),
@@ -69,14 +70,14 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     "nombre": articulo.descr or "",
                     "um": articulo.um or "",
                     "precio": articulo.precio or 0,
-                    "prc": articulo.prc or ""
+                    "prc": articulo.prc
                 }
             })
         except Articulos.DoesNotExist:
             return JsonResponse({"success": False, "message": "Artículo no encontrado"})
 
     def _listar_articulos(self) -> JsonResponse:
-        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").order_by("descr")[:100]
+        articulos = Articulos.objects.values("codigo", "descr", "um", "precio", "prc").order_by("descr")
         return JsonResponse({"articulos": list(articulos)})
 
     def _listar_bodegas(self) -> JsonResponse:
@@ -86,7 +87,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
     def _listar_ocat(self) -> JsonResponse:
         movs = Movs.objects.filter(linea=0, tipo=7).values(
             "numero", "fecha", "rut", "docref", "tipodocref", "canttotal", "neto", "punit", "tipo", "estado", "codencargado", "patente_id"
-        ).order_by("-numero")[:50]
+        ).order_by("-numero")
         resultado = []
         for m in movs:
             fecha = ""
@@ -169,6 +170,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     transportista_nombre = pat.transportista.nombre
 
             transportista_rut = encabezado.glosa or ""
+
             if transportista_rut:
                 patentes_list = list(Patentes.objects.filter(
                     transportista__rut=transportista_rut
@@ -214,6 +216,18 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": True, "message": f"OCAT {numero} eliminada correctamente"})
         except Exception as e:
             logger.error(f"Error al eliminar: {e}")
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _editar_estado(self, data) -> JsonResponse:
+        try:
+            numero = data.get("numero")
+            estado = data.get("estado")
+            if not numero:
+                return JsonResponse({"success": False, "message": "Número de OCAT requerido"})
+            Movs.objects.filter(numero=numero, tipo=7).update(estado=estado)
+            return JsonResponse({"success": True, "message": f"Estado actualizado correctamente", "numero": numero})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
             return JsonResponse({"success": False, "message": str(e)})
 
     def _guardar_ocat(self, data: dict[str, Any]) -> JsonResponse:
@@ -266,11 +280,10 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                 rut=rut,
                 tipodocref=tipodocref,
                 docref=docref,
-                codencargado=codencargado,
+                codencargado=codencargado if codencargado else 0 ,
                 canttotal=cant_total,
                 punit=punit,
                 neto=neto,
-                total=total,
                 estado=estado,
                 patente_id=patente_id,
                 glosa=transportista_rut,
@@ -288,7 +301,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     rut=rut,
                     tipodocref=tipodocref,
                     docref=docref,
-                    codencargado=codencargado,
+                    codencargado=codencargado if codencargado else 0 ,
                     codigo=Articulos.objects.filter(codigo=det.get("codigo")).first(),
                     cantidad=float(det.get("cantidad", 0)),
                     canttotal=cant_total,

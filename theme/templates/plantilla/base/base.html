@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="{% static 'libs/boxicons/css/boxicons.min.css' %}">
     <link rel="stylesheet" href="{% static 'libs/toastify/toastify.min.css' %}">
 
+    <link rel="stylesheet" href="{% static 'libs/tabulator/css/tabulator.min.css' %}">
     {% block extra_css %}{% endblock %}
     
     <link rel="stylesheet" href="/static/css/dist/styles.css">
@@ -49,6 +50,49 @@
         {% include 'plantilla/base/footer.html' %}
     </div>
 
+    <!-- Modal Búsqueda Tabulator -->
+    <div id="modalBusqueda" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div id="modalBusquedaContent" class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-lg sm:max-w-3xl max-h-[90vh] flex flex-col shadow-xl">
+            <div class="flex justify-between items-center p-4 border-b border-aq-border shrink-0">
+                <div class="flex items-center gap-2">
+                    <h2 id="modalBusquedaTitle" class="text-lg sm:text-xl font-bold text-aq-text">Lista</h2>
+                    <button id="modalBusquedaRefresh" onclick="recargarModalBusqueda()" class="p-2 rounded-lg text-aq-muted hover:text-aq-primary hover:bg-aq-surface-2 hidden" title="Actualizar">
+                        <i class='bx bx-refresh text-xl'></i>
+                    </button>
+                </div>
+                <button onclick="cerrarModalBusqueda()" class="text-aq-muted hover:text-aq-text">
+                    <i class='bx bx-x text-2xl'></i>
+                </button>
+            </div>
+            <div class="p-4 overflow-auto flex-1 min-h-0 flex flex-col gap-4">
+                <div id="modalBusquedaFiltroWrap">
+                    <input type="text" id="modalBusquedaFiltro" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text" placeholder="Buscar...">
+                </div>
+                <div id="modalBusquedaTable" class="w-full"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Confirm Modal -->
+    <div id="modalConfirm" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-md p-4 sm:p-6 shadow-xl">
+            <div class="text-center">
+                <div id="modalConfirmIconWrap" class="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                    <i id="modalConfirmIcon" class='bx bx-trash text-xl sm:text-2xl text-red-500'></i>
+                </div>
+                <h3 id="modalConfirmTitle" class="text-lg sm:text-xl font-bold text-aq-text mb-2">Confirmar</h3>
+                <div id="modalConfirmData" class="hidden mb-4 rounded-lg bg-aq-bg/50 border border-aq-border divide-y divide-aq-border text-sm text-left">
+                    <div id="modalConfirmDataBody"></div>
+                </div>
+                <p id="modalConfirmMessage" class="text-sm sm:text-base text-aq-muted mb-6"></p>
+                <div class="flex gap-3 justify-center">
+                    <button onclick="cerrarModalConfirm()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">Cancelar</button>
+                    <button id="modalConfirmBtn" onclick="ejecutarModalConfirm()" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <button
             id="backToTop"
             type="button"
@@ -66,6 +110,9 @@
 
 
 <script src="{% static 'libs/toastify/toastify-js.js' %}"></script>
+<script src="{% static 'libs/tabulator/js/tabulator.min.js' %}"></script>
+<script src="{% static 'js/utils/modalConfirm.js' %}"></script>
+<script src="{% static 'js/utils/modalBusqueda.js' %}"></script>
 <script type="module" src="{% static 'js/init.js' %}"></script>
 
 

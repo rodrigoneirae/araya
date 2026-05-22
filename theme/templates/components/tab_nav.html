@@ -1,0 +1,26 @@
+{% comment %}
+Componente reutilizable: Barra de navegación por tabs
+Uso:
+{% include 'components/tab_nav.html' with
+    tabs=tabs_data
+    switch_fn='cambiarTab'
+    nav_class='w-full lg:w-1/3'
+%}
+Donde tabs_data es una lista de dicts:
+  [{'id': 'encabezado', 'icon': 'bx bx-file', 'label': 'Encabezado', 'active': True},
+   {'id': 'detalle', 'icon': 'bx bx-list-ul', 'label': 'Detalle'}]
+Parámetros:
+  - tabs: lista de tabs (obligatorio)
+  - switch_fn: nombre de función para cambiar tab (default: 'cambiarTab')
+  - nav_class: clases extra para el nav (default: 'w-full lg:w-1/3')
+{% endcomment %}
+<div class="border-b border-aq-border overflow-x-auto">
+    <nav class="flex -mb-px {{ nav_class|default:'w-full lg:w-1/3' }} min-w-max" aria-label="Tabs">
+        {% for tab in tabs %}
+        <button onclick="{{ switch_fn|default:'cambiarTab' }}('{{ tab.id }}')" id="tab-{{ tab.id }}" class="tab-btn{% if tab.active %} active{% endif %}">
+            <i class='{{ tab.icon }}'></i>
+            <span>{{ tab.label }}</span>
+        </button>
+        {% endfor %}
+    </nav>
+</div>

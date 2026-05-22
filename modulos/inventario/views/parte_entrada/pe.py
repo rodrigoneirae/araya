@@ -74,7 +74,7 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": False, "message": "Artículo no encontrado"})
 
     def _listar_articulos(self) -> JsonResponse:
-        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").order_by("descr")[:100]
+        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").order_by("descr")
         return JsonResponse({"articulos": list(articulos)})
 
     def _listar_bodegas(self) -> JsonResponse:
@@ -84,7 +84,7 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
     def _listar_pe(self) -> JsonResponse:
         movs = Movs.objects.filter(linea=0, tipo=11).values(
             "numero", "fecha", "docref", "tipodocref"
-        ).order_by("-numero")[:50]
+        ).order_by("-numero")
         resultado = []
         for m in movs:
             fecha = ""

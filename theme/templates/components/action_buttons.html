@@ -1,0 +1,40 @@
+{% comment %}
+Componente reutilizable: Barra de botones de acción (Nuevo, Guardar, Editar, Eliminar, Salir)
+Uso:
+{% include 'components/action_buttons.html' with entity='Articulo' %}
+{% include 'components/action_buttons.html' with entity='Bodega' gender='a' suffix_ids=True show_salir=False %}
+Parámetros:
+  - entity: nombre para construir function names (nuevoEntity, guardarEntity, ...) y opcionalmente IDs (default: '')
+  - gender: 'o' para "nuevo", 'a' para "nueva" (default: 'o')
+  - suffix_ids: True para sufijar IDs con entity (default: False)
+  - round: True para rounded-full (maestros), False para rounded-lg (default: True)
+  - show_edit: mostrar botón Editar (default: True)
+  - show_salir: mostrar botón Salir (default: True)
+  - home_url: URL name para Salir (default: 'home')
+  - extra_after: HTML adicional antes del botón Salir (|safe)
+{% endcomment %}
+{% with gender|default:'o' as g %}
+{% with entity|default:'' as e %}
+<div class="flex gap-2">
+    <button type="button" onclick="{{ 'nuev'|add:g|add:e|add:'()' }}" id="btnNuevo{% if suffix_ids %}{{ e }}{% endif %}" class="w-10 h-10 flex items-center justify-center rounded-{% if round %}full{% else %}lg{% endif %} bg-aq-primary text-white hover:opacity-85" title="Nuevo">
+        <i class='bx bx-plus text-xl'></i>
+    </button>
+    <button type="button" onclick="{{ 'guardar'|add:e|add:'()' }}" id="btnGuardar{% if suffix_ids %}{{ e }}{% endif %}" class="w-10 h-10 flex items-center justify-center rounded-{% if round %}full{% else %}lg{% endif %} bg-aq-primary text-white hover:opacity-85 hidden" title="Guardar">
+        <i class='bx bx-save text-xl'></i>
+    </button>
+    {% if show_edit != False %}
+    <button type="button" onclick="{{ 'editar'|add:e|add:'()' }}" id="btnEditar{% if suffix_ids %}{{ e }}{% endif %}" class="w-10 h-10 flex items-center justify-center rounded-{% if round %}full{% else %}lg{% endif %} bg-amber-500 text-white hover:opacity-85 hidden" title="Editar">
+        <i class='bx bx-edit text-xl'></i>
+    </button>
+    {% endif %}
+    <button type="button" onclick="{{ 'eliminar'|add:e|add:'()' }}" id="btnEliminar{% if suffix_ids %}{{ e }}{% endif %}" class="w-10 h-10 flex items-center justify-center rounded-{% if round %}full{% else %}lg{% endif %} bg-red-500 text-white hover:bg-red-600 hidden" title="Eliminar">
+        <i class='bx bx-trash text-xl'></i>
+    </button>
+    {% if extra_after %}{{ extra_after|safe }}{% endif %}
+    {% if show_salir != False %}
+    <a href="{% url home_url|default:'home' %}" class="w-10 h-10 flex items-center justify-center rounded-{% if round %}full{% else %}lg{% endif %} bg-gray-500 text-white hover:opacity-85 p-2" title="Salir">
+        <i class='bx bx-exit text-lg'></i>
+    </a>
+    {% endif %}
+</div>
+{% endwith %}{% endwith %}

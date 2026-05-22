@@ -2,27 +2,6 @@ const urlOcat = (document.currentScript?.dataset.url) || '/';
 
 let detallesOcat = [];
 let modoEdicionOcat = false;
-let callbackConfirmar = null;
-
-function mostrarConfirmar(titulo, mensaje, callback) {
-    document.getElementById('modalConfirmarTitulo').textContent = titulo;
-    document.getElementById('modalConfirmarMensaje').textContent = mensaje;
-    callbackConfirmar = callback;
-    document.getElementById('modalConfirmar').classList.remove('hidden');
-}
-
-function cerrarModalConfirmar() {
-    document.getElementById('modalConfirmar').classList.add('hidden');
-    callbackConfirmar = null;
-}
-
-function ejecutarModalConfirmar() {
-    const callback = callbackConfirmar;
-    document.getElementById('modalConfirmar').classList.add('hidden');
-    callbackConfirmar = null;
-    if (callback) callback();
-}
-
 function buscarXHROcat(action, datos, callback) {
     function getCookie(name) {
         let cookieValue = null;
@@ -45,7 +24,8 @@ function buscarXHROcat(action, datos, callback) {
     for (let key in datos) { formData.append(key, datos[key]); }
     fetch(urlOcat, {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: {'X-CSRFToken': csrfToken}
     })
     .then(res => {
         if (!res.ok) {
@@ -201,33 +181,36 @@ function nuevaOcat() {
 }
 
 function setCamposOcatEditable(editable) {
-    const inputs = ['ocatFecha', 'ocatProveedor', 'ocatTipoDoc', 'ocatRef', 'ocatEncargado', 'ocatEstado', 'ocatArtCod', 'ocatArtCant', 'ocatArtPUnit', 'ocatArtFecha', 'ocatNeto', 'ocatTotal', 'ocatTransportista', 'ocatPatente', 'ocatPeso'];
+    const inputs = ['ocatFecha', 'ocatProveedor', 'ocatTipoDoc', 'ocatRef', 'ocatEncargado', 'ocatArtCod', 'ocatArtCant', 'ocatArtPUnit', 'ocatArtFecha', 'ocatNeto', 'ocatTotal', 'ocatTransportista', 'ocatPatente', 'ocatPeso'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             if (el.tagName === 'SELECT') {
-                el.disabled = !editable;
+                el.disabled = true;
             } else {
-                el.readOnly = !editable;
+                el.readOnly = true;
             }
         }
     });
     const bodega = document.getElementById('ocatArtBodega');
-    if (bodega) bodega.disabled = !editable;
+    if (bodega) bodega.disabled = true;
     
     const provBtn = document.querySelector('#ocatProveedor + button');
-    if (provBtn) provBtn.disabled = !editable;
+    if (provBtn) provBtn.disabled = true;
     const artBtn = document.querySelector('#ocatArtCod + button');
-    if (artBtn) artBtn.disabled = !editable;
+    if (artBtn) artBtn.disabled = true;
     const agregarBtn = document.querySelector('#contenido-detalle button[onclick="agregarArticuloOcat()"]');
-    if (agregarBtn) agregarBtn.disabled = !editable;
+    if (agregarBtn) agregarBtn.disabled = true;
     
     const proveedor = document.getElementById('ocatProveedor');
-    if (proveedor) proveedor.disabled = !editable;
+    if (proveedor) proveedor.disabled = true;
     const tipodoc = document.getElementById('ocatTipoDoc');
-    if (tipodoc) tipodoc.disabled = !editable;
+    if (tipodoc) tipodoc.disabled = true;
     const encargado = document.getElementById('ocatEncargado');
-    if (encargado) encargado.disabled = !editable;
+    if (encargado) encargado.disabled = true;
+    
+    const estado = document.getElementById('ocatEstado');
+    if (estado) estado.disabled = !editable;
     
     modoEdicionOcat = editable;
     renderizarDetalleOcat();
@@ -260,7 +243,7 @@ function eliminarOcat() {
         Toastify({text: 'No hay OCAT seleccionada', style: {background: '#f44336'}}).showToast();
         return;
     }
-    mostrarConfirmar('Eliminar OCAT', '¿Está seguro de eliminar esta OCAT?', function() {
+    mostrarModalConfirm({titulo: 'Eliminar OCAT', mensaje: '¿Está seguro de eliminar esta OCAT?', onConfirm: function() {
         buscarXHROcat('eliminar', {numero: numero}, function(data) {
             if (data.success) {
                 Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
@@ -269,7 +252,7 @@ function eliminarOcat() {
                 Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
             }
         });
-    });
+    }});
 }
 
 function buscarArticuloOcat() {
@@ -280,7 +263,7 @@ function buscarArticuloOcat() {
             document.getElementById('ocatArtPUnit').value = data.data.precio || 0;
             document.getElementById('ocatArtNombre').value = data.data.nombre || '';
             document.getElementById('ocatArtUM').value = data.data.um || '';
-            window.articuloPrc = data.data.prc || '';
+            window.articuloPrc = data.data.prc || null;
         } else {
             Toastify({text: 'Artículo no encontrado', style: {background: '#f44336'}}).showToast();
         }
@@ -289,48 +272,31 @@ function buscarArticuloOcat() {
 
 function abrirListaArticulos() {
     buscarXHROcat('listar_articulos', {}, function(data) {
-        window.listaArticulos = data.articulos || [];
-        document.getElementById('modalArticulos').classList.remove('hidden');
-        document.getElementById('filtroArticulos').value = '';
-        renderizarListaArticulos(window.listaArticulos);
+        abrirModalBusqueda({
+            titulo: 'Buscar Artículo',
+            columnas: [
+                { title: 'Código', field: 'codigo', width: 100 },
+                { title: 'Nombre', field: 'descr' },
+                { title: 'UM', field: 'um', width: 80 },
+                { title: 'Precio', field: 'precio', width: 100 },
+            ],
+            data: data.articulos || [],
+            filtroCampos: ['codigo', 'descr'],
+            onSelect: function(row) {
+                document.getElementById('ocatArtCod').value = row.codigo;
+                document.getElementById('ocatArtNombre').value = row.descr || '';
+                document.getElementById('ocatArtUM').value = row.um || '';
+                document.getElementById('ocatArtPUnit').value = row.precio || 0;
+                window.articuloPrc = row.prc || null;
+            },
+            onRefresh: function(opts) {
+                buscarXHROcat('listar_articulos', {}, function(data) {
+                    opts.data = data.articulos || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
-}
-
-function cerrarListaArticulos() {
-    document.getElementById('modalArticulos').classList.add('hidden');
-}
-
-function renderizarListaArticulos(lista) {
-    const tbody = document.getElementById('tablaListaArticulos');
-    tbody.innerHTML = '';
-    lista.forEach(a => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('ocatArtCod').value = a.codigo;
-            document.getElementById('ocatArtNombre').value = a.descr || '';
-            document.getElementById('ocatArtUM').value = a.um || '';
-            document.getElementById('ocatArtPUnit').value = a.precio || 0;
-            window.articuloPrc = a.prc || '';
-            cerrarListaArticulos();
-        };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text">${a.codigo}</td>
-            <td class="px-3 py-2 text-aq-text">${a.descr || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${a.um || ''}</td>
-            <td class="px-3 py-2 text-aq-text text-right">${a.precio || 0}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarArticulos() {
-    const filtro = document.getElementById('filtroArticulos').value.toLowerCase();
-    const filtradas = window.listaArticulos.filter(a =>
-        (a.codigo && a.codigo.toString().toLowerCase().includes(filtro)) ||
-        (a.descr && a.descr.toLowerCase().includes(filtro))
-    );
-    renderizarListaArticulos(filtradas);
 }
 
 function agregarArticuloOcat() {
@@ -368,7 +334,7 @@ function agregarArticuloOcat() {
         bodega: bodega,
         canttotal: cant,
         falta: 0,
-        proceso: window.articuloPrc || '',
+        proceso: window.articuloPrc || null,
         proceso_nombre: '',
         fecha: fecha,
         estado: 'Abierto',
@@ -507,6 +473,26 @@ function calcularTotalesOcat() {
 }
 
 function guardarOcat() {
+    const numero = document.getElementById('ocatNumero').value;
+
+    if (modoEdicionOcat) {
+        const estado = document.getElementById('ocatEstado').value;
+        mostrarModalConfirm({titulo: 'Guardar OCAT', mensaje: '¿Está seguro de guardar esta OCAT?', tipo: 'confirm', onConfirm: function() {
+            buscarXHROcat('editar_estado', {
+                numero: numero,
+                estado: estado
+            }, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    cargarOcat(data.numero);
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
+        }});
+        return;
+    }
+
     const rut = document.getElementById('ocatProveedor').value;
     const tipodocref = document.getElementById('ocatTipoDoc').value.split(' - ')[0];
     const docref = document.getElementById('ocatRef').value;
@@ -514,7 +500,6 @@ function guardarOcat() {
     const fecha = document.getElementById('ocatFecha').value;
     const estado = document.getElementById('ocatEstado').value;
     const neto = document.getElementById('ocatNeto').value;
-    const numero = document.getElementById('ocatNumero').value;
     const patenteSelect = document.getElementById('ocatPatente');
     const patenteOption = patenteSelect.selectedIndex > 0 ? patenteSelect.options[patenteSelect.selectedIndex] : null;
     const patenteId = patenteOption && patenteOption.dataset.id ? patenteOption.dataset.id : '';
@@ -535,7 +520,7 @@ function guardarOcat() {
         return;
     }
 
-    mostrarConfirmar('Guardar OCAT', '¿Está seguro de guardar esta OCAT?', function() {
+    mostrarModalConfirm({titulo: 'Guardar OCAT', mensaje: '¿Está seguro de guardar esta OCAT?', tipo: 'confirm', onConfirm: function() {
         buscarXHROcat('nuevo', {
             numero: numero,
             rut: rut,
@@ -558,43 +543,33 @@ function guardarOcat() {
                 Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
             }
         });
-    });
+    }});
 }
 
 function buscarOcat() {
     buscarXHROcat('listar_ocat', {}, function(data) {
-
-        window.listaOcat = data.ocat || [];
-        document.getElementById('modalBusquedaOcat').classList.remove('hidden');
-        renderizarBusquedaOcat(window.listaOcat);
+        abrirModalBusqueda({
+            titulo: 'Lista de OCAT',
+            columnas: [
+                { title: 'Nro', field: 'numero', width: 80 },
+                { title: 'Fecha', field: 'fecha', width: 110 },
+                { title: 'RUT', field: 'rut' },
+                { title: 'Estado', field: 'estado', width: 90 },
+                { title: 'Total', field: 'total', width: 100 },
+            ],
+            data: data.ocat || [],
+            filtroCampos: ['numero', 'rut', 'estado'],
+            onSelect: function(row) {
+                cargarOcat(row.numero);
+            },
+            onRefresh: function(opts) {
+                buscarXHROcat('listar_ocat', {}, function(data) {
+                    opts.data = data.ocat || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
-}
-
-function renderizarBusquedaOcat(lista) {
-    const tbody = document.getElementById('tablaBusquedaOcat');
-    tbody.innerHTML = '';
-    lista.forEach(o => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() { cargarOcat(o.numero); };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text">${o.numero || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.fecha || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.rut || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.estado || ''}</td>
-            <td class="px-3 py-2 text-aq-text text-right">${o.total || 0}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarOcat() {
-    const filtro = document.getElementById('filtroBusquedaOcat').value.toLowerCase();
-    const filtradas = window.listaOcat.filter(o =>
-        (o.numero && o.numero.toString().includes(filtro)) ||
-        (o.rut && o.rut.toLowerCase().includes(filtro))
-    );
-    renderizarBusquedaOcat(filtradas);
 }
 
 function cambiarTabOcat(tab) {
@@ -623,7 +598,6 @@ function cambiarTabOcat(tab) {
 function cargarOcat(numero) {
     buscarXHROcat('buscar', {numero: numero}, function(data) {
         if (data.success) {
-            document.getElementById('modalBusquedaOcat').classList.add('hidden');
             document.getElementById('ocatNumero').value = data.data.numero;
             document.getElementById('ocatFecha').value = data.data.fecha || '';
             modoEdicionOcat = false;
@@ -703,6 +677,7 @@ function cargarOcat(numero) {
 
             const transpSel = document.getElementById('ocatTransportista');
             const patenteSel = document.getElementById('ocatPatente');
+            transpSel.value = '';
             if (data.data.transportista_rut) {
                 for (let i = 0; i < transpSel.options.length; i++) {
                     if (transpSel.options[i].value === data.data.transportista_rut) {
@@ -738,7 +713,7 @@ function cargarOcat(numero) {
                 um: d.um || '',
                 bodega: d.bodega || '',
                 falta: 0,
-                proceso: d.proceso || '',
+                proceso: d.proceso || null,
                 proceso_nombre: d.proceso_nombre || '',
                 fecha: d.fecha || '',
                 estado: d.estado || '',
@@ -761,6 +736,10 @@ function cargarOcat(numero) {
 
 let indiceCUP = null;
 
+function cerrarModalCUP() {
+    document.getElementById('modalCUP').classList.add('hidden');
+}
+
 function abrirModalCUP(index) {
     indiceCUP = index;
     const item = detallesOcat[index];
@@ -768,9 +747,7 @@ function abrirModalCUP(index) {
     document.getElementById('cupCantidad').value = item.cantidad || 0;
     document.getElementById('cupPUnit').value = item.punit || 0;
     document.getElementById('cupActual').value = item.cup || 0;
-    const modal = document.getElementById('modalCUP');
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
+    document.getElementById('modalCUP').classList.remove('hidden');
 }
 
 function guardarCUP() {
@@ -806,7 +783,6 @@ function guardarCUP() {
             
             const modal = document.getElementById('modalCUP');
             modal.classList.add('hidden');
-            modal.style.display = 'none';
             indiceCUP = null;
             
             renderizarDetalleOcat();

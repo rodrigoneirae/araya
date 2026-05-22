@@ -6,7 +6,7 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
-WEB = os.environ.get('WEB', False)
+WEB = os.environ.get('WEB', 'False').lower() in ('true', '1', 'yes')
 SECRET_KEY = os.environ.get('SECRET_KEY', '')
 APP_VERSION = os.environ.get('APP_VERSION', '0.0.0')
 DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')

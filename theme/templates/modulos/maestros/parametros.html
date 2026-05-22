@@ -46,20 +46,7 @@
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-semibold text-aq-text">Bodegas</h2>
                     <div class="flex items-center gap-2">
-                        <div class="flex gap-2">
-                            <button type="button" id="btnNuevoBodega" onclick="nuevaBodega()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85" title="Nueva">
-                                <i class='bx bx-plus text-xl'></i>
-                            </button>
-                            <button type="button" id="btnGuardarBodega" onclick="guardarBodega()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85 hidden" title="Guardar">
-                                <i class='bx bx-save text-xl'></i>
-                            </button>
-                            <button type="button" id="btnEditarBodega" onclick="editarBodega()" class="w-10 h-10 flex items-center justify-center rounded-full bg-amber-500 text-white hover:opacity-85 hidden" title="Editar">
-                                <i class='bx bx-edit text-xl'></i>
-                            </button>
-                            <button type="button" id="btnEliminarBodega" onclick="eliminarBodega()" class="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 hidden" title="Eliminar">
-                                <i class='bx bx-trash text-xl'></i>
-                            </button>
-                        </div>
+                        {% include 'components/action_buttons.html' with entity='Bodega' gender='a' suffix_ids=True show_salir=False %}
                     </div>
                 </div>
 
@@ -89,20 +76,7 @@
             <div id="contenido-documentos" class="tab-content hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-semibold text-aq-text">Documentos</h2>
-                    <div class="flex gap-2">
-                        <button type="button" id="btnNuevoDoc" onclick="nuevaDoc()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85" title="Nueva">
-                            <i class='bx bx-plus text-xl'></i>
-                        </button>
-                        <button type="button" id="btnGuardarDoc" onclick="guardarDoc()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85 hidden" title="Guardar">
-                            <i class='bx bx-save text-xl'></i>
-                        </button>
-                        <button type="button" id="btnEditarDoc" onclick="editarDoc()" class="w-10 h-10 flex items-center justify-center rounded-full bg-amber-500 text-white hover:opacity-85 hidden" title="Editar">
-                            <i class='bx bx-edit text-xl'></i>
-                        </button>
-                        <button type="button" id="btnEliminarDoc" onclick="eliminarDoc()" class="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 hidden" title="Eliminar">
-                            <i class='bx bx-trash text-xl'></i>
-                        </button>
-                    </div>
+                    {% include 'components/action_buttons.html' with entity='Doc' gender='a' suffix_ids=True show_salir=False %}
                 </div>
 
                 <form id="docForm" class="space-y-4">
@@ -136,20 +110,7 @@
             <div id="contenido-procesos" class="tab-content hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-semibold text-aq-text">Procesos</h2>
-                    <div class="flex gap-2">
-                        <button type="button" id="btnNuevoProceso" onclick="nuevoProceso()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85" title="Nuevo">
-                            <i class='bx bx-plus text-xl'></i>
-                        </button>
-                        <button type="button" id="btnGuardarProceso" onclick="guardarProceso()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85 hidden" title="Guardar">
-                            <i class='bx bx-save text-xl'></i>
-                        </button>
-                        <button type="button" id="btnEditarProceso" onclick="editarProceso()" class="w-10 h-10 flex items-center justify-center rounded-full bg-amber-500 text-white hover:opacity-85 hidden" title="Editar">
-                            <i class='bx bx-edit text-xl'></i>
-                        </button>
-                        <button type="button" id="btnEliminarProceso" onclick="eliminarProceso()" class="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 hidden" title="Eliminar">
-                            <i class='bx bx-trash text-xl'></i>
-                        </button>
-                    </div>
+                    {% include 'components/action_buttons.html' with entity='Proceso' suffix_ids=True show_salir=False %}
                 </div>
 
                 <form id="procesoForm" class="space-y-4">
@@ -178,20 +139,7 @@
             <div id="contenido-empleados" class="tab-content hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-semibold text-aq-text">Empleados</h2>
-                    <div class="flex gap-2">
-                        <button type="button" id="btnNuevoEmpleado" onclick="nuevoEmpleado()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85" title="Nuevo">
-                            <i class='bx bx-plus text-xl'></i>
-                        </button>
-                        <button type="button" id="btnGuardarEmpleado" onclick="guardarEmpleado()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85 hidden" title="Guardar">
-                            <i class='bx bx-save text-xl'></i>
-                        </button>
-                        <button type="button" id="btnEditarEmpleado" onclick="editarEmpleado()" class="w-10 h-10 flex items-center justify-center rounded-full bg-amber-500 text-white hover:opacity-85 hidden" title="Editar">
-                            <i class='bx bx-edit text-xl'></i>
-                        </button>
-                        <button type="button" id="btnEliminarEmpleado" onclick="eliminarEmpleado()" class="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 hidden" title="Eliminar">
-                            <i class='bx bx-trash text-xl'></i>
-                        </button>
-                    </div>
+                    {% include 'components/action_buttons.html' with entity='Empleado' suffix_ids=True show_salir=False %}
                 </div>
 
                 <form id="empleadoForm" class="space-y-4">
@@ -220,20 +168,7 @@
 <div id="contenido-condpago" class="tab-content hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-semibold text-aq-text">Condiciones de Pago</h2>
-                    <div class="flex gap-2">
-                        <button type="button" id="btnNuevoCpago" onclick="nuevoCpago()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85" title="Nueva">
-                            <i class='bx bx-plus text-xl'></i>
-                        </button>
-                        <button type="button" id="btnGuardarCpago" onclick="guardarCpago()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85 hidden" title="Guardar">
-                            <i class='bx bx-save text-xl'></i>
-                        </button>
-                        <button type="button" id="btnEditarCpago" onclick="editarCpago()" class="w-10 h-10 flex items-center justify-center rounded-full bg-amber-500 text-white hover:opacity-85 hidden" title="Editar">
-                            <i class='bx bx-edit text-xl'></i>
-                        </button>
-                        <button type="button" id="btnEliminarCpago" onclick="eliminarCpago()" class="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 hidden" title="Eliminar">
-                            <i class='bx bx-trash text-xl'></i>
-                        </button>
-                    </div>
+                    {% include 'components/action_buttons.html' with entity='Cpago' suffix_ids=True show_salir=False %}
                 </div>
 
                 <form id="cpagoForm" class="space-y-4">
@@ -266,20 +201,7 @@
             <div id="contenido-transportistas" class="tab-content hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-semibold text-aq-text">Transportistas</h2>
-                    <div class="flex gap-2">
-                        <button type="button" id="btnNuevoTransportista" onclick="nuevoTransportista()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85" title="Nuevo">
-                            <i class='bx bx-plus text-xl'></i>
-                        </button>
-                        <button type="button" id="btnGuardarTransportista" onclick="guardarTransportista()" class="w-10 h-10 flex items-center justify-center rounded-full bg-aq-primary text-white hover:opacity-85 hidden" title="Guardar">
-                            <i class='bx bx-save text-xl'></i>
-                        </button>
-                        <button type="button" id="btnEditarTransportista" onclick="editarTransportista()" class="w-10 h-10 flex items-center justify-center rounded-full bg-amber-500 text-white hover:opacity-85 hidden" title="Editar">
-                            <i class='bx bx-edit text-xl'></i>
-                        </button>
-                        <button type="button" id="btnEliminarTransportista" onclick="eliminarTransportista()" class="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 hidden" title="Eliminar">
-                            <i class='bx bx-trash text-xl'></i>
-                        </button>
-                    </div>
+                    {% include 'components/action_buttons.html' with entity='Transportista' suffix_ids=True show_salir=False %}
                 </div>
 
                 <form id="transportistaForm" class="space-y-4">
@@ -326,346 +248,26 @@
                     </div>
                 </div>
 
-                <div id="modalPatente" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-                    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-md p-6 shadow-xl">
-                        <div class="text-center mb-4">
-                            <h3 class="text-xl font-bold text-aq-text">Agregar Patente</h3>
-                        </div>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-aq-text mb-1">Patente</label>
-                                <input type="text" id="patenteInput" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text" placeholder="Ej: ABCD-12" onkeyup="if(event.key==='Enter'){confirmarAgregarPatente();}">
-                            </div>
-                            <div class="flex gap-3 justify-center">
-                                <button onclick="cerrarModalPatente()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
-                                    Cancelar
-                                </button>
-                                <button onclick="confirmarAgregarPatente()" class="px-4 py-2 rounded-lg bg-aq-primary text-white hover:opacity-85">
-                                    Agregar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="modalConfirmarPatente" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-                    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-md p-6 shadow-xl">
-                        <div class="text-center">
-                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                                <i class='bx bx-trash text-2xl text-red-500'></i>
-                            </div>
-                            <h3 class="text-xl font-bold text-aq-text mb-2">Confirmar Eliminación</h3>
-                            <p class="text-aq-muted mb-6">¿Está seguro de eliminar la patente <span id="eliminarPatenteTexto" class="font-semibold"></span>?</p>
-                            <div class="flex gap-3 justify-center">
-                                <button onclick="cerrarConfirmarPatente()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
-                                    Cancelar
-                                </button>
-                                <button onclick="confirmarEliminarPatente()" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">
-                                    Eliminar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 </div>
 
-<div id="modalConfirmarProceso" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-md p-6 shadow-xl">
-        <div class="text-center">
-            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                <i class='bx bx-trash text-2xl text-red-500'></i>
-            </div>
-            <h3 class="text-xl font-bold text-aq-text mb-2">Confirmar Eliminación</h3>
-            <p class="text-aq-muted mb-6">¿Está seguro de eliminar el proceso código <span id="eliminarCodProceso" class="font-semibold"></span>?</p>
-            <div class="flex gap-3 justify-center">
-                <button onclick="cerrarConfirmarProceso()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
-                    Cancelar
-                </button>
-                <button onclick="confirmarEliminarProceso()" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">
-                    Eliminar
-                </button>
-            </div>
+<div id="modalPatente" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-sm border border-aq-border">
+        <h3 class="text-lg font-semibold text-aq-text mb-4">Agregar Patente</h3>
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-aq-text mb-1">Patente</label>
+            <input type="text" id="patenteInput" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text uppercase" placeholder="Ingrese patente" maxlength="8">
         </div>
-    </div>
-</div>
-
-<div id="modalProcesos" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-xl">
-        <div class="flex justify-between items-center p-4 border-b border-aq-border">
-            <div class="flex items-center gap-2">
-                <h2 class="text-xl font-bold text-aq-text">Lista de Procesos</h2>
-                <button onclick="recargarProcesos()" class="p-2 rounded-lg text-aq-muted hover:text-aq-primary hover:bg-aq-surface-2" title="Actualizar">
-                    <i class='bx bx-refresh text-xl'></i>
-                </button>
-            </div>
-            <button onclick="cerrarListaProcesos()" class="text-aq-muted hover:text-aq-text">
-                <i class='bx bx-x text-2xl'></i>
+        <div class="flex justify-end gap-2">
+            <button onclick="cerrarModalPatente()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cancelar
+            </button>
+            <button onclick="confirmarAgregarPatente()" class="px-4 py-2 rounded-lg bg-aq-primary text-white hover:opacity-85">
+                Agregar
             </button>
         </div>
-        <div class="p-4 overflow-auto flex-1">
-            <input type="text" id="filtroProcesos" onkeyup="filtrarProcesos()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar...">
-            <table class="w-full text-sm">
-                <thead class="bg-aq-surface-2 sticky top-0">
-                    <tr>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Código</th>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Nombre</th>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Glosa</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaListaProcesos" class="divide-y divide-aq-border"></tbody>
-            </table>
-        </div>
-</div>
     </div>
 </div>
-
-<div id="modalConfirmarEmpleado" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-md p-6 shadow-xl">
-        <div class="text-center">
-            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                <i class='bx bx-trash text-2xl text-red-500'></i>
-            </div>
-            <h3 class="text-xl font-bold text-aq-text mb-2">Confirmar Eliminación</h3>
-            <p class="text-aq-muted mb-6">¿Está seguro de eliminar el empleado código <span id="eliminarCodEmpleado" class="font-semibold"></span>?</p>
-            <div class="flex gap-3 justify-center">
-                <button onclick="cerrarConfirmarEmpleado()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
-                    Cancelar
-                </button>
-                <button onclick="confirmarEliminarEmpleado()" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">
-                    Eliminar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="modalEmpleados" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-xl">
-        <div class="flex justify-between items-center p-4 border-b border-aq-border">
-            <div class="flex items-center gap-2">
-                <h2 class="text-xl font-bold text-aq-text">Lista de Empleados</h2>
-                <button onclick="recargarEmpleados()" class="p-2 rounded-lg text-aq-muted hover:text-aq-primary hover:bg-aq-surface-2" title="Actualizar">
-                    <i class='bx bx-refresh text-xl'></i>
-                </button>
-            </div>
-            <button onclick="cerrarListaEmpleados()" class="text-aq-muted hover:text-aq-text">
-                <i class='bx bx-x text-2xl'></i>
-            </button>
-        </div>
-        <div class="p-4 overflow-auto flex-1">
-            <input type="text" id="filtroEmpleados" onkeyup="filtrarEmpleados()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar...">
-            <table class="w-full text-sm">
-                <thead class="bg-aq-surface-2 sticky top-0">
-                    <tr>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Código</th>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Nombre</th>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Glosa</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaListaEmpleados" class="divide-y divide-aq-border"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div id="modalConfirmarCpago" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-md p-6 shadow-xl">
-        <div class="text-center">
-            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                <i class='bx bx-trash text-2xl text-red-500'></i>
-            </div>
-            <h3 class="text-xl font-bold text-aq-text mb-2">Confirmar Eliminación</h3>
-            <p class="text-aq-muted mb-6">¿Está seguro de eliminar la condición de pago código <span id="eliminarCodCpago" class="font-semibold"></span>?</p>
-            <div class="flex gap-3 justify-center">
-                <button onclick="cerrarConfirmarCpago()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
-                    Cancelar
-                </button>
-                <button onclick="confirmarEliminarCpago()" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">
-                    Eliminar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="modalCpagos" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-xl">
-        <div class="flex justify-between items-center p-4 border-b border-aq-border">
-            <div class="flex items-center gap-2">
-                <h2 class="text-xl font-bold text-aq-text">Lista de Condiciones de Pago</h2>
-                <button onclick="recargarCpagos()" class="p-2 rounded-lg text-aq-muted hover:text-aq-primary hover:bg-aq-surface-2" title="Actualizar">
-                    <i class='bx bx-refresh text-xl'></i>
-                </button>
-            </div>
-            <button onclick="cerrarListaCpagos()" class="text-aq-muted hover:text-aq-text">
-                <i class='bx bx-x text-2xl'></i>
-            </button>
-        </div>
-        <div class="p-4 overflow-auto flex-1">
-            <input type="text" id="filtroCpagos" onkeyup="filtrarCpagos()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar...">
-            <table class="w-full text-sm">
-                <thead class="bg-aq-surface-2 sticky top-0">
-                    <tr>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Código</th>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Descripción</th>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Días</th>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Glosa</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaListaCpagos" class="divide-y divide-aq-border"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-</div>
-
-<div id="modalConfirmarBodega" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-md p-6 shadow-xl">
-        <div class="text-center">
-            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                <i class='bx bx-trash text-2xl text-red-500'></i>
-            </div>
-            <h3 class="text-xl font-bold text-aq-text mb-2">Confirmar Eliminación</h3>
-            <p class="text-aq-muted mb-6">¿Está seguro de eliminar la bodega código <span id="eliminarCodBodega" class="font-semibold"></span>?</p>
-            <div class="flex gap-3 justify-center">
-                <button onclick="cerrarConfirmarBodega()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
-                    Cancelar
-                </button>
-                <button onclick="confirmarEliminarBodega()" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">
-                    Eliminar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="modalBodegas" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-xl">
-        <div class="flex justify-between items-center p-4 border-b border-aq-border">
-            <div class="flex items-center gap-2">
-                <h2 class="text-xl font-bold text-aq-text">Lista de Bodegas</h2>
-                <button onclick="recargarBodegas()" class="p-2 rounded-lg text-aq-muted hover:text-aq-primary hover:bg-aq-surface-2" title="Actualizar">
-                    <i class='bx bx-refresh text-xl'></i>
-                </button>
-            </div>
-            <button onclick="cerrarListaBodegas()" class="text-aq-muted hover:text-aq-text">
-                <i class='bx bx-x text-2xl'></i>
-            </button>
-        </div>
-        <div class="p-4 overflow-auto flex-1">
-            <input type="text" id="filtroBodegas" onkeyup="filtrarBodegas()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar...">
-            <table class="w-full text-sm">
-                <thead class="bg-aq-surface-2 sticky top-0">
-                    <tr>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Código</th>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Nombre</th>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Glosa</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaListaBodegas" class="divide-y divide-aq-border"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div id="modalConfirmarTransportista" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-md p-6 shadow-xl">
-        <div class="text-center">
-            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                <i class='bx bx-trash text-2xl text-red-500'></i>
-            </div>
-            <h3 class="text-xl font-bold text-aq-text mb-2">Confirmar Eliminación</h3>
-            <p class="text-aq-muted mb-6">¿Está seguro de eliminar el transportista RUT <span id="eliminarRutTransportista" class="font-semibold"></span>?</p>
-            <div class="flex gap-3 justify-center">
-                <button onclick="cerrarConfirmarTransportista()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
-                    Cancelar
-                </button>
-                <button onclick="confirmarEliminarTransportista()" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">
-                    Eliminar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="modalTransportistas" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-xl">
-        <div class="flex justify-between items-center p-4 border-b border-aq-border">
-            <div class="flex items-center gap-2">
-                <h2 class="text-xl font-bold text-aq-text">Lista de Transportistas</h2>
-                <button onclick="recargarTransportistas()" class="p-2 rounded-lg text-aq-muted hover:text-aq-primary hover:bg-aq-surface-2" title="Actualizar">
-                    <i class='bx bx-refresh text-xl'></i>
-                </button>
-            </div>
-            <button onclick="cerrarListaTransportistas()" class="text-aq-muted hover:text-aq-text">
-                <i class='bx bx-x text-2xl'></i>
-            </button>
-        </div>
-        <div class="p-4 overflow-auto flex-1">
-            <input type="text" id="filtroTransportistas" onkeyup="filtrarTransportistas()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar...">
-            <table class="w-full text-sm">
-                <thead class="bg-aq-surface-2 sticky top-0">
-                    <tr>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">RUT</th>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Nombre</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaListaTransportistas" class="divide-y divide-aq-border"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div id="modalConfirmarDoc" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-md p-6 shadow-xl">
-        <div class="text-center">
-            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                <i class='bx bx-trash text-2xl text-red-500'></i>
-            </div>
-            <h3 class="text-xl font-bold text-aq-text mb-2">Confirmar Eliminación</h3>
-            <p class="text-aq-muted mb-6">¿Está seguro de eliminar el documento código <span id="eliminarCodDoc" class="font-semibold"></span>?</p>
-            <div class="flex gap-3 justify-center">
-                <button onclick="cerrarConfirmarDoc()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
-                    Cancelar
-                </button>
-                <button onclick="confirmarEliminarDoc()" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">
-                    Eliminar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="modalDocs" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
-    <div class="bg-aq-surface border border-aq-border rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-xl">
-        <div class="flex justify-between items-center p-4 border-b border-aq-border">
-            <div class="flex items-center gap-2">
-                <h2 class="text-xl font-bold text-aq-text">Lista de Documentos</h2>
-                <button onclick="recargarDocs()" class="p-2 rounded-lg text-aq-muted hover:text-aq-primary hover:bg-aq-surface-2" title="Actualizar">
-                    <i class='bx bx-refresh text-xl'></i>
-                </button>
-            </div>
-            <button onclick="cerrarListaDocs()" class="text-aq-muted hover:text-aq-text">
-                <i class='bx bx-x text-2xl'></i>
-            </button>
-        </div>
-        <div class="p-4 overflow-auto flex-1">
-            <input type="text" id="filtroDocs" onkeyup="filtrarDocs()" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text mb-4" placeholder="Buscar...">
-            <table class="w-full text-sm">
-                <thead class="bg-aq-surface-2 sticky top-0">
-                    <tr>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Código</th>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Nombre</th>
-                        <th class="px-3 py-2 text-left text-aq-text font-semibold">Signo</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaListaDocs" class="divide-y divide-aq-border"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
 
 {% endblock %}
 {% block extra_js %}

@@ -92,8 +92,6 @@ function nuevaPE() {
     document.getElementById('contenido-detalle').classList.add('hidden');
     document.getElementById('tab-encabezado').classList.add('active');
     document.getElementById('contenido-encabezado').classList.remove('hidden');
-    document.getElementById('btnEditarPE').classList.add('hidden');
-    document.getElementById('btnEliminarPE').classList.add('hidden');
     document.getElementById('btnGuardarPE').classList.remove('hidden');
     setCamposPEEditable(true);
 }
@@ -195,47 +193,30 @@ function buscarArticuloPE() {
 
 function abrirListaArticulosPE() {
     buscarXHRPE('listar_articulos', {}, function(data) {
-        window.listaArticulosPE = data.articulos || [];
-        document.getElementById('modalArticulosPE').classList.remove('hidden');
-        document.getElementById('filtroArticulosPE').value = '';
-        renderizarListaArticulosPE(window.listaArticulosPE);
+        abrirModalBusqueda({
+            titulo: 'Buscar Artículo',
+            columnas: [
+                { title: 'Código', field: 'codigo', width: 80 },
+                { title: 'Nombre', field: 'descr', width: 150 },
+                { title: 'UM', field: 'um', width: 60 },
+                { title: 'Precio', field: 'precio', width: 80 },
+            ],
+            data: data.articulos || [],
+            filtroCampos: ['codigo', 'descr'],
+            onSelect: function(row) {
+                document.getElementById('peArtCod').value = row.codigo;
+                document.getElementById('peArtNombre').value = row.descr || '';
+                document.getElementById('peArtUM').value = row.um || '';
+                document.getElementById('peArtPUnit').value = row.precio || 0;
+            },
+            onRefresh: function(opts) {
+                buscarXHRPE('listar_articulos', {}, function(data) {
+                    opts.data = data.articulos || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
-}
-
-function cerrarListaArticulosPE() {
-    document.getElementById('modalArticulosPE').classList.add('hidden');
-}
-
-function renderizarListaArticulosPE(lista) {
-    const tbody = document.getElementById('tablaListaArticulosPE');
-    tbody.innerHTML = '';
-    lista.forEach(a => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('peArtCod').value = a.codigo;
-            document.getElementById('peArtNombre').value = a.descr || '';
-            document.getElementById('peArtUM').value = a.um || '';
-            document.getElementById('peArtPUnit').value = a.precio || 0;
-            cerrarListaArticulosPE();
-        };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text">${a.codigo}</td>
-            <td class="px-3 py-2 text-aq-text">${a.descr || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${a.um || ''}</td>
-            <td class="px-3 py-2 text-aq-text text-right">${a.precio || 0}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarArticulosPE() {
-    const filtro = document.getElementById('filtroArticulosPE').value.toLowerCase();
-    const filtradas = window.listaArticulosPE.filter(a =>
-        (a.codigo && a.codigo.toString().toLowerCase().includes(filtro)) ||
-        (a.descr && a.descr.toLowerCase().includes(filtro))
-    );
-    renderizarListaArticulosPE(filtradas);
 }
 
 function agregarArticuloPE() {
@@ -334,30 +315,28 @@ function buscarPEInput() {
     }
 }
 
-
-
 function abrirBusquedaPE() {
     buscarXHRPE('listar_pe', {}, function(data) {
-        const tbody = document.getElementById('tablaBusquedaPE');
-        tbody.innerHTML = '';
-        if (data.lista) {
-            data.lista.forEach(p => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-                tr.onclick = function() {
-                    document.getElementById('modalBusquedaPE').classList.add('hidden');
-                    document.getElementById('peNumero').value = p.numero;
-                    cargarPE(p.numero);
-                };
-                tr.innerHTML = `
-                    <td class="px-3 py-2 text-aq-text">${p.numero || ''}</td>
-                    <td class="px-3 py-2 text-aq-text">${p.fecha || ''}</td>
-                    <td class="px-3 py-2 text-aq-text">${p.tipodocref_nombre || ''}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-        document.getElementById('modalBusquedaPE').classList.remove('hidden');
+        abrirModalBusqueda({
+            titulo: 'Lista de PE',
+            columnas: [
+                { title: 'Nro', field: 'numero', width: 80 },
+                { title: 'Fecha', field: 'fecha', width: 110 },
+                { title: 'Tipo Doc', field: 'tipodocref_nombre', width: 130 },
+            ],
+            data: data.lista || [],
+            filtroCampos: ['numero', 'tipodocref_nombre'],
+            onSelect: function(row) {
+                document.getElementById('peNumero').value = row.numero;
+                cargarPE(row.numero);
+            },
+            onRefresh: function(opts) {
+                buscarXHRPE('listar_pe', {}, function(data) {
+                    opts.data = data.lista || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
 }
 
@@ -370,7 +349,6 @@ function cargarPE(numero) {
 
             document.getElementById('tab-detalle').classList.remove('hidden');
             document.getElementById('btnGuardarPE').classList.add('hidden');
-            document.getElementById('btnEditarPE').classList.remove('hidden');
             document.getElementById('btnEliminarPE').classList.remove('hidden');
 
             const docSelect = document.getElementById('peTipoDoc');
@@ -405,20 +383,11 @@ function cargarPE(numero) {
                 cup: d.cup || 0
             }));
             renderizarDetallePE();
+            setCamposPEEditable(false);
         } else {
             Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
         }
     });
-}
-
-function filtrarPE() {
-    const filtro = document.getElementById('filtroBusquedaPE').value.toLowerCase();
-    const tbody = document.getElementById('tablaBusquedaPE');
-    const rows = tbody.getElementsByTagName('tr');
-    for (let i = 0; i < rows.length; i++) {
-        const text = rows[i].textContent.toLowerCase();
-        rows[i].style.display = text.includes(filtro) ? '' : 'none';
-    }
 }
 
 function buscarArticuloPEInput() {

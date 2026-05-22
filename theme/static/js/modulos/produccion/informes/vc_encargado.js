@@ -101,5 +101,10 @@ function cargarEncargados() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    const hoy = new Date();
+    const hace30 = new Date();
+    hace30.setDate(hace30.getDate() - 30);
+    document.querySelector('input[name="fecha_inicio"]').value = hace30.toISOString().split('T')[0];
+    document.querySelector('input[name="fecha_fin"]').value = hoy.toISOString().split('T')[0];
     cargarEncargados();
 });

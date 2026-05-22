@@ -74,46 +74,29 @@ function buscarArticulo() {
 
 function abrirListaArticulos() {
     buscarXHRAux('listar_articulos', {}, function(data) {
-        window.listaArticulosAux = data.articulos || [];
-        document.getElementById('modalArticulos').classList.remove('hidden');
-        document.getElementById('filtroArticulos').value = '';
-        renderizarListaArticulos(window.listaArticulosAux);
+        abrirModalBusqueda({
+            titulo: 'Buscar Artículo',
+            columnas: [
+                { title: 'Código', field: 'codigo', width: 100 },
+                { title: 'Nombre', field: 'descr' },
+                { title: 'UM', field: 'um', width: 80 },
+            ],
+            data: data.articulos || [],
+            filtroCampos: ['codigo', 'descr'],
+            onSelect: function(row) {
+                document.getElementById('auxArtCod').value = row.codigo;
+                setSpan('auxArtNombre', row.descr);
+                setSpan('auxArtUM', row.um);
+                consultar();
+            },
+            onRefresh: function(opts) {
+                buscarXHRAux('listar_articulos', {}, function(data) {
+                    opts.data = data.articulos || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
-}
-
-function cerrarListaArticulos() {
-    document.getElementById('modalArticulos').classList.add('hidden');
-}
-
-function renderizarListaArticulos(lista) {
-    const tbody = document.getElementById('tablaListaArticulos');
-    tbody.innerHTML = '';
-    lista.forEach(a => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('auxArtCod').value = a.codigo;
-            setSpan('auxArtNombre', a.descr);
-            setSpan('auxArtUM', a.um);
-            cerrarListaArticulos();
-            consultar();
-        };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text">${a.codigo}</td>
-            <td class="px-3 py-2 text-aq-text">${a.descr || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${a.um || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarArticulos() {
-    const filtro = document.getElementById('filtroArticulos').value.toLowerCase();
-    const filtradas = window.listaArticulosAux.filter(a =>
-        (a.codigo && a.codigo.toString().toLowerCase().includes(filtro)) ||
-        (a.descr && a.descr.toLowerCase().includes(filtro))
-    );
-    renderizarListaArticulos(filtradas);
 }
 
 function actualizarResumen(data, saldoFinal) {

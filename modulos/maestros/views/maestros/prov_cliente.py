@@ -11,6 +11,14 @@ from modulos.maestros.models.prov_cliente import Provclientes
 from modulos.maestros.models.auxiliares import Cpago
 
 
+def _get_movs_model():
+    try:
+        from modulos.inventario.models.movs import Movs
+        return Movs
+    except ImportError:
+        return None
+
+
 
 class IndexProvClienteView(LoginRequiredMixin, TemplateView):
     """Vista para manejar clientes y proveedores."""
@@ -35,7 +43,8 @@ class IndexProvClienteView(LoginRequiredMixin, TemplateView):
             "buscar": lambda d: self._buscar(d.get("rut")),
             "nuevo": self._guardar,
             "editar": self._actualizar,
-            "eliminar": lambda d: self._eliminar(d.get("rut")),
+            "desactivar": lambda d: self._desactivar(d.get("rut")),
+            "activar": lambda d: self._activar(d.get("rut")),
             "listar_ruts": lambda _: self._listar_ruts(),
             "listar_cpagos": lambda _: self._listar_cpagos(),
             "listar_tipos": lambda _: self._listar_tipos(),
@@ -103,12 +112,39 @@ class IndexProvClienteView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
-    def _eliminar(self, rut: str | None) -> JsonResponse:
+    def _desactivar(self, rut: str | None) -> JsonResponse:
         if not rut:
             return JsonResponse({"success": False, "message": "RUT requerido"})
         try:
-            Provclientes.objects.get(rut=rut).delete(using="default")
-            return JsonResponse({"success": True, "message": "Cliente eliminado correctamente"})
+            cliente = Provclientes.objects.get(rut=rut)
+            cliente.tipo = 'Inactivo'
+            cliente.usr = self.request.user.username
+            cliente.timeuser = timezone.now()
+            cliente.save(using="default")
+
+            Movs = _get_movs_model()
+            if Movs:
+                Movs.objects.filter(rut=rut, estado__isnull=True).update(estado='Inactivo')
+
+            return JsonResponse({"success": True, "message": "Cliente/Proveedor desactivado correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _activar(self, rut: str | None) -> JsonResponse:
+        if not rut:
+            return JsonResponse({"success": False, "message": "RUT requerido"})
+        try:
+            cliente = Provclientes.objects.get(rut=rut)
+            cliente.tipo = 'Cliente'
+            cliente.usr = self.request.user.username
+            cliente.timeuser = timezone.now()
+            cliente.save(using="default")
+
+            Movs = _get_movs_model()
+            if Movs:
+                Movs.objects.filter(rut=rut, estado='Inactivo').update(estado='Cerrado')
+
+            return JsonResponse({"success": True, "message": "Cliente/Proveedor activado correctamente"})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 

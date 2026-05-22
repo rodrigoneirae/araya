@@ -39,6 +39,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
     def _get_action_handler(self, action: str):
         handlers = {
             "nuevo": self._guardar_ot,
+            "editar_estado": self._editar_estado,
             "actualizar": self._actualizar_ot,
             "buscar": lambda d: self._buscar_ot(d.get("numero")),
             "eliminar": lambda d: self._eliminar_ot(d.get("numero")),
@@ -83,6 +84,17 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
             movimiento.timeuser = timezone.now()
             movimiento.save()
             return JsonResponse({"success": True, "message": f"OT {int(float(numero))} actualizada correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _editar_estado(self, data) -> JsonResponse:
+        try:
+            numero = data.get("numero")
+            estado = data.get("estado")
+            if not numero:
+                return JsonResponse({"success": False, "message": "Número de OT requerido"})
+            Movs.objects.filter(numero=float(numero), tipo=8, linea=0).update(estado=estado)
+            return JsonResponse({"success": True, "message": "Estado actualizado correctamente", "numero": numero})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 

@@ -2,28 +2,8 @@ const urlPE = (document.currentScript?.dataset.url) || '/';
 
 let detallesPE = [];
 let modoEdicionPE = false;
-let callbackConfirmar = null;
 let tabulatorSubOTRef = null;
 let tabulatorSubVCRef = null;
-
-function mostrarConfirmar(titulo, mensaje, callback) {
-    document.getElementById('modalConfirmarTitulo').textContent = titulo;
-    document.getElementById('modalConfirmarMensaje').textContent = mensaje;
-    callbackConfirmar = callback;
-    document.getElementById('modalConfirmar').classList.remove('hidden');
-}
-
-function cerrarModalConfirmar() {
-    document.getElementById('modalConfirmar').classList.add('hidden');
-    callbackConfirmar = null;
-}
-
-function ejecutarModalConfirmar() {
-    const callback = callbackConfirmar;
-    document.getElementById('modalConfirmar').classList.add('hidden');
-    callbackConfirmar = null;
-    if (callback) callback();
-}
 
 function getCookie(name) {
     let cookieValue = null;
@@ -169,7 +149,6 @@ function cargarDatosInicialesPE() {
     document.getElementById('peArtFecha').value = fecha;
     nuevoPE();
     setCamposPEEditable(true);
-    document.getElementById('btnEditarPE').classList.add('hidden');
     document.getElementById('btnGuardarPE').classList.remove('hidden');
 
     document.getElementById('peOT').addEventListener('change', function() {
@@ -196,7 +175,6 @@ function nuevoPE() {
 
         modoEdicionPE = false;
         document.getElementById('btnGuardarPE').classList.remove('hidden');
-        document.getElementById('btnEditarPE').classList.add('hidden');
         document.getElementById('btnEliminarPE').classList.add('hidden');
 
         setCamposPEEditable(true);
@@ -264,7 +242,6 @@ function guardarPE() {
         if (data.success) {
             Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
             modoEdicionPE = true;
-            document.getElementById('btnEditarPE').classList.remove('hidden');
             document.getElementById('btnEliminarPE').classList.remove('hidden');
             document.getElementById('btnGuardarPE').classList.add('hidden');
         } else {
@@ -276,7 +253,6 @@ function guardarPE() {
 function editarPE() {
     setCamposPEEditable(true);
     document.getElementById('btnGuardarPE').classList.remove('hidden');
-    document.getElementById('btnEditarPE').classList.add('hidden');
     modoEdicionPE = false;
 }
 
@@ -284,10 +260,7 @@ function eliminarPE() {
     const numero = document.getElementById('peNumero').value;
     if (!numero) return;
 
-    mostrarConfirmar(
-        'Eliminar PE',
-        '¿Está seguro de eliminar el Parte de Entrada actual?',
-        function() {
+    mostrarModalConfirm({titulo: 'Eliminar PE', mensaje: '¿Está seguro de eliminar el Parte de Entrada actual?', onConfirm: function() {
             buscarXHRPE('eliminar', {numero: numero}, function(data) {
                 if (data.success) {
                     Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
@@ -296,8 +269,7 @@ function eliminarPE() {
                     Toastify({text: data.message || 'Error al eliminar', style: {background: '#f44336'}}).showToast();
                 }
             });
-        }
-    );
+        }});
 }
 
 function setCamposPEEditable(editable) {
@@ -345,12 +317,15 @@ function cargarPE(data) {
     renderizarDetallesPE();
     actualizarResumenPE();
 
-    modoEdicionPE = true;
+    modoEdicionPE = false;
     document.getElementById('btnGuardarPE').classList.add('hidden');
-    document.getElementById('btnEditarPE').classList.remove('hidden');
     document.getElementById('btnEliminarPE').classList.remove('hidden');
 
-    setCamposPEEditable(true);
+    setCamposPEEditable(false);
+
+    document.getElementById('tab-detalle').classList.remove('hidden');
+    document.getElementById('tab-detalle').classList.remove('pointer-events-none', 'opacity-50');
+    cambiarTabPE('encabezado');
 
     if (data.ot) {
         buscarXHRPE('buscar_ot', {numero: data.ot}, function(dataOT) {
@@ -359,13 +334,9 @@ function cargarPE(data) {
 
             if (dataOT.success && dataOT.data.estado === 'Cerrado') {
                 document.getElementById('tab-detalle').classList.add('pointer-events-none', 'opacity-50');
-            } else {
-                document.getElementById('tab-detalle').classList.remove('pointer-events-none', 'opacity-50');
             }
         });
     }
-
-    cambiarTabPE('encabezado');
 }
 
 function sincronizarPEconOT() {
@@ -541,88 +512,44 @@ function cambiarTabPE(tab) {
 
 function abrirBusquedaPE() {
     buscarXHRPE('listar_pe', {}, function(data) {
-        window.listaBusquedaPE = data.lista || [];
-        document.getElementById('modalBusquedaPE').classList.remove('hidden');
-        document.getElementById('filtroBusquedaPE').value = '';
-        renderizarBusquedaPE(window.listaBusquedaPE);
+        abrirModalBusqueda({
+            titulo: 'Buscar PE',
+            columnas: [
+                { title: 'PE', field: 'numero', width: 100 },
+                { title: 'Fecha', field: 'fecha', width: 100 },
+                { title: 'OT', field: 'ot', width: 100 },
+                { title: 'Proceso', field: 'proceso_nombre', width: 150 },
+                { title: 'Estado', field: 'estado', width: 80 }
+            ],
+            data: data.lista || [],
+            filtroCampos: ['numero'],
+            onSelect: function(row) {
+                document.getElementById('peNumero').value = row.numero;
+                buscarPEInput();
+            }
+        });
     });
-}
-
-function renderizarBusquedaPE(lista) {
-    const tbody = document.getElementById('tablaBusquedaPE');
-    tbody.innerHTML = '';
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-center text-aq-muted">Sin registros</td></tr>';
-        return;
-    }
-    lista.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('modalBusquedaPE').classList.add('hidden');
-            document.getElementById('peNumero').value = item.numero;
-            buscarPEInput();
-        };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.numero}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.fecha || ''}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.ot || ''}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.proceso_nombre || ''}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.estado || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarPE() {
-    const filtro = document.getElementById('filtroBusquedaPE').value.toLowerCase();
-    const listaFiltrada = window.listaBusquedaPE.filter(item => 
-        String(item.numero).toLowerCase().includes(filtro)
-    );
-    renderizarBusquedaPE(listaFiltrada);
 }
 
 function abrirBusquedaOT() {
     buscarXHRPE('listar_ot', {}, function(data) {
-        window.listaBusquedaOT = data.ot || [];
-        document.getElementById('modalBusquedaOT').classList.remove('hidden');
-        document.getElementById('filtroBusquedaOT').value = '';
-        renderizarBusquedaOT(window.listaBusquedaOT);
+        abrirModalBusqueda({
+            titulo: 'Buscar Orden de Trabajo (OT)',
+            columnas: [
+                { title: 'OT', field: 'numero', width: 100 },
+                { title: 'Fecha', field: 'fecha', width: 100 },
+                { title: 'Encargado', field: 'encargado_nombre', width: 150 },
+                { title: 'Proceso', field: 'proceso_nombre', width: 150 },
+                { title: 'Estado', field: 'estado', width: 80 }
+            ],
+            data: data.ot || [],
+            filtroCampos: ['numero'],
+            onSelect: function(row) {
+                document.getElementById('peOT').value = row.numero;
+                buscarOTInput();
+            }
+        });
     });
-}
-
-function renderizarBusquedaOT(lista) {
-    const tbody = document.getElementById('tablaBusquedaOT');
-    tbody.innerHTML = '';
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-center text-aq-muted">Sin registros</td></tr>';
-        return;
-    }
-    lista.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('modalBusquedaOT').classList.add('hidden');
-            document.getElementById('peOT').value = item.numero;
-            buscarOTInput();
-        };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.numero}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.fecha || ''}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.encargado_nombre || ''}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.proceso_nombre || ''}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.estado || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarOT() {
-    const filtro = document.getElementById('filtroBusquedaOT').value.toLowerCase();
-    const listaFiltrada = window.listaBusquedaOT.filter(item => 
-        String(item.numero).toLowerCase().includes(filtro)
-    );
-    renderizarBusquedaOT(listaFiltrada);
 }
 
 function buscarArticuloPEInput() {
@@ -654,48 +581,23 @@ function limpiarDetallePE() {
 
 function abrirListaArticulosPE() {
     buscarXHRPE('listar_articulos_produccion', {}, function(data) {
-        window.listaArticulosPE = data.articulos || [];
-        document.getElementById('modalArticulosPE').classList.remove('hidden');
-        document.getElementById('filtroArticulosPE').value = '';
-        renderizarArticulosPE(window.listaArticulosPE);
+        abrirModalBusqueda({
+            titulo: 'Seleccionar Artículo',
+            columnas: [
+                { title: 'Código', field: 'codigo', width: 100 },
+                { title: 'Descripción', field: 'descr', width: 200 },
+                { title: 'Tipo', field: 'tipo', width: 80 },
+                { title: 'Proceso', field: 'proceso', width: 120 },
+                { title: 'UM', field: 'um', width: 60 }
+            ],
+            data: data.articulos || [],
+            filtroCampos: ['codigo', 'descr', 'tipo', 'proceso'],
+            onSelect: function(row) {
+                document.getElementById('peArtCod').value = row.codigo;
+                document.getElementById('peArtNombre').value = row.descr || '';
+                document.getElementById('peArtUM').value = row.um || '';
+                document.getElementById('peArtPUnit').value = row.precio || 0;
+            }
+        });
     });
-}
-
-function renderizarArticulosPE(lista) {
-    const tbody = document.getElementById('tablaArticulosPE');
-    tbody.innerHTML = '';
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-2 py-4 text-center text-aq-muted text-xs">Sin registros</td></tr>';
-        return;
-    }
-    lista.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('peArtCod').value = item.codigo;
-            document.getElementById('peArtNombre').value = item.descr || '';
-            document.getElementById('peArtUM').value = item.um || '';
-            document.getElementById('peArtPUnit').value = item.precio || 0;
-            document.getElementById('modalArticulosPE').classList.add('hidden');
-        };
-        tr.innerHTML = `
-            <td class="px-2 py-2 text-aq-text whitespace-nowrap text-xs">${item.codigo}</td>
-            <td class="px-2 py-2 text-aq-text whitespace-nowrap text-xs">${item.descr || ''}</td>
-            <td class="px-2 py-2 text-aq-text whitespace-nowrap text-xs">${item.tipo || ''}</td>
-            <td class="px-2 py-2 text-aq-text whitespace-nowrap text-xs">${item.proceso || ''}</td>
-            <td class="px-2 py-2 text-aq-text whitespace-nowrap text-xs">${item.um || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarArticulosPE() {
-    const filtro = document.getElementById('filtroArticulosPE').value.toLowerCase();
-    const listaFiltrada = window.listaArticulosPE.filter(item =>
-        (item.codigo || '').toLowerCase().includes(filtro) ||
-        (item.descr || '').toLowerCase().includes(filtro) ||
-        (item.tipo || '').toLowerCase().includes(filtro) ||
-        (item.proceso || '').toLowerCase().includes(filtro)
-    );
-    renderizarArticulosPE(listaFiltrada);
 }

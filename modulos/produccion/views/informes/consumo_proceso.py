@@ -259,7 +259,9 @@ class IndexInformeConsumoProcesoView(LoginRequiredMixin, TemplateView):
             col_widths = [20 * mm, 38 * mm, 18 * mm, 15 * mm, 22 * mm, 16 * mm, 10 * mm, 25 * mm]
 
             if not data:
-                return HttpResponse("No hay datos", content_type="text/plain")
+                elems.append(Spacer(1, 20 * mm))
+                elems.append(Paragraph("No hay datos para los filtros seleccionados", subtitle_style))
+                return elems
 
             table_data = [header]
             total_general = 0

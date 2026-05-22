@@ -1,5 +1,4 @@
 const urlResOts = (document.currentScript?.dataset.url) || '/';
-let listaOTs = [];
 
 function getCookie(name) {
     let cookieValue = null;
@@ -85,19 +84,6 @@ function generarPDFDetalle() {
 }
 
 function abrirModalOT() {
-    const modal = document.getElementById('modalOT');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    cargarTodasOTs();
-}
-
-function cerrarModalOT() {
-    const modal = document.getElementById('modalOT');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-}
-
-function cargarTodasOTs() {
     const formData = new FormData();
     formData.append('action', 'listar_ots');
 
@@ -108,43 +94,40 @@ function cargarTodasOTs() {
     })
     .then(res => res.json())
     .then(data => {
-        listaOTs = data.ots || [];
-        renderizarTablaOT(listaOTs);
-    });
-}
-
-function renderizarTablaOT(ots) {
-    const tbody = document.getElementById('tablaBusquedaOT');
-    const sinResultados = document.getElementById('sinResultados');
-    tbody.innerHTML = '';
-    
-    if (ots.length === 0) {
-        sinResultados.classList.remove('hidden');
-    } else {
-        sinResultados.classList.add('hidden');
-        ots.forEach(ot => {
-            const tr = document.createElement('tr');
-            tr.className = 'hover:bg-aq-surface-2 cursor-pointer transition-colors';
-            tr.onclick = () => seleccionarOT(ot);
-            tr.innerHTML = `
-                <td class="px-4 py-3 text-aq-text font-medium">${ot.numero}</td>
-                <td class="px-4 py-3 text-aq-text">${ot.fecha}</td>
-                <td class="px-4 py-3 text-aq-text">${ot.proceso || '-'}</td>
-                <td class="px-4 py-3 text-aq-text">${ot.encargado || '-'}</td>
-            `;
-            tbody.appendChild(tr);
+        const ots = data.ots || [];
+        abrirModalBusqueda({
+            titulo: 'Buscar Orden de Trabajo',
+            columnas: [
+                { title: 'N° OT', field: 'numero', width: 100 },
+                { title: 'Fecha', field: 'fecha', width: 120 },
+                { title: 'Proceso', field: 'proceso' },
+                { title: 'Encargado', field: 'encargado', width: 150 },
+            ],
+            data: ots,
+            filtroCampos: ['numero', 'fecha', 'proceso', 'encargado'],
+            onSelect: function(row) {
+                document.getElementById('ot_numero').value = row.numero;
+                document.getElementById('ot_fecha').value = row.fecha;
+                document.getElementById('ot_encargado').value = row.encargado;
+                document.getElementById('ot_proceso').value = row.proceso;
+                cargarDetallesOT(row.numero);
+            },
+            onRefresh: function(opts) {
+                const fd = new FormData();
+                fd.append('action', 'listar_ots');
+                fetch(urlResOts, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                    body: fd
+                })
+                .then(res => res.json())
+                .then(data => {
+                    opts.data = data.ots || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
         });
-    }
-}
-
-function seleccionarOT(ot) {
-    document.getElementById('ot_numero').value = ot.numero;
-    document.getElementById('ot_fecha').value = ot.fecha;
-    document.getElementById('ot_encargado').value = ot.encargado;
-    document.getElementById('ot_proceso').value = ot.proceso;
-    
-    cerrarModalOT();
-    cargarDetallesOT(ot.numero);
+    });
 }
 
 function cargarDetallesOT(numero) {
@@ -159,9 +142,9 @@ function cargarDetallesOT(numero) {
     })
     .then(res => res.json())
     .then(data => {
-        renderizarTabla(tablaDetalleOT, data.detalle_ot || []);
-        renderizarTabla(tablaValeConsumo, data.vale_consumo || []);
-        renderizarTabla(tablaParteEntrada, data.parte_entrada || []);
+        if (tablaDetalleOT) tablaDetalleOT.setData(data.detalle_ot || []);
+        if (tablaValeConsumo) tablaValeConsumo.setData(data.vale_consumo || []);
+        if (tablaParteEntrada) tablaParteEntrada.setData(data.parte_entrada || []);
     });
 }
 
@@ -200,27 +183,12 @@ function inicializarTablas() {
     tablaParteEntrada = new Tabulator("#tablaParteEntrada", opciones);
 }
 
-function renderizarTabla(tabla, data) {
-    if (tabla) {
-        tabla.setData(data || []);
-    }
-}
-
-document.getElementById('busquedaOT')?.addEventListener('input', function(e) {
-    const filtro = e.target.value.toLowerCase();
-    const filtradas = listaOTs.filter(ot => 
-        ot.numero.toString().includes(filtro) ||
-        ot.proceso.toLowerCase().includes(filtro) ||
-        ot.fecha.includes(filtro) ||
-        ot.encargado.toLowerCase().includes(filtro)
-    );
-    renderizarTablaOT(filtradas);
-});
-
 document.addEventListener('DOMContentLoaded', function() {
-    const hoy = new Date().toISOString().split('T')[0];
-    document.getElementById('fecha_inicio').value = hoy;
-    document.getElementById('fecha_fin').value = hoy;
+    const hoy = new Date();
+    const hace30 = new Date();
+    hace30.setDate(hace30.getDate() - 30);
+    document.getElementById('fecha_inicio').value = hace30.toISOString().split('T')[0];
+    document.getElementById('fecha_fin').value = hoy.toISOString().split('T')[0];
     
     inicializarTablas();
     

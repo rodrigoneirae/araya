@@ -2,27 +2,6 @@ const urlOt = (document.currentScript?.dataset.url) || '/';
 
 let detallesOt = [];
 let modoEdicionOt = false;
-let callbackConfirmar = null;
-
-function mostrarConfirmar(titulo, mensaje, callback) {
-    document.getElementById('modalConfirmarTitulo').textContent = titulo;
-    document.getElementById('modalConfirmarMensaje').textContent = mensaje;
-    callbackConfirmar = callback;
-    document.getElementById('modalConfirmar').classList.remove('hidden');
-}
-
-function cerrarModalConfirmar() {
-    document.getElementById('modalConfirmar').classList.add('hidden');
-    callbackConfirmar = null;
-}
-
-function ejecutarModalConfirmar() {
-    const callback = callbackConfirmar;
-    document.getElementById('modalConfirmar').classList.add('hidden');
-    callbackConfirmar = null;
-    if (callback) callback();
-}
-
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -131,491 +110,164 @@ function cargarListasORPE() {
     });
 }
 
-function renderizarDropdownOR() {
-    const tbody = document.getElementById('tablaDropdownOR');
-    tbody.innerHTML = '';
-    if (window.listaOR.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="px-2 py-2 text-center text-aq-muted">Sin registros</td></tr>';
-        return;
-    }
-    window.listaOR.forEach(o => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('dropdownOR').classList.add('hidden');
-            document.getElementById('labelSelectOR').textContent = o.numero;
-            seleccionarOR(o.numero);
-        };
-        tr.innerHTML = `
-            <td class="px-2 py-1 text-aq-text text-aq-primary font-medium">${o.numero || ''}</td>
-            <td class="px-2 py-1 text-aq-text">${o.fecha || ''}</td>
-            <td class="px-2 py-1 text-aq-text">${o.codigo || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
 
-function renderizarDropdownPE() {
-    const tbody = document.getElementById('tablaDropdownPE');
-    tbody.innerHTML = '';
-    if (window.listaPE.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="px-2 py-2 text-center text-aq-muted">Sin registros</td></tr>';
-        return;
-    }
-    window.listaPE.forEach(o => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('dropdownPE').classList.add('hidden');
-            document.getElementById('labelSelectPE').textContent = o.numero;
-            seleccionarPE(o.numero);
-        };
-        tr.innerHTML = `
-            <td class="px-2 py-1 text-aq-text text-aq-primary font-medium">${o.numero || ''}</td>
-            <td class="px-2 py-1 text-aq-text">${o.fecha || ''}</td>
-            <td class="px-2 py-1 text-aq-text">${o.codigo || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// === Modal OR Unico (selección única desde input) ===
-let orUnicoSeleccionado = null;
 
 function abrirModalORUnico() {
     const proceso = document.getElementById('otProceso').value;
     buscarXHROt('listar_or', {proceso: proceso}, function(data) {
-        window.listaORUnico = data.documentos || [];
-        document.getElementById('modalORUnico').classList.remove('hidden');
-        document.getElementById('filtroORUnico').value = '';
-        document.getElementById('orUnicoSeccionLista').classList.remove('hidden');
-        document.getElementById('orUnicoSeccionDetalle').classList.add('hidden');
-        renderizarListaORUnico(window.listaORUnico);
-    });
-}
-
-function renderizarListaORUnico(lista) {
-    const tbody = document.getElementById('tablaORUnico');
-    tbody.innerHTML = '';
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-center text-aq-muted">Sin órdenes de requisición</td></tr>';
-        return;
-    }
-    lista.forEach(o => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() { seleccionarORUnico(o.numero); };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text text-aq-primary font-medium">${o.numero || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.fecha || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.codigo || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.proceso_nombre || ''}</td>
-            <td class="px-3 py-2 text-aq-text text-right">${o.cantidad || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.bodega || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// === Funciones de selección múltiple para modalOR ===
-let orSeleccionados = [];
-
-function renderizarListaOR(lista) {
-    const tbody = document.getElementById('tablaOR');
-    tbody.innerHTML = '';
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="px-3 py-4 text-center text-aq-muted">Sin órdenes de requisición</td></tr>';
-        return;
-    }
-    lista.forEach(o => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2';
-        const checked = orSeleccionados.includes(o.numero) ? 'checked' : '';
-        tr.innerHTML = `
-            <td class="px-2 py-2 text-center">
-                <input type="checkbox" class="w-4 h-4 rounded border-aq-border text-aq-primary focus:ring-aq-primary or-checkbox" 
-                    value="${o.numero}" ${checked} onchange="toggleOR('${o.numero}', this.checked)">
-            </td>
-            <td class="px-3 py-2 text-aq-text text-aq-primary font-medium cursor-pointer" onclick="seleccionarOR('${o.numero}')">${o.numero || ''}</td>
-            <td class="px-3 py-2 text-aq-text cursor-pointer" onclick="seleccionarOR('${o.numero}')">${o.fecha || ''}</td>
-            <td class="px-3 py-2 text-aq-text cursor-pointer" onclick="seleccionarOR('${o.numero}')">${o.rut || ''}</td>
-            <td class="px-3 py-2 text-aq-text cursor-pointer" onclick="seleccionarOR('${o.numero}')">${o.codigo || ''}</td>
-            <td class="px-3 py-2 text-aq-text cursor-pointer" onclick="seleccionarOR('${o.numero}')">${o.proceso_nombre || ''}</td>
-            <td class="px-3 py-2 text-aq-text text-right cursor-pointer" onclick="seleccionarOR('${o.numero}')">${o.cantidad || ''}</td>
-            <td class="px-3 py-2 text-aq-text cursor-pointer" onclick="seleccionarOR('${o.numero}')">${o.bodega || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-    actualizarBotonConfirmarOR();
-}
-
-function toggleOR(idArt, checked) {
-    if (checked) {
-        if (!orSeleccionados.includes(idArt)) {
-            orSeleccionados.push(idArt);
+        const docs = data.documentos || [];
+        if (docs.length === 0) {
+            abrirModalBusqueda({
+                titulo: 'Seleccionar Artículos de OR',
+                columnas: [
+                    { title: 'N° OR', field: 'numero', width: 80 },
+                    { title: 'Fecha', field: 'fecha', width: 100 },
+                    { title: 'Código', field: 'codigo', width: 90 },
+                    { title: 'Cant', field: 'cantidad', width: 70 },
+                    { title: 'Bodega', field: 'bodega', width: 80 },
+                ],
+                data: [],
+                filtroCampos: ['numero', 'codigo'],
+                onSelect: null,
+                onRefresh: function(opts) { abrirModalORUnico(); },
+            });
+            return;
         }
-    } else {
-        orSeleccionados = orSeleccionados.filter(n => n !== idArt);
-    }
-    actualizarBotonConfirmarOR();
-}
-
-function toggleSelectAllOR() {
-    const masterCheckbox = document.querySelector('#orSeccionLista thead input[type="checkbox"]');
-    const checkboxes = document.querySelectorAll('.or-checkbox');
-    const filtro = document.getElementById('filtroOR').value.toLowerCase();
-    
-    const filtradas = [];
-    const indicesOriginales = [];
-    listaArticulosOR.forEach((o, idx) => {
-        if (
-            ((o.docref || o.numeroOR || '').toString().toLowerCase().includes(filtro)) ||
-            ((o.codigo || '').toLowerCase().includes(filtro)) ||
-            ((o.nombre || '').toLowerCase().includes(filtro))
-        ) {
-            filtradas.push(o);
-            indicesOriginales.push(idx);
-        }
-    });
-    
-    if (masterCheckbox.checked) {
-        filtradas.forEach((o, idx) => {
-            const idArt = `or-art-${indicesOriginales[idx]}`;
-            if (!orSeleccionados.includes(idArt)) {
-                orSeleccionados.push(idArt);
-            }
+        let articulos = [];
+        let pendientes = docs.length;
+        docs.forEach(or => {
+            buscarXHROt('buscar_referencia', {numero: or.numero, tipo: 7}, function(resp) {
+                if (resp.success && resp.detalles) {
+                    resp.detalles.forEach(d => {
+                        d.numeroDoc = or.numero;
+                        let fechaFmt = '';
+                        if (d.fecha) {
+                            const f = (typeof d.fecha === 'string') ? d.fecha.split('T')[0] : '';
+                            if (f) fechaFmt = f.split('-').reverse().join('-');
+                        }
+                        d.fecha = fechaFmt;
+                        articulos.push(d);
+                    });
+                }
+                pendientes--;
+                if (pendientes === 0) {
+                    abrirModalBusqueda({
+                        titulo: 'Seleccionar Artículos de OR',
+                        columnas: [
+                            { title: 'DocRef', field: 'numeroDoc', width: 80 },
+                            { title: 'Fecha', field: 'fecha', width: 100 },
+                            { title: 'Código', field: 'codigo', width: 90 },
+                            { title: 'Nombre', field: 'nombre' },
+                            { title: 'Cant', field: 'cantidad', width: 70 },
+                            { title: 'Bodega', field: 'bodega', width: 80 },
+                        ],
+                        data: articulos,
+                        filtroCampos: ['numeroDoc', 'codigo', 'nombre'],
+                        onSelect: function(row) {
+                            document.getElementById('inputOR').value = row.numeroDoc || '';
+                            detallesOt.push({
+                                codigo: row.codigo || '',
+                                nombre: row.nombre || '',
+                                cantidad: Math.abs(row.cantidad || 0),
+                                punit: row.punit || 0,
+                                um: row.um || '',
+                                bodega: row.bodega || '',
+                                fecha: row.fecha || '',
+                                estado: 'Abierto',
+                                docref: row.numeroDoc || '',
+                                tipo: '7',
+                                rut: row.rut || '',
+                                canttotal: row.canttotal || 0,
+                            });
+                            renderizarDetalleOt();
+                            Toastify({text: 'Artículo de OR agregado', style: {background: '#4caf50'}}).showToast();
+                        },
+                        onRefresh: function(opts) { abrirModalORUnico(); },
+                    });
+                }
+            });
         });
-        checkboxes.forEach(cb => cb.checked = true);
-    } else {
-        orSeleccionados = [];
-        checkboxes.forEach(cb => cb.checked = false);
-    }
-    actualizarBotonConfirmarOR();
-}
-
-function actualizarBotonConfirmarOR() {
-    const btn = document.getElementById('btnConfirmarORMultiple');
-    if (btn) {
-        if (orSeleccionados.length > 0) {
-            btn.classList.remove('hidden');
-            btn.innerHTML = `<i class='bx bx-check'></i> Agregar seleccionados (${orSeleccionados.length})`;
-        } else {
-            btn.classList.add('hidden');
-        }
-    }
-}
-
-function confirmarSeleccionMultipleOR() {
-    if (orSeleccionados.length === 0) return;
-    
-    const detallesTotales = [];
-    
-    orSeleccionados.forEach(idArt => {
-        const idxOriginal = parseInt(idArt.replace('or-art-', ''));
-        if (listaArticulosOR[idxOriginal]) {
-            detallesTotales.push(listaArticulosOR[idxOriginal]);
-        }
-    });
-    
-    agregarDetallesOTMultiples(detallesTotales);
-    document.getElementById('modalOR').classList.add('hidden');
-    orSeleccionados = [];
-}
-
-function filtrarORUnico() {
-    const filtro = document.getElementById('filtroORUnico').value.toLowerCase();
-    const filtradas = window.listaORUnico.filter(o =>
-        (o.numero && o.numero.toString().toLowerCase().includes(filtro)) ||
-        (o.codigo && o.codigo.toLowerCase().includes(filtro)) ||
-        (o.fecha && o.fecha.toLowerCase().includes(filtro))
-    );
-    renderizarListaORUnico(filtradas);
-}
-
-function seleccionarORUnico(numero) {
-    buscarXHROt('buscar_referencia', {numero: numero, tipo: 7}, function(data) {
-        if (data.success && data.detalles) {
-            orUnicoSeleccionado = { numero: numero, detalles: data.detalles };
-            document.getElementById('orUnicoSeccionLista').classList.add('hidden');
-            document.getElementById('orUnicoSeccionDetalle').classList.remove('hidden');
-            document.getElementById('orUnicoTituloNumero').textContent = numero;
-
-            renderizarDetalleORUnico(data.detalles);
-
-            const codigos = data.detalles.map(d => d.codigo).filter(c => c);
-            if (codigos.length > 0) {
-                cargarHistorialORUnico(codigos);
-            }
-        }
     });
 }
 
-function renderizarDetalleORUnico(detalles) {
-    const tbody = document.getElementById('tablaORUnicoDetalle');
-    tbody.innerHTML = '';
-    if (detalles.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-2 text-center text-aq-muted">Sin detalles</td></tr>';
-        return;
-    }
-    window.detallesORUnico = detalles;
-    detalles.forEach((d, index) => {
-        let fechaFmt = '';
-        if (d.fecha) {
-            const f = (typeof d.fecha === 'string') ? d.fecha.split('T')[0] : '';
-            if (f) fechaFmt = f.split('-').reverse().join('-');
-        }
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() { agregarArticuloORUnico(index); };
-        tr.innerHTML = `
-            <td class="px-2 py-1.5 text-aq-text">${d.docref || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${fechaFmt}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.codigo || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right">${d.cantidad || 0}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.bodega || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.proceso || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.estado || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
 
-function agregarArticuloORUnico(index) {
-    const d = window.detallesORUnico[index];
-    if (!d) return;
-
-    document.getElementById('inputOR').value = orUnicoSeleccionado.numero;
-
-    detallesOt.push({
-        codigo: d.codigo || '',
-        nombre: d.nombre || '',
-        cantidad: Math.abs(d.cantidad || 0),
-        punit: d.punit || 0,
-        um: d.um || '',
-        bodega: d.bodega || '',
-        fecha: d.fecha || '',
-        estado: 'Abierto',
-        docref: orUnicoSeleccionado.numero,
-        tipo: '7',
-        rut: d.rut || '',
-        canttotal: d.canttotal || 0,
-    });
-
-    renderizarDetalleOt();
-    Toastify({text: 'Artículo de OR agregado', style: {background: '#4caf50'}}).showToast();
-
-    document.getElementById('modalORUnico').classList.add('hidden');
-    orUnicoSeleccionado = null;
-}
-
-function cargarHistorialORUnico(codigos) {
-    buscarXHROt('historial_articulo', {codigos: codigos}, function(data) {
-        renderizarHistorialORUnico(data.historial || [], data.suma_saldo || 0);
-    });
-}
-
-function renderizarHistorialORUnico(historial, sumaSaldo) {
-    const tbody = document.getElementById('tablaORUnicoHistorial');
-    tbody.innerHTML = '';
-    if (historial.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="px-2 py-2 text-center text-aq-muted">Sin historial para estos artículos</td></tr>';
-        return;
-    }
-    historial.forEach(h => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2';
-        tr.innerHTML = `
-            <td class="px-2 py-1.5 text-aq-text">${h.codigo || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.descr || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.fecha || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.numero || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.tipo || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.bodega || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right">${h.cantidad || 0}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right font-semibold text-aq-primary">${h.saldo || 0}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function volverListaORUnico() {
-    orUnicoSeleccionado = null;
-    document.getElementById('orUnicoSeccionLista').classList.remove('hidden');
-    document.getElementById('orUnicoSeccionDetalle').classList.add('hidden');
-}
-
-function cerrarModalORUnico() {
-    document.getElementById('modalORUnico').classList.add('hidden');
-    orUnicoSeleccionado = null;
-    orUnicoSeleccionados = [];
-    document.getElementById('filtroORUnico').value = '';
-    const masterCheckbox = document.querySelector('#orUnicoSeccionLista thead input[type="checkbox"]');
-    if (masterCheckbox) masterCheckbox.checked = false;
-}
-
-// === Modal PE Unico (selección única desde input) ===
-let peUnicoSeleccionado = null;
 
 function abrirModalPEUnico() {
     const proceso = document.getElementById('otProceso').value;
     buscarXHROt('listar_pe', {proceso: proceso}, function(data) {
-        window.listaPEUnico = data.documentos || [];
-        document.getElementById('modalPEUnico').classList.remove('hidden');
-        document.getElementById('filtroPEUnico').value = '';
-        document.getElementById('peUnicoSeccionLista').classList.remove('hidden');
-        document.getElementById('peUnicoSeccionDetalle').classList.add('hidden');
-        renderizarListaPEUnico(window.listaPEUnico);
-    });
-}
-
-function renderizarListaPEUnico(lista) {
-    const tbody = document.getElementById('tablaPEUnico');
-    tbody.innerHTML = '';
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-center text-aq-muted">Sin partes de entrada</td></tr>';
-        return;
-    }
-    lista.forEach(o => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() { seleccionarPEUnico(o.numero); };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text text-aq-primary font-medium">${o.numero || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.fecha || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.codigo || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.proceso_nombre || ''}</td>
-            <td class="px-3 py-2 text-aq-text text-right">${o.cantidad || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.bodega || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarPEUnico() {
-    const filtro = document.getElementById('filtroPEUnico').value.toLowerCase();
-    const filtradas = window.listaPEUnico.filter(o =>
-        (o.numero && o.numero.toString().toLowerCase().includes(filtro)) ||
-        (o.codigo && o.codigo.toLowerCase().includes(filtro)) ||
-        (o.fecha && o.fecha.toLowerCase().includes(filtro))
-    );
-    renderizarListaPEUnico(filtradas);
-}
-
-function seleccionarPEUnico(numero) {
-    buscarXHROt('buscar_referencia', {numero: numero, tipo: 6}, function(data) {
-        if (data.success && data.detalles) {
-            peUnicoSeleccionado = { numero: numero, detalles: data.detalles };
-            document.getElementById('peUnicoSeccionLista').classList.add('hidden');
-            document.getElementById('peUnicoSeccionDetalle').classList.remove('hidden');
-            document.getElementById('peUnicoTituloNumero').textContent = numero;
-
-            renderizarDetallePEUnico(data.detalles);
-
-            const codigos = data.detalles.map(d => d.codigo).filter(c => c);
-            if (codigos.length > 0) {
-                cargarHistorialPEUnico(codigos);
-            }
+        const docs = data.documentos || [];
+        if (docs.length === 0) {
+            abrirModalBusqueda({
+                titulo: 'Seleccionar Artículos de PE',
+                columnas: [
+                    { title: 'N° PE', field: 'numero', width: 80 },
+                    { title: 'Fecha', field: 'fecha', width: 100 },
+                    { title: 'Código', field: 'codigo', width: 90 },
+                    { title: 'Cant', field: 'cantidad', width: 70 },
+                    { title: 'Bodega', field: 'bodega', width: 80 },
+                ],
+                data: [],
+                filtroCampos: ['numero', 'codigo'],
+                onSelect: null,
+                onRefresh: function(opts) { abrirModalPEUnico(); },
+            });
+            return;
         }
+        let articulos = [];
+        let pendientes = docs.length;
+        docs.forEach(pe => {
+            buscarXHROt('buscar_referencia', {numero: pe.numero, tipo: 6}, function(resp) {
+                if (resp.success && resp.detalles) {
+                    resp.detalles.forEach(d => {
+                        d.numeroDoc = pe.numero;
+                        let fechaFmt = '';
+                        if (d.fecha) {
+                            const f = (typeof d.fecha === 'string') ? d.fecha.split('T')[0] : '';
+                            if (f) fechaFmt = f.split('-').reverse().join('-');
+                        }
+                        d.fecha = fechaFmt;
+                        articulos.push(d);
+                    });
+                }
+                pendientes--;
+                if (pendientes === 0) {
+                    abrirModalBusqueda({
+                        titulo: 'Seleccionar Artículos de PE',
+                        columnas: [
+                            { title: 'DocRef', field: 'numeroDoc', width: 80 },
+                            { title: 'Fecha', field: 'fecha', width: 100 },
+                            { title: 'Código', field: 'codigo', width: 90 },
+                            { title: 'Nombre', field: 'nombre' },
+                            { title: 'Cant', field: 'cantidad', width: 70 },
+                            { title: 'Bodega', field: 'bodega', width: 80 },
+                        ],
+                        data: articulos,
+                        filtroCampos: ['numeroDoc', 'codigo', 'nombre'],
+                        onSelect: function(row) {
+                            document.getElementById('inputPE').value = row.numeroDoc || '';
+                            detallesOt.push({
+                                codigo: row.codigo || '',
+                                nombre: row.nombre || '',
+                                cantidad: Math.abs(row.cantidad || 0),
+                                punit: row.punit || 0,
+                                um: row.um || '',
+                                bodega: row.bodega || '',
+                                fecha: row.fecha || '',
+                                estado: 'Abierto',
+                                docref: row.numeroDoc || '',
+                                tipo: '6',
+                                rut: row.rut || '',
+                                canttotal: row.canttotal || 0,
+                            });
+                            renderizarDetalleOt();
+                            Toastify({text: 'Artículo de PE agregado', style: {background: '#4caf50'}}).showToast();
+                        },
+                        onRefresh: function(opts) { abrirModalPEUnico(); },
+                    });
+                }
+            });
+        });
     });
-}
-
-function renderizarDetallePEUnico(detalles) {
-    const tbody = document.getElementById('tablaPEUnicoDetalle');
-    tbody.innerHTML = '';
-    if (detalles.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-2 text-center text-aq-muted">Sin detalles</td></tr>';
-        return;
-    }
-    window.detallesPEUnico = detalles;
-    detalles.forEach((d, index) => {
-        let fechaFmt = '';
-        if (d.fecha) {
-            const f = (typeof d.fecha === 'string') ? d.fecha.split('T')[0] : '';
-            if (f) fechaFmt = f.split('-').reverse().join('-');
-        }
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() { agregarArticuloPEUnico(index); };
-        tr.innerHTML = `
-            <td class="px-2 py-1.5 text-aq-text">${d.docref || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${fechaFmt}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.codigo || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right">${d.cantidad || 0}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.bodega || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.proceso || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.estado || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function agregarArticuloPEUnico(index) {
-    const d = window.detallesPEUnico[index];
-    if (!d) return;
-
-    document.getElementById('inputPE').value = peUnicoSeleccionado.numero;
-
-    detallesOt.push({
-        codigo: d.codigo || '',
-        nombre: d.nombre || '',
-        cantidad: Math.abs(d.cantidad || 0),
-        punit: d.punit || 0,
-        um: d.um || '',
-        bodega: d.bodega || '',
-        fecha: d.fecha || '',
-        estado: 'Abierto',
-        docref: peUnicoSeleccionado.numero,
-        tipo: '6',
-        rut: d.rut || '',
-        canttotal: d.canttotal || 0,
-    });
-
-    renderizarDetalleOt();
-    Toastify({text: 'Artículo de PE agregado', style: {background: '#4caf50'}}).showToast();
-
-    document.getElementById('modalPEUnico').classList.add('hidden');
-    peUnicoSeleccionado = null;
-}
-
-function cargarHistorialPEUnico(codigos) {
-    buscarXHROt('historial_articulo', {codigos: codigos}, function(data) {
-        renderizarHistorialPEUnico(data.historial || [], data.suma_saldo || 0);
-    });
-}
-
-function renderizarHistorialPEUnico(historial, sumaSaldo) {
-    const tbody = document.getElementById('tablaPEUnicoHistorial');
-    tbody.innerHTML = '';
-    if (historial.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="px-2 py-2 text-center text-aq-muted">Sin historial para estos artículos</td></tr>';
-        return;
-    }
-    historial.forEach(h => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2';
-        tr.innerHTML = `
-            <td class="px-2 py-1.5 text-aq-text">${h.codigo || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.descr || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.fecha || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.numero || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.tipo || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.bodega || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right">${h.cantidad || 0}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right font-semibold text-aq-primary">${h.saldo || 0}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function volverListaPEUnico() {
-    peUnicoSeleccionado = null;
-    document.getElementById('peUnicoSeccionLista').classList.remove('hidden');
-    document.getElementById('peUnicoSeccionDetalle').classList.add('hidden');
-}
-
-function cerrarModalPEUnico() {
-    document.getElementById('modalPEUnico').classList.add('hidden');
-    peUnicoSeleccionado = null;
 }
 
 function nuevaOt() {
@@ -640,27 +292,30 @@ function nuevaOt() {
 }
 
 function setCamposOtEditable(editable) {
-    const inputs = ['otNumero', 'otFecha', 'otEncargado', 'otProceso', 'otEstado'];
+    const inputs = ['otNumero', 'otFecha', 'otEncargado', 'otProceso'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             if (el.tagName === 'SELECT') {
-                el.disabled = !editable;
+                el.disabled = true;
             } else {
-                el.readOnly = !editable;
+                el.readOnly = true;
             }
         }
     });
 
     const inputOR = document.getElementById('inputOR');
-    if (inputOR) inputOR.disabled = !editable;
+    if (inputOR) inputOR.disabled = true;
     const inputPE = document.getElementById('inputPE');
-    if (inputPE) inputPE.disabled = !editable;
+    if (inputPE) inputPE.disabled = true;
 
     const buttons = document.querySelectorAll('#contenido-detalle button');
     buttons.forEach(btn => {
-        btn.disabled = !editable;
+        btn.disabled = true;
     });
+
+    const estado = document.getElementById('otEstado');
+    if (estado) estado.disabled = !editable;
 
     modoEdicionOt = editable;
     renderizarDetalleOt();
@@ -691,7 +346,7 @@ function eliminarOt() {
         Toastify({text: 'No hay OT seleccionada', style: {background: '#f44336'}}).showToast();
         return;
     }
-    mostrarConfirmar('Eliminar OT', '¿Está seguro de eliminar esta Orden de Trabajo y todos sus movimientos?', function() {
+    mostrarModalConfirm({titulo: 'Eliminar OT', mensaje: '¿Está seguro de eliminar esta Orden de Trabajo y todos sus movimientos?', tipo: 'confirm', onConfirm: function() {
         buscarXHROt('eliminar', {numero: numero}, function(data) {
             if (data.success) {
                 Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
@@ -700,7 +355,7 @@ function eliminarOt() {
                 Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
             }
         });
-    });
+    }});
 }
 
 function eliminarArticuloOt(index) {
@@ -717,581 +372,186 @@ function imprimirOt() {
     const formData = new FormData();
     formData.append('action', 'generar_pdf');
     formData.append('numero', numero);
-    fetch('', {
+    fetch(urlOt, {
         method: 'POST',
         body: formData,
         headers: {
             'X-CSRFToken': getCookie('csrftoken')
         }
     })
-    .then(response => response.blob())
+    .then(response => {
+        if (!response.ok) throw new Error('Error HTTP ' + response.status);
+        return response.blob();
+    })
     .then(blob => {
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
+        if (typeof window.downloadBlobTauri === 'function') {
+            window.downloadBlobTauri(blob, 'ot_' + numero + '.pdf');
+        } else {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'ot_' + numero + '.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
     })
     .catch(err => {
-        Toastify({text: 'Error al generar PDF', style: {background: '#f44336'}}).showToast();
+        console.error('Error:', err);
+        Toastify({text: 'Error al generar PDF: ' + err.message, style: {background: '#f44336'}}).showToast();
     });
 }
-
-// === Referencia OR (tipo 7) ===
-let orSeleccionado = null;
-let listaArticulosOR = [];
 
 function abrirListaOR() {
     const proceso = document.getElementById('otProceso').value;
-    orSeleccionados = [];
     buscarXHROt('listar_or', {proceso: proceso}, function(data) {
-        window.listaOR = data.documentos || [];
-        listaArticulosOR = [];
-        let cargaPendiente = window.listaOR.length;
-        if (cargaPendiente === 0) {
-            renderizarListaORArticulos([]);
-            document.getElementById('modalOR').classList.remove('hidden');
+        const docs = data.documentos || [];
+        let articulos = [];
+        let pendientes = docs.length;
+        if (pendientes === 0) {
+            abrirModalBusqueda({
+                titulo: 'Seleccionar Artículos de OR',
+                columnas: [
+                    { title: 'DocRef', field: 'numeroDoc', width: 80 },
+                    { title: 'Código', field: 'codigo', width: 90 },
+                    { title: 'Nombre', field: 'nombre' },
+                    { title: 'Cant', field: 'cantidad', width: 70 },
+                    { title: 'Bodega', field: 'bodega', width: 80 },
+                ],
+                data: [],
+                filtroCampos: ['numeroDoc', 'codigo', 'nombre'],
+                onSelect: null,
+                onRefresh: function(opts) { abrirListaOR(); },
+            });
             return;
         }
-        window.listaOR.forEach(or => {
+        docs.forEach(or => {
             buscarXHROt('buscar_referencia', {numero: or.numero, tipo: 7}, function(resp) {
                 if (resp.success && resp.detalles) {
                     resp.detalles.forEach(d => {
-                        d.numeroOR = or.numero;
-                        listaArticulosOR.push(d);
+                        d.numeroDoc = or.numero;
+                        articulos.push(d);
                     });
                 }
-                cargaPendiente--;
-                if (cargaPendiente === 0) {
-                    document.getElementById('modalOR').classList.remove('hidden');
-                    document.getElementById('filtroOR').value = '';
-                    document.getElementById('orSeccionLista').classList.remove('hidden');
-                    document.getElementById('orSeccionDetalle').classList.add('hidden');
-                    document.getElementById('orFooterLista').classList.remove('hidden');
-                    renderizarListaORArticulos(listaArticulosOR);
+                pendientes--;
+                if (pendientes === 0) {
+                    abrirModalBusqueda({
+                        titulo: 'Seleccionar Artículos de OR',
+                        ancho: 'xl',
+                        columnas: [
+                            { title: 'DocRef', field: 'numeroDoc', width: 80 },
+                            { title: 'Fecha', field: 'fecha', width: 100 },
+                            { title: 'Código', field: 'codigo', width: 90 },
+                            { title: 'Nombre', field: 'nombre' },
+                            { title: 'Cant', field: 'cantidad', width: 70 },
+                            { title: 'Bodega', field: 'bodega', width: 80 },
+                        ],
+                        data: articulos,
+                        filtroCampos: ['numeroDoc', 'codigo', 'nombre'],
+                        onSelect: function(row) {
+                            const numsOR = [...new Set([row.numeroDoc]).filter(n => n)];
+                            document.getElementById('inputOR').value = numsOR.length > 1
+                                ? numsOR.join(', ')
+                                : (numsOR[0] || '');
+                            detallesOt.push({
+                                codigo: row.codigo || '',
+                                nombre: row.nombre || '',
+                                cantidad: Math.abs(row.cantidad || 0),
+                                punit: row.punit || 0,
+                                um: row.um || '',
+                                bodega: row.bodega || '',
+                                fecha: row.fecha || '',
+                                estado: 'Abierto',
+                                docref: row.numeroDoc || '',
+                                tipo: '7',
+                                rut: row.rut || '',
+                                canttotal: row.canttotal || 0,
+                            });
+                            renderizarDetalleOt();
+                            Toastify({text: 'Artículo de OR agregado', style: {background: '#4caf50'}}).showToast();
+                        },
+                        onRefresh: function(opts) { abrirListaOR(); },
+                    });
                 }
             });
         });
     });
 }
-
-function renderizarListaORArticulos(lista, indicesOriginales = null) {
-    const tbody = document.getElementById('tablaOR');
-    tbody.innerHTML = '';
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-3 py-4 text-center text-aq-muted">Sin artículos disponibles</td></tr>';
-        return;
-    }
-    lista.forEach((o, idx) => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2';
-        const idxOriginal = indicesOriginales ? indicesOriginales[idx] : idx;
-        const idArt = `or-art-${idxOriginal}`;
-        const checked = orSeleccionados.includes(idArt) ? 'checked' : '';
-        let fechaFmt = '';
-        if (o.fecha) {
-            const f = (typeof o.fecha === 'string') ? o.fecha.split('T')[0] : '';
-            if (f) fechaFmt = f.split('-').reverse().join('-');
-        }
-        tr.innerHTML = `
-            <td class="px-2 py-2 text-center">
-                <input type="checkbox" class="w-4 h-4 rounded border-aq-border text-aq-primary focus:ring-aq-primary or-checkbox" 
-                    data-idx="${idxOriginal}" ${checked} onchange="toggleOR('${idArt}', this.checked)">
-            </td>
-            <td class="px-3 py-2 text-aq-text text-aq-primary font-medium">${o.docref || o.numeroOR || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${fechaFmt}</td>
-            <td class="px-3 py-2 text-aq-text">${o.codigo || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.nombre || ''}</td>
-            <td class="px-3 py-2 text-aq-text text-right">${o.cantidad || 0}</td>
-            <td class="px-3 py-2 text-aq-text">${o.bodega || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-    actualizarBotonConfirmarOR();
-}
-
-function filtrarORArticulos() {
-    const filtro = document.getElementById('filtroOR').value.toLowerCase();
-    const filtradas = [];
-    const indicesOriginales = [];
-    listaArticulosOR.forEach((o, idx) => {
-        if (
-            ((o.docref || o.numeroOR || '').toString().toLowerCase().includes(filtro)) ||
-            ((o.codigo || '').toLowerCase().includes(filtro)) ||
-            ((o.nombre || '').toLowerCase().includes(filtro))
-        ) {
-            filtradas.push(o);
-            indicesOriginales.push(idx);
-        }
-    });
-    renderizarListaORArticulos(filtradas, indicesOriginales);
-}
-
-function renderizarListaOR(lista) {
-    const tbody = document.getElementById('tablaOR');
-    tbody.innerHTML = '';
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-3 py-4 text-center text-aq-muted">Sin órdenes de requisición</td></tr>';
-        return;
-    }
-    lista.forEach(o => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() { seleccionarOR(o.numero); };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text">${o.numero || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.fecha || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.rut || ''}</td>
-            <td class="px-3 py-2 text-aq-text text-aq-primary font-medium">${o.codigo || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.proceso_nombre || ''}</td>
-            <td class="px-3 py-2 text-aq-text text-right">${o.cantidad || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.bodega || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarOR() {
-    const filtro = document.getElementById('filtroOR').value.toLowerCase();
-    const filtradas = window.listaOR.filter(o =>
-        (o.numero && o.numero.toString().toLowerCase().includes(filtro)) ||
-        (o.rut && o.rut.toLowerCase().includes(filtro)) ||
-        (o.codigo && o.codigo.toLowerCase().includes(filtro)) ||
-        (o.proceso_nombre && o.proceso_nombre.toLowerCase().includes(filtro))
-    );
-    renderizarListaOR(filtradas);
-}
-
-function seleccionarOR(numero) {
-    buscarXHROt('buscar_referencia', {numero: numero, tipo: 7}, function(data) {
-        if (data.success && data.detalles) {
-            orSeleccionado = { numero: numero, detalles: data.detalles };
-            document.getElementById('orSeccionLista').classList.add('hidden');
-            document.getElementById('orSeccionDetalle').classList.remove('hidden');
-            document.getElementById('orFooterLista').classList.add('hidden');
-            document.getElementById('orTituloNumero').textContent = numero;
-            
-            renderizarDetalleOR(data.detalles);
-            
-            const codigos = data.detalles.map(d => d.codigo).filter(c => c);
-            if (codigos.length > 0) {
-                cargarHistorialArticuloOR(codigos);
-            }
-        }
-    });
-}
-
-function renderizarDetalleOR(detalles) {
-    const tbody = document.getElementById('tablaORDetalle');
-    tbody.innerHTML = '';
-    if (detalles.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="px-2 py-2 text-center text-aq-muted">Sin detalles</td></tr>';
-        return;
-    }
-    detalles.forEach(d => {
-        let fechaFmt = '';
-        if (d.fecha) {
-            const f = (typeof d.fecha === 'string') ? d.fecha.split('T')[0] : '';
-            if (f) fechaFmt = f.split('-').reverse().join('-');
-        }
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2';
-        tr.innerHTML = `
-            <td class="px-2 py-1.5 text-aq-text">${d.docref || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${fechaFmt}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.rut || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.codigo || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right">${d.cantidad || 0}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.bodega || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.proceso || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.encargado || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.estado || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function cargarHistorialArticuloOR(codigos) {
-    console.log('cargarHistorialArticuloOR codigos:', codigos);
-    buscarXHROt('historial_articulo', {codigos: codigos}, function(data) {
-        console.log('historial response:', data);
-        renderizarHistorialOR(data.historial || [], data.suma_saldo || 0);
-    });
-}
-
-function renderizarHistorialOR(historial, sumaSaldo) {
-    const tbody = document.getElementById('tablaORHistorial');
-    tbody.innerHTML = '';
-    if (historial.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="px-2 py-2 text-center text-aq-muted">Sin historial para estos artículos</td></tr>';
-        return;
-    }
-    historial.forEach(h => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2';
-        tr.innerHTML = `
-            <td class="px-2 py-1.5 text-aq-text">${h.codigo || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.descr || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.fecha || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.numero || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.tipo || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.bodega || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right">${h.cantidad || 0}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right font-semibold text-aq-primary">${h.saldo || 0}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function volverListaOR() {
-    orSeleccionado = null;
-    document.getElementById('orSeccionLista').classList.remove('hidden');
-    document.getElementById('orSeccionDetalle').classList.add('hidden');
-    document.getElementById('orFooterLista').classList.remove('hidden');
-}
-
-function confirmarAgregarOR() {
-    if (!orSeleccionado || !orSeleccionado.detalles) return;
-
-    document.getElementById('inputOR').value = orSeleccionado.numero;
-
-    orSeleccionado.detalles.forEach(d => {
-        detallesOt.push({
-            codigo: d.codigo || '',
-            nombre: d.nombre || '',
-            cantidad: Math.abs(d.cantidad || 0),
-            punit: d.punit || 0,
-            um: d.um || '',
-            bodega: d.bodega || '',
-            fecha: d.fecha || '',
-            estado: 'Abierto',
-            docref: orSeleccionado.numero,
-            tipo: '7',
-            rut: d.rut || '',
-            canttotal: d.canttotal || 0,
-        });
-    });
-
-    renderizarDetalleOt();
-    Toastify({text: 'Detalles de OR agregados', style: {background: '#4caf50'}}).showToast();
-
-    document.getElementById('modalOR').classList.add('hidden');
-    orSeleccionado = null;
-}
-
-function agregarDetallesOTMultiples(detalles) {
-    if (!detalles || detalles.length === 0) return;
-
-    const numsOR = [...new Set(detalles.map(d => d.numeroOR).filter(n => n))];
-    document.getElementById('inputOR').value = numsOR.length > 1 
-        ? numsOR.join(', ') 
-        : (numsOR[0] || '');
-
-    detalles.forEach(d => {
-        detallesOt.push({
-            codigo: d.codigo || '',
-            nombre: d.nombre || '',
-            cantidad: Math.abs(d.cantidad || 0),
-            punit: d.punit || 0,
-            um: d.um || '',
-            bodega: d.bodega || '',
-            fecha: d.fecha || '',
-            estado: 'Abierto',
-            docref: d.numeroOR || '',
-            tipo: '7',
-            rut: d.rut || '',
-            canttotal: d.canttotal || 0,
-        });
-    });
-
-    renderizarDetalleOt();
-    Toastify({text: `${detalles.length} artículos agregados`, style: {background: '#4caf50'}}).showToast();
-}
-
-// === Referencia PE (tipo 6) ===
-let peSeleccionado = null;
-let peSeleccionados = [];
-let listaArticulosPE = [];
 
 function abrirListaPE() {
     const proceso = document.getElementById('otProceso').value;
-    peSeleccionados = [];
     buscarXHROt('listar_pe', {proceso: proceso}, function(data) {
-        window.listaPE = data.documentos || [];
-        listaArticulosPE = [];
-        let cargaPendiente = window.listaPE.length;
-        if (cargaPendiente === 0) {
-            renderizarListaPEArticulos([]);
-            document.getElementById('modalPE').classList.remove('hidden');
+        const docs = data.documentos || [];
+        let articulos = [];
+        let pendientes = docs.length;
+        if (pendientes === 0) {
+            abrirModalBusqueda({
+                titulo: 'Seleccionar Artículos de PE',
+                columnas: [
+                    { title: 'DocRef', field: 'numeroDoc', width: 80 },
+                    { title: 'Código', field: 'codigo', width: 90 },
+                    { title: 'Nombre', field: 'nombre' },
+                    { title: 'Cant', field: 'cantidad', width: 70 },
+                    { title: 'Bodega', field: 'bodega', width: 80 },
+                ],
+                data: [],
+                filtroCampos: ['numeroDoc', 'codigo', 'nombre'],
+                onSelect: null,
+                onRefresh: function(opts) { abrirListaPE(); },
+            });
             return;
         }
-        window.listaPE.forEach(pe => {
+        docs.forEach(pe => {
             buscarXHROt('buscar_referencia', {numero: pe.numero, tipo: 6}, function(resp) {
                 if (resp.success && resp.detalles) {
                     resp.detalles.forEach(d => {
-                        d.numeroPE = pe.numero;
-                        listaArticulosPE.push(d);
+                        d.numeroDoc = pe.numero;
+                        articulos.push(d);
                     });
                 }
-                cargaPendiente--;
-                if (cargaPendiente === 0) {
-                    document.getElementById('modalPE').classList.remove('hidden');
-                    document.getElementById('filtroPE').value = '';
-                    document.getElementById('peSeccionLista').classList.remove('hidden');
-                    document.getElementById('peSeccionDetalle').classList.add('hidden');
-                    document.getElementById('peFooterLista').classList.remove('hidden');
-                    renderizarListaPEArticulos(listaArticulosPE);
+                pendientes--;
+                if (pendientes === 0) {
+                    abrirModalBusqueda({
+                        titulo: 'Seleccionar Artículos de PE',
+                        ancho: 'xl',
+                        columnas: [
+                            { title: 'DocRef', field: 'numeroDoc', width: 80 },
+                            { title: 'Fecha', field: 'fecha', width: 100 },
+                            { title: 'Código', field: 'codigo', width: 90 },
+                            { title: 'Nombre', field: 'nombre' },
+                            { title: 'Cant', field: 'cantidad', width: 70 },
+                            { title: 'Bodega', field: 'bodega', width: 80 },
+                        ],
+                        data: articulos,
+                        filtroCampos: ['numeroDoc', 'codigo', 'nombre'],
+                        onSelect: function(row) {
+                            const numsPE = [...new Set([row.numeroDoc]).filter(n => n)];
+                            document.getElementById('inputPE').value = numsPE.length > 1
+                                ? numsPE.join(', ')
+                                : (numsPE[0] || '');
+                            detallesOt.push({
+                                codigo: row.codigo || '',
+                                nombre: row.nombre || '',
+                                cantidad: Math.abs(row.cantidad || 0),
+                                punit: row.punit || 0,
+                                um: row.um || '',
+                                bodega: row.bodega || '',
+                                fecha: row.fecha || '',
+                                estado: 'Abierto',
+                                docref: row.numeroDoc || '',
+                                tipo: '6',
+                                rut: row.rut || '',
+                                canttotal: row.canttotal || 0,
+                            });
+                            renderizarDetalleOt();
+                            Toastify({text: 'Artículo de PE agregado', style: {background: '#4caf50'}}).showToast();
+                        },
+                        onRefresh: function(opts) { abrirListaPE(); },
+                    });
                 }
             });
         });
     });
-}
-
-function renderizarListaPEArticulos(lista, indicesOriginales = null) {
-    const tbody = document.getElementById('tablaPE');
-    tbody.innerHTML = '';
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-3 py-4 text-center text-aq-muted">Sin artículos disponibles</td></tr>';
-        return;
-    }
-    lista.forEach((o, idx) => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2';
-        const idxOriginal = indicesOriginales ? indicesOriginales[idx] : idx;
-        const idArt = `pe-art-${idxOriginal}`;
-        const checked = peSeleccionados.includes(idArt) ? 'checked' : '';
-        let fechaFmt = '';
-        if (o.fecha) {
-            const f = (typeof o.fecha === 'string') ? o.fecha.split('T')[0] : '';
-            if (f) fechaFmt = f.split('-').reverse().join('-');
-        }
-        tr.innerHTML = `
-            <td class="px-2 py-2 text-center">
-                <input type="checkbox" class="w-4 h-4 rounded border-aq-border text-aq-primary focus:ring-aq-primary pe-checkbox" 
-                    data-idx="${idxOriginal}" ${checked} onchange="togglePE('${idArt}', this.checked)">
-            </td>
-            <td class="px-3 py-2 text-aq-text text-aq-primary font-medium">${o.docref || o.numeroPE || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${fechaFmt}</td>
-            <td class="px-3 py-2 text-aq-text">${o.codigo || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.nombre || ''}</td>
-            <td class="px-3 py-2 text-aq-text text-right">${o.cantidad || 0}</td>
-            <td class="px-3 py-2 text-aq-text">${o.bodega || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-    actualizarBotonConfirmarPE();
-}
-
-function filtrarPEArticulos() {
-    const filtro = document.getElementById('filtroPE').value.toLowerCase();
-    const filtradas = [];
-    const indicesOriginales = [];
-    listaArticulosPE.forEach((o, idx) => {
-        if (
-            ((o.docref || o.numeroPE || '').toString().toLowerCase().includes(filtro)) ||
-            ((o.codigo || '').toLowerCase().includes(filtro)) ||
-            ((o.nombre || '').toLowerCase().includes(filtro))
-        ) {
-            filtradas.push(o);
-            indicesOriginales.push(idx);
-        }
-    });
-    renderizarListaPEArticulos(filtradas, indicesOriginales);
-}
-
-function togglePE(idArt, checked) {
-    if (checked) {
-        if (!peSeleccionados.includes(idArt)) {
-            peSeleccionados.push(idArt);
-        }
-    } else {
-        peSeleccionados = peSeleccionados.filter(n => n !== idArt);
-    }
-    actualizarBotonConfirmarPE();
-}
-
-function toggleSelectAllPE() {
-    const masterCheckbox = document.querySelector('#peSeccionLista thead input[type="checkbox"]');
-    const checkboxes = document.querySelectorAll('.pe-checkbox');
-    const filtro = document.getElementById('filtroPE').value.toLowerCase();
-    
-    const filtradas = [];
-    const indicesOriginales = [];
-    listaArticulosPE.forEach((o, idx) => {
-        if (
-            ((o.docref || o.numeroPE || '').toString().toLowerCase().includes(filtro)) ||
-            ((o.codigo || '').toLowerCase().includes(filtro)) ||
-            ((o.nombre || '').toLowerCase().includes(filtro))
-        ) {
-            filtradas.push(o);
-            indicesOriginales.push(idx);
-        }
-    });
-    
-    if (masterCheckbox.checked) {
-        filtradas.forEach((o, idx) => {
-            const idArt = `pe-art-${indicesOriginales[idx]}`;
-            if (!peSeleccionados.includes(idArt)) {
-                peSeleccionados.push(idArt);
-            }
-        });
-        checkboxes.forEach(cb => cb.checked = true);
-    } else {
-        peSeleccionados = [];
-        checkboxes.forEach(cb => cb.checked = false);
-    }
-    actualizarBotonConfirmarPE();
-}
-
-function actualizarBotonConfirmarPE() {
-    const btn = document.getElementById('btnConfirmarPEMultiple');
-    if (btn) {
-        if (peSeleccionados.length > 0) {
-            btn.classList.remove('hidden');
-            btn.innerHTML = `<i class='bx bx-check'></i> Agregar seleccionados (${peSeleccionados.length})`;
-        } else {
-            btn.classList.add('hidden');
-        }
-    }
-}
-
-function confirmarSeleccionMultiplePE() {
-    if (peSeleccionados.length === 0) return;
-    
-    const detallesTotales = [];
-    
-    peSeleccionados.forEach(idArt => {
-        const idxOriginal = parseInt(idArt.replace('pe-art-', ''));
-        if (listaArticulosPE[idxOriginal]) {
-            detallesTotales.push(listaArticulosPE[idxOriginal]);
-        }
-    });
-    
-    agregarDetallesPEMultiples(detallesTotales);
-    document.getElementById('modalPE').classList.add('hidden');
-    peSeleccionados = [];
-}
-
-function agregarDetallesPEMultiples(detalles) {
-    if (!detalles || detalles.length === 0) return;
-
-    const numsPE = [...new Set(detalles.map(d => d.numeroPE).filter(n => n))];
-    document.getElementById('inputPE').value = numsPE.length > 1 
-        ? numsPE.join(', ') 
-        : (numsPE[0] || '');
-
-    detalles.forEach(d => {
-        detallesOt.push({
-            codigo: d.codigo || '',
-            nombre: d.nombre || '',
-            cantidad: Math.abs(d.cantidad || 0),
-            punit: d.punit || 0,
-            um: d.um || '',
-            bodega: d.bodega || '',
-            fecha: d.fecha || '',
-            estado: 'Abierto',
-            docref: d.numeroPE || '',
-            tipo: '6',
-            rut: d.rut || '',
-            canttotal: d.canttotal || 0,
-        });
-    });
-
-    renderizarDetalleOt();
-    Toastify({text: `${detalles.length} artículos agregados`, style: {background: '#4caf50'}}).showToast();
-}
-
-function renderizarDetallePE(detalles) {
-    const tbody = document.getElementById('tablaPEDetalle');
-    tbody.innerHTML = '';
-    if (detalles.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="px-2 py-2 text-center text-aq-muted">Sin detalles</td></tr>';
-        return;
-    }
-    detalles.forEach(d => {
-        let fechaFmt = '';
-        if (d.fecha) {
-            const f = (typeof d.fecha === 'string') ? d.fecha.split('T')[0] : '';
-            if (f) fechaFmt = f.split('-').reverse().join('-');
-        }
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2';
-        tr.innerHTML = `
-            <td class="px-2 py-1.5 text-aq-text">${d.docref || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${fechaFmt}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.rut || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.codigo || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right">${d.cantidad || 0}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.bodega || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.proceso || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.encargado || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${d.estado || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function cargarHistorialArticuloPE(codigos) {
-    buscarXHROt('historial_articulo', {codigos: codigos}, function(data) {
-        renderizarHistorialPE(data.historial || [], data.suma_saldo || 0);
-    });
-}
-
-function renderizarHistorialPE(historial, sumaSaldo) {
-    const tbody = document.getElementById('tablaPEHistorial');
-    tbody.innerHTML = '';
-    if (historial.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="px-2 py-2 text-center text-aq-muted">Sin historial para estos artículos</td></tr>';
-        return;
-    }
-    historial.forEach(h => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2';
-        tr.innerHTML = `
-            <td class="px-2 py-1.5 text-aq-text">${h.codigo || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.descr || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.fecha || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.numero || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.tipo || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text">${h.bodega || ''}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right">${h.cantidad || 0}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right font-semibold text-aq-primary">${h.saldo || 0}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function volverListaPE() {
-    peSeleccionado = null;
-    document.getElementById('peSeccionLista').classList.remove('hidden');
-    document.getElementById('peSeccionDetalle').classList.add('hidden');
-    document.getElementById('peFooterLista').classList.remove('hidden');
-}
-
-function confirmarAgregarPE() {
-    if (!peSeleccionado || !peSeleccionado.detalles) return;
-
-    document.getElementById('inputPE').value = peSeleccionado.numero;
-
-    peSeleccionado.detalles.forEach(d => {
-        detallesOt.push({
-            codigo: d.codigo || '',
-            nombre: d.nombre || '',
-            cantidad: Math.abs(d.cantidad || 0),
-            punit: d.punit || 0,
-            um: d.um || '',
-            bodega: d.bodega || '',
-            fecha: d.fecha || '',
-            estado: 'Abierto',
-            docref: peSeleccionado.numero,
-            tipo: '6',
-            rut: d.rut || '',
-            canttotal: d.canttotal || 0,
-        });
-    });
-
-    renderizarDetalleOt();
-    Toastify({text: 'Detalles de PE agregados', style: {background: '#4caf50'}}).showToast();
-
-    document.getElementById('modalPE').classList.add('hidden');
-    peSeleccionado = null;
 }
 
 function renderizarDetalleOt() {
@@ -1332,9 +592,7 @@ function renderizarDetalleOt() {
             <td class="px-1 py-1 text-aq-text">${d.estado || ''}</td>
             <td class="px-1 py-1 text-aq-text text-right">${d.punit ? d.punit.toFixed(0) : 0}</td>
             <td class="px-1 py-1 text-center">
-                ${modoEdicionOt ? `
-                <button onclick="eliminarArticuloOt(${index})" class="text-red-500 hover:text-red-700" title="Eliminar"><i class="bx bx-trash"></i></button>
-                ` : ''}
+                ${modoEdicionOt ? '<button onclick="eliminarArticuloOt(' + index + ')" class="text-red-500 hover:text-red-700" title="Eliminar"><i class="bx bx-trash"></i></button>' : ''}
             </td>
         `;
         tbody.appendChild(tr);
@@ -1354,11 +612,30 @@ function renderizarDetalleOt() {
 }
 
 function guardarOt() {
+    const numero = document.getElementById('otNumero').value;
+
+    if (modoEdicionOt) {
+        const estado = document.getElementById('otEstado').value;
+        mostrarModalConfirm({titulo: 'Guardar OT', mensaje: '¿Está seguro de actualizar el estado de esta OT?', tipo: 'confirm', onConfirm: function() {
+            buscarXHROt('editar_estado', {
+                numero: numero,
+                estado: estado
+            }, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    cargarOt(data.numero);
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
+        }});
+        return;
+    }
+
     const encargado = document.getElementById('otEncargado').value;
     const proceso = document.getElementById('otProceso').value;
     const estado = document.getElementById('otEstado').value;
     const fecha = document.getElementById('otFecha').value;
-    const numero = document.getElementById('otNumero').value;
 
     if (!encargado) {
         Toastify({text: 'Debe ingresar un encargado', style: {background: '#f44336'}}).showToast();
@@ -1369,7 +646,7 @@ function guardarOt() {
         return;
     }
 
-    mostrarConfirmar('Guardar OT', '¿Está seguro de guardar esta Orden de Trabajo?\n\nLos artículos referenciados serán marcados como Cerrados.', function() {
+    mostrarModalConfirm({titulo: 'Guardar OT', mensaje: '¿Está seguro de guardar esta Orden de Trabajo?\n\nLos artículos referenciados serán marcados como Cerrados.', tipo: 'confirm', onConfirm: function() {
         buscarXHROt('nuevo', {
             numero: numero,
             fecha: fecha,
@@ -1385,43 +662,31 @@ function guardarOt() {
                 Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
             }
         });
-    });
+    }});
 }
 
 function buscarOt() {
     buscarXHROt('listar_ot', {}, function(data) {
-        window.listaOt = data.ot || [];
-        document.getElementById('modalBusquedaOt').classList.remove('hidden');
-        renderizarBusquedaOt(window.listaOt);
+        abrirModalBusqueda({
+            titulo: 'Buscar OT',
+            columnas: [
+                { title: 'Nro', field: 'numero', width: 80 },
+                { title: 'Fecha', field: 'fecha', width: 110 },
+                { title: 'Encargado', field: 'encargado_nombre' },
+                { title: 'Proceso', field: 'proceso_nombre' },
+                { title: 'Estado', field: 'estado', width: 90 },
+            ],
+            data: data.ot || [],
+            filtroCampos: ['numero', 'encargado_nombre', 'proceso_nombre', 'estado'],
+            onSelect: function(row) { cargarOt(row.numero); },
+            onRefresh: function(opts) {
+                buscarXHROt('listar_ot', {}, function(data) {
+                    opts.data = data.ot || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
-}
-
-function renderizarBusquedaOt(lista) {
-    const tbody = document.getElementById('tablaBusquedaOt');
-    tbody.innerHTML = '';
-    lista.forEach(o => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() { cargarOt(o.numero); };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text">${o.numero || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.fecha || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.encargado_nombre || o.encargado || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.proceso_nombre || o.proceso || ''}</td>
-            <td class="px-3 py-2 text-aq-text">${o.estado || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarOt() {
-    const filtro = document.getElementById('filtroBusquedaOt').value.toLowerCase();
-    const filtradas = window.listaOt.filter(o =>
-        (o.numero && o.numero.toString().includes(filtro)) ||
-        (o.encargado_nombre && o.encargado_nombre.toLowerCase().includes(filtro)) ||
-        (o.proceso_nombre && o.proceso_nombre.toLowerCase().includes(filtro))
-    );
-    renderizarBusquedaOt(filtradas);
 }
 
 function cambiarTabOt(tab) {
@@ -1452,7 +717,7 @@ function cargarOt(numero) {
     document.getElementById('inputPE').value = '';
     buscarXHROt('buscar', {numero: numero}, function(data) {
         if (data.success) {
-            document.getElementById('modalBusquedaOt').classList.add('hidden');
+            cerrarModalBusqueda();
             document.getElementById('otNumero').value = data.data.numero;
             document.getElementById('otFecha').value = data.data.fecha || '';
             modoEdicionOt = false;

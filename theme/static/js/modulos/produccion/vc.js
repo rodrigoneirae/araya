@@ -2,28 +2,8 @@ const urlVC = (document.currentScript?.dataset.url) || '/';
 
 let detallesVC = [];
 let modoEdicionVC = false;
-let callbackConfirmar = null;
 let tabulatorSubOTRef = null;
 let tabulatorSubVCRef = null;
-
-function mostrarConfirmar(titulo, mensaje, callback) {
-    document.getElementById('modalConfirmarTitulo').textContent = titulo;
-    document.getElementById('modalConfirmarMensaje').textContent = mensaje;
-    callbackConfirmar = callback;
-    document.getElementById('modalConfirmar').classList.remove('hidden');
-}
-
-function cerrarModalConfirmar() {
-    document.getElementById('modalConfirmar').classList.add('hidden');
-    callbackConfirmar = null;
-}
-
-function ejecutarModalConfirmar() {
-    const callback = callbackConfirmar;
-    document.getElementById('modalConfirmar').classList.add('hidden');
-    callbackConfirmar = null;
-    if (callback) callback();
-}
 
 function getCookie(name) {
     let cookieValue = null;
@@ -284,10 +264,7 @@ function eliminarVC() {
     const numero = document.getElementById('vcNumero').value;
     if (!numero) return;
 
-    mostrarConfirmar(
-        'Eliminar VC',
-        '¿Está seguro de eliminar el Vale de Consumo actual?',
-        function() {
+    mostrarModalConfirm({titulo: 'Eliminar VC', mensaje: '¿Está seguro de eliminar el Vale de Consumo actual?', onConfirm: function() {
             buscarXHRVC('eliminar_vc', {numero: numero}, function(data) {
                 if (data.success) {
                     Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
@@ -296,8 +273,7 @@ function eliminarVC() {
                     Toastify({text: data.message || 'Error al eliminar', style: {background: '#f44336'}}).showToast();
                 }
             });
-        }
-    );
+        }});
 }
 
 function setCamposVCEditable(editable) {
@@ -541,88 +517,44 @@ function cambiarTabVC(tab) {
 
 function abrirBusquedaVC() {
     buscarXHRVC('listar_vc', {}, function(data) {
-        window.listaBusquedaVC = data.lista || [];
-        document.getElementById('modalBusquedaVC').classList.remove('hidden');
-        document.getElementById('filtroBusquedaVC').value = '';
-        renderizarBusquedaVC(window.listaBusquedaVC);
+        abrirModalBusqueda({
+            titulo: 'Buscar VC',
+            columnas: [
+                { title: 'VC', field: 'numero', width: 100 },
+                { title: 'Fecha', field: 'fecha', width: 100 },
+                { title: 'OT', field: 'ot', width: 100 },
+                { title: 'Proceso', field: 'proceso_nombre', width: 150 },
+                { title: 'Estado', field: 'estado', width: 80 }
+            ],
+            data: data.lista || [],
+            filtroCampos: ['numero'],
+            onSelect: function(row) {
+                document.getElementById('vcNumero').value = row.numero;
+                buscarVCInput();
+            }
+        });
     });
-}
-
-function renderizarBusquedaVC(lista) {
-    const tbody = document.getElementById('tablaBusquedaVC');
-    tbody.innerHTML = '';
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-center text-aq-muted">Sin registros</td></tr>';
-        return;
-    }
-    lista.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('modalBusquedaVC').classList.add('hidden');
-            document.getElementById('vcNumero').value = item.numero;
-            buscarVCInput();
-        };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.numero}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.fecha || ''}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.ot || ''}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.proceso_nombre || ''}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.estado || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarVC() {
-    const filtro = document.getElementById('filtroBusquedaVC').value.toLowerCase();
-    const listaFiltrada = window.listaBusquedaVC.filter(item => 
-        String(item.numero).toLowerCase().includes(filtro)
-    );
-    renderizarBusquedaVC(listaFiltrada);
 }
 
 function abrirBusquedaOT() {
     buscarXHRVC('listar_ot', {}, function(data) {
-        window.listaBusquedaOT = data.ot || [];
-        document.getElementById('modalBusquedaOT').classList.remove('hidden');
-        document.getElementById('filtroBusquedaOT').value = '';
-        renderizarBusquedaOT(window.listaBusquedaOT);
+        abrirModalBusqueda({
+            titulo: 'Buscar Orden de Trabajo (OT)',
+            columnas: [
+                { title: 'OT', field: 'numero', width: 100 },
+                { title: 'Fecha', field: 'fecha', width: 100 },
+                { title: 'Encargado', field: 'encargado_nombre', width: 150 },
+                { title: 'Proceso', field: 'proceso_nombre', width: 150 },
+                { title: 'Estado', field: 'estado', width: 80 }
+            ],
+            data: data.ot || [],
+            filtroCampos: ['numero'],
+            onSelect: function(row) {
+                document.getElementById('vcOT').value = row.numero;
+                buscarOTInput();
+            }
+        });
     });
-}
-
-function renderizarBusquedaOT(lista) {
-    const tbody = document.getElementById('tablaBusquedaOT');
-    tbody.innerHTML = '';
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-center text-aq-muted">Sin registros</td></tr>';
-        return;
-    }
-    lista.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('modalBusquedaOT').classList.add('hidden');
-            document.getElementById('vcOT').value = item.numero;
-            buscarOTInput();
-        };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.numero}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.fecha || ''}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.encargado_nombre || ''}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.proceso_nombre || ''}</td>
-            <td class="px-3 py-2 text-aq-text whitespace-nowrap">${item.estado || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarOT() {
-    const filtro = document.getElementById('filtroBusquedaOT').value.toLowerCase();
-    const listaFiltrada = window.listaBusquedaOT.filter(item => 
-        String(item.numero).toLowerCase().includes(filtro)
-    );
-    renderizarBusquedaOT(listaFiltrada);
 }
 
 function buscarArticuloVCInput() {
@@ -660,50 +592,25 @@ function limpiarDetalleVC() {
 
 function abrirListaArticulosVC() {
     buscarXHRVC('listar_articulos_produccion', {}, function(data) {
-        window.listaArticulosVC = data.articulos || [];
-        document.getElementById('modalArticulosVC').classList.remove('hidden');
-        document.getElementById('filtroArticulosVC').value = '';
-        renderizarArticulosVC(window.listaArticulosVC);
-    });
-}
-
-function renderizarArticulosVC(lista) {
-    const tbody = document.getElementById('tablaArticulosVC');
-    tbody.innerHTML = '';
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-2 py-4 text-center text-aq-muted text-xs">Sin registros</td></tr>';
-        return;
-    }
-    lista.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('vcArtCod').value = item.codigo;
-            if (document.getElementById('vcArtNombre')) {
-                document.getElementById('vcArtNombre').value = item.descr || '';
+        abrirModalBusqueda({
+            titulo: 'Seleccionar Artículo',
+            columnas: [
+                { title: 'Código', field: 'codigo', width: 100 },
+                { title: 'Descripción', field: 'descr', width: 200 },
+                { title: 'Tipo', field: 'tipo', width: 80 },
+                { title: 'Proceso', field: 'proceso', width: 120 },
+                { title: 'UM', field: 'um', width: 60 }
+            ],
+            data: data.articulos || [],
+            filtroCampos: ['codigo', 'descr', 'tipo', 'proceso'],
+            onSelect: function(row) {
+                document.getElementById('vcArtCod').value = row.codigo;
+                if (document.getElementById('vcArtNombre')) {
+                    document.getElementById('vcArtNombre').value = row.descr || '';
+                }
+                document.getElementById('vcArtUM').value = row.um || '';
+                document.getElementById('vcArtPUnit').value = row.precio || 0;
             }
-            document.getElementById('vcArtUM').value = item.um || '';
-            document.getElementById('vcArtPUnit').value = item.precio || 0;
-            document.getElementById('modalArticulosVC').classList.add('hidden');
-        };
-        tr.innerHTML = `
-            <td class="px-2 py-2 text-aq-text whitespace-nowrap text-xs">${item.codigo}</td>
-            <td class="px-2 py-2 text-aq-text whitespace-nowrap text-xs">${item.descr || ''}</td>
-            <td class="px-2 py-2 text-aq-text whitespace-nowrap text-xs">${item.tipo || ''}</td>
-            <td class="px-2 py-2 text-aq-text whitespace-nowrap text-xs">${item.proceso || ''}</td>
-            <td class="px-2 py-2 text-aq-text whitespace-nowrap text-xs">${item.um || ''}</td>
-        `;
-        tbody.appendChild(tr);
+        });
     });
-}
-
-function filtrarArticulosVC() {
-    const filtro = document.getElementById('filtroArticulosVC').value.toLowerCase();
-    const listaFiltrada = window.listaArticulosVC.filter(item =>
-        (item.codigo || '').toLowerCase().includes(filtro) ||
-        (item.descr || '').toLowerCase().includes(filtro) ||
-        (item.tipo || '').toLowerCase().includes(filtro) ||
-        (item.proceso || '').toLowerCase().includes(filtro)
-    );
-    renderizarArticulosVC(listaFiltrada);
 }

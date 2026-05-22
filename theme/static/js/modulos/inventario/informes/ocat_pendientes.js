@@ -276,44 +276,27 @@ function cargarResumen() {
 
 function abrirListaProveedores() {
     buscarXHR('listar_proveedores', {}, function(data) {
-        window.listaProveedores = data.proveedores || [];
-        document.getElementById('modalProveedores').classList.remove('hidden');
-        document.getElementById('filtroProveedores').value = '';
-        renderizarListaProveedores(window.listaProveedores);
+        abrirModalBusqueda({
+            titulo: 'Buscar Proveedor',
+            columnas: [
+                { title: 'RUT', field: 'rut', width: 140 },
+                { title: 'Nombre', field: 'nombre' },
+            ],
+            data: data.proveedores || [],
+            filtroCampos: ['rut', 'nombre'],
+            onSelect: function(row) {
+                document.getElementById('proRut').value = row.rut;
+                setSpan('proNombre', row.nombre);
+                recargarTabActivo();
+            },
+            onRefresh: function(opts) {
+                buscarXHR('listar_proveedores', {}, function(data) {
+                    opts.data = data.proveedores || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
-}
-
-function cerrarListaProveedores() {
-    document.getElementById('modalProveedores').classList.add('hidden');
-}
-
-function renderizarListaProveedores(lista) {
-    const tbody = document.getElementById('tablaListaProveedores');
-    tbody.innerHTML = '';
-    lista.forEach(p => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('proRut').value = p.rut;
-            setSpan('proNombre', p.nombre);
-            cerrarListaProveedores();
-            recargarTabActivo();
-        };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text">${p.rut}</td>
-            <td class="px-3 py-2 text-aq-text">${p.nombre || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarProveedores() {
-    const filtro = document.getElementById('filtroProveedores').value.toLowerCase();
-    const filtradas = window.listaProveedores.filter(p =>
-        (p.rut && p.rut.toLowerCase().includes(filtro)) ||
-        (p.nombre && p.nombre.toLowerCase().includes(filtro))
-    );
-    renderizarListaProveedores(filtradas);
 }
 
 function buscarProveedor() {

@@ -1,12 +1,21 @@
 const urlArticulos = (document.currentScript && document.currentScript.dataset.url) || '/';
 const csrfToken = document.currentScript?.dataset.csrfToken || '';
-let listaArticulos = [];
+
 let modoEdicion = false;
+let tipoOriginal = '';
 
 document.addEventListener('DOMContentLoaded', function() {
     cargarProcesos();
     cargarTipos();
     cargarUMedida();
+
+    const btnEliminar = document.getElementById('btnEliminar');
+    if (btnEliminar) {
+        btnEliminar.title = 'Inactivar';
+        btnEliminar.querySelector('i').className = 'bx bx-no-entry text-xl';
+        btnEliminar.classList.remove('bg-red-500', 'hover:bg-red-600');
+        btnEliminar.classList.add('bg-amber-500', 'hover:bg-amber-600');
+    }
 
     const codigoInput = document.getElementById('codigo');
     if (codigoInput) {
@@ -77,53 +86,28 @@ function cargarUMedida() {
 }
 
 function abrirListaArticulos() {
-    console.log('Abriendo lista de artículos...');
     buscarXHR('listar_codigos', {}, function(data) {
-        console.log('Respuesta:', data);
-        listaArticulos = data.maestros || [];  // Cambiar de 'articulos' a 'maestros'
-        const modal = document.getElementById('modalArticulos');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
-        const filtro = document.getElementById('filtroArticulos');
-        if (filtro) {
-            filtro.value = '';
-        }
-        renderizarArticulos(listaArticulos);
+        abrirModalBusqueda({
+            titulo: 'Lista de Artículos',
+            columnas: [
+                { title: 'Código', field: 'codigo', width: 100 },
+                { title: 'Nombre', field: 'descr' },
+                { title: 'Tipo', field: 'tipo', width: 130 },
+            ],
+            data: data.maestros || [],
+            filtroCampos: ['codigo', 'descr', 'tipo'],
+            onSelect: function(row) {
+                document.getElementById('codigo').value = row.codigo;
+                buscarPorCodigo();
+            },
+            onRefresh: function(opts) {
+                buscarXHR('listar_codigos', {}, function(data) {
+                    opts.data = data.maestros || [];
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
     });
-}
-
-function cerrarListaArticulos() {
-    const modal = document.getElementById('modalArticulos');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-}
-
-function renderizarArticulos(articulos) {
-    const tbody = document.getElementById('tablaArticulos');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    articulos.forEach(a => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('codigo').value = a.codigo;
-            buscarPorCodigo();
-            cerrarListaArticulos();
-        };
-        tr.innerHTML = `<td class="px-3 py-2 text-aq-text">${a.codigo}</td><td class="px-3 py-2 text-aq-text">${a.descr}</td><td class="px-3 py-2 text-aq-text">${a.tipo}</td>`;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarArticulos() {
-    const filtro = document.getElementById('filtroArticulos').value.toLowerCase();
-    const filtrados = listaArticulos.filter(a =>
-        (a.codigo && a.codigo.toLowerCase().includes(filtro)) ||
-        (a.nombre && a.nombre.toLowerCase().includes(filtro))
-    );
-    renderizarArticulos(filtrados);
 }
 
 function buscarPorCodigo() {
@@ -147,10 +131,12 @@ function buscarPorCodigo() {
             document.getElementById('stomin').value = data.data.stomin !== null && data.data.stomin !== '' ? data.data.stomin : '';
             document.getElementById('stomax').value = data.data.stomax !== null && data.data.stomax !== '' ? data.data.stomax : '';
             document.getElementById('procesos').value = data.data.proceso || '';
+            tipoOriginal = data.data.tipo || '';
             setCamposDisabled(true);
             document.getElementById('btnGuardar').classList.add('hidden');
             document.getElementById('btnEditar').classList.remove('hidden');
             document.getElementById('btnEliminar').classList.remove('hidden');
+            actualizarBtnEliminar();
             modoEdicion = false;
             resetBtnEditar();
         } else {
@@ -167,7 +153,7 @@ function buscarPorCodigo() {
 }
 
 function setCamposDisabled(disabled) {
-    ['nombre', 'tipo', 'um', 'stomin', 'stomax', 'procesos'].forEach(id => {
+    ['codigo', 'nombre', 'tipo', 'um', 'stomin', 'stomax', 'procesos'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.disabled = disabled;
     });
@@ -249,6 +235,7 @@ function editarArticulo() {
     if (!modoEdicion) {
         modoEdicion = true;
         setCamposDisabled(false);
+        document.getElementById('codigo').disabled = true;
         btn.innerHTML = '<i class="bx bx-check text-xl"></i>';
         btn.title = 'Guardar';
         btn.classList.remove('bg-amber-500');
@@ -283,32 +270,47 @@ function editarArticulo() {
     }
 }
 
+function actualizarBtnEliminar() {
+    const btn = document.getElementById('btnEliminar');
+    if (!btn) return;
+    const activo = tipoOriginal !== 'Inactivo';
+    btn.title = activo ? 'Desactivar' : 'Activar';
+    btn.querySelector('i').className = activo ? 'bx bx-no-entry text-xl' : 'bx bx-check-circle text-xl';
+    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'bg-amber-500', 'hover:bg-amber-600');
+    btn.classList.add(activo ? 'bg-amber-500' : 'bg-green-500', activo ? 'hover:bg-amber-600' : 'hover:bg-green-600');
+}
+
 function eliminarArticulo() {
     const codigo = document.getElementById('codigo').value.trim().toUpperCase();
     if (!codigo) {
         Toastify({text: 'Seleccione un código', style: {background: '#f44336'}}).showToast();
         return;
     }
-    document.getElementById('eliminarCodigo').textContent = codigo;
-    document.getElementById('modalConfirmar').classList.remove('hidden');
-    window.codigoAEliminar = codigo;
-}
-
-function cerrarConfirmar() {
-    document.getElementById('modalConfirmar').classList.add('hidden');
-    window.codigoAEliminar = '';
-}
-
-function confirmarEliminar() {
-    if (!window.codigoAEliminar) return;
-
-    buscarXHR('eliminar', {codigo: window.codigoAEliminar}, function(data) {
-        if (data.success) {
-            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-            cerrarConfirmar();
-            nuevoArticulo();
-        } else {
-            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+    const activo = tipoOriginal !== 'Inactivo';
+    mostrarModalConfirm({
+        datos: [
+            { label: 'Código', value: codigo },
+            { label: 'Nombre', value: document.getElementById('nombre').value || '—' },
+        ],
+        titulo: activo ? 'Desactivar Artículo' : 'Activar Artículo',
+        mensaje: activo ? '¿Está seguro de desactivar este artículo?' : '¿Está seguro de activar este artículo?',
+        icono: activo ? 'bx bx-no-entry text-xl sm:text-2xl text-amber-500' : 'bx bx-check-circle text-xl sm:text-2xl text-green-500',
+        textoBoton: activo ? 'Desactivar' : 'Activar',
+        colorBoton: activo ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-green-500 text-white hover:bg-green-600',
+        onConfirm: function() {
+            const action = activo ? 'desactivar' : 'activar';
+            buscarXHR(action, {codigo: codigo}, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    if (activo) {
+                        nuevoArticulo();
+                    } else {
+                        buscarPorCodigo();
+                    }
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
         }
     });
 }

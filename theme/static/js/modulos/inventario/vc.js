@@ -44,189 +44,6 @@ function buscarXHRVC(action, datos, callback) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    cargarDatosInicialesVC();
-    document.getElementById('vcArtCod')?.addEventListener('keyup', function(e) {
-        if (e.key === 'Enter') buscarArticuloVC();
-    });
-});
-
-function cargarDatosInicialesVC() {
-    buscarXHRVC('listar_bodegas', {}, function(data) {
-        const select = document.getElementById('vcArtBodega');
-        if (select && data.bodegas) {
-            data.bodegas.forEach(b => {
-                const option = document.createElement('option');
-                option.value = b.cod;
-                option.textContent = b.nombre;
-                select.appendChild(option);
-            });
-        }
-    });
-
-    const fecha = new Date().toISOString().split('T')[0];
-    document.getElementById('vcFecha').value = fecha;
-    document.getElementById('vcArtFecha').value = fecha;
-    nuevaVC();
-}
-
-function nuevaVC() {
-    document.getElementById('vcForm').reset();
-    detallesVC = [];
-    modoEdicionVC = true;
-    renderizarDetalleVC();
-    const fecha = new Date().toISOString().split('T')[0];
-    document.getElementById('vcFecha').value = fecha;
-    document.getElementById('vcArtFecha').value = fecha;
-    document.getElementById('tab-detalle').classList.add('hidden');
-    document.getElementById('contenido-detalle').classList.add('hidden');
-    document.getElementById('tab-encabezado').classList.add('active');
-    document.getElementById('contenido-encabezado').classList.remove('hidden');
-    document.getElementById('btnEditarVC').classList.add('hidden');
-    document.getElementById('btnEliminarVC').classList.add('hidden');
-    document.getElementById('btnGuardarVC').classList.remove('hidden');
-    setCamposVCEditable(true);
-}
-
-function setCamposVCEditable(editable) {
-    const inputs = ['vcFecha', 'vcArtCod', 'vcArtCant', 'vcArtFecha'];
-    inputs.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            if (el.tagName === 'SELECT') {
-                el.disabled = !editable;
-            } else {
-                el.readOnly = !editable;
-            }
-        }
-    });
-    const bodega = document.getElementById('vcArtBodega');
-    if (bodega) bodega.disabled = !editable;
-    
-    const artBtn = document.querySelector('#vcArtCod + button');
-    if (artBtn) artBtn.disabled = !editable;
-    const agregarBtn = document.querySelector('#contenido-detalle button[onclick="agregarArticuloVC()"]');
-    if (agregarBtn) agregarBtn.disabled = !editable;
-    
-    modoEdicionVC = editable;
-    renderizarDetalleVC();
-}
-
-function editarVC() {
-    const btn = document.getElementById('btnEditarVC');
-    if (btn.classList.contains('bg-amber-500')) {
-        setCamposVCEditable(true);
-        document.getElementById('btnGuardarVC').classList.remove('hidden');
-        document.getElementById('btnEliminarVC').classList.add('hidden');
-        btn.classList.add('hidden');
-    }
-}
-
-function eliminarVC() {
-    const numero = document.getElementById('vcNumero').value;
-    if (!numero) {
-        Toastify({text: 'No hay Vale de Consumo seleccionado', style: {background: '#f44336'}}).showToast();
-        return;
-    }
-    if (!confirm('¿Está seguro de eliminar este Vale de Consumo?')) {
-        return;
-    }
-    buscarXHRVC('eliminar', {numero: numero}, function(data) {
-        if (data.success) {
-            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-            nuevaVC();
-        } else {
-            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
-        }
-    });
-}
-
-function buscarArticuloVC() {
-    const cod = document.getElementById('vcArtCod').value.trim();
-    if (!cod) return;
-    buscarXHRVC('buscar_articulo', {codigo: cod}, function(data) {
-        if (data.success) {
-            document.getElementById('vcArtNombre').value = data.data.nombre || '';
-            document.getElementById('vcArtUM').value = data.data.um || '';
-            document.getElementById('vcArtTipo').value = data.data.tipo || '';
-            buscarXHRVC('historial_articulo', {codigo: cod}, function(hData) {
-                console.log('historial response:', hData);
-                if (window.tablaHistorialVC) {
-                    window.tablaHistorialVC.destroy();
-                }
-                const tableData = hData.historial || [];
-                if (tableData.length === 0) {
-                    Toastify({text: 'Sin movimientos para este artículo', style: {background: '#f44336'}}).showToast();
-                    return;
-                }
-                window.tablaHistorialVC = new Tabulator("#historialArticulo", {
-                    data: tableData,
-                    layout: "fitColumns",
-                    height: "160px",
-                    columns: [
-                        {title: "Fecha", field: "fecha", formatter: function(cell) {
-                            const val = cell.getValue();
-                            if (val) {
-                                return val.split('T')[0].split('-').reverse().join('-');
-                            }
-                            return '';
-                        }},
-                        {title: "Número", field: "numero"},
-                        {title: "Tipo", field: "tipo"},
-                        {title: "Bodega", field: "bodega"},
-                        {title: "Cant", field: "cantidad", hozAlign: "right"},
-                        {title: "Saldo", field: "saldo", hozAlign: "right"},
-                    ],
-                });
-            });
-        } else {
-            Toastify({text: 'Artículo no encontrado', style: {background: '#f44336'}}).showToast();
-        }
-    });
-}
-
-function abrirListaArticulosVC() {
-    buscarXHRVC('listar_articulos', {}, function(data) {
-        window.listaArticulosVC = data.articulos || [];
-        document.getElementById('modalArticulosVC').classList.remove('hidden');
-        document.getElementById('filtroArticulosVC').value = '';
-        renderizarListaArticulosVC(window.listaArticulosVC);
-    });
-}
-
-function cerrarListaArticulosVC() {
-    document.getElementById('modalArticulosVC').classList.add('hidden');
-}
-
-function renderizarListaArticulosVC(lista) {
-    const tbody = document.getElementById('tablaListaArticulosVC');
-    tbody.innerHTML = '';
-    lista.forEach(a => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-        tr.onclick = function() {
-            document.getElementById('vcArtCod').value = a.codigo;
-            document.getElementById('vcArtNombre').value = a.descr || '';
-            cerrarListaArticulosVC();
-            buscarArticuloVC();
-        };
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text">${a.codigo}</td>
-            <td class="px-3 py-2 text-aq-text">${a.descr || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function filtrarArticulosVC() {
-    const filtro = document.getElementById('filtroArticulosVC').value.toLowerCase();
-    const filtradas = window.listaArticulosVC.filter(a =>
-        (a.codigo && a.codigo.toString().toLowerCase().includes(filtro)) ||
-        (a.descr && a.descr.toLowerCase().includes(filtro))
-    );
-    renderizarListaArticulosVC(filtradas);
-}
-
 function agregarArticuloVC() {
     const cod = document.getElementById('vcArtCod').value.trim();
     const nombre = document.getElementById('vcArtNombre').value.trim();
@@ -266,6 +83,47 @@ function agregarArticuloVC() {
 function eliminarArticuloVC(index) {
     detallesVC.splice(index, 1);
     renderizarDetalleVC();
+}
+
+function setCamposVCEditable(editable) {
+    const inputs = ['vcFecha', 'vcArtCod', 'vcArtCant', 'vcArtFecha'];
+    inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (el.tagName === 'SELECT') {
+                el.disabled = !editable;
+            } else {
+                el.readOnly = !editable;
+            }
+        }
+    });
+    const bodega = document.getElementById('vcArtBodega');
+    if (bodega) bodega.disabled = !editable;
+
+    const artBtn = document.querySelector('#vcArtCod + button');
+    if (artBtn) artBtn.disabled = !editable;
+    const agregarBtn = document.querySelector('#contenido-detalle button[onclick="agregarArticuloVC()"]');
+    if (agregarBtn) agregarBtn.disabled = !editable;
+
+    modoEdicionVC = editable;
+    renderizarDetalleVC();
+}
+
+function nuevaVC() {
+    document.getElementById('vcForm').reset();
+    detallesVC = [];
+    modoEdicionVC = true;
+    renderizarDetalleVC();
+    const fecha = new Date().toISOString().split('T')[0];
+    document.getElementById('vcFecha').value = fecha;
+    document.getElementById('vcArtFecha').value = fecha;
+    document.getElementById('tab-detalle').classList.add('hidden');
+    document.getElementById('contenido-detalle').classList.add('hidden');
+    document.getElementById('tab-encabezado').classList.add('active');
+    document.getElementById('contenido-encabezado').classList.remove('hidden');
+    document.getElementById('btnGuardarVC').classList.remove('hidden');
+    document.getElementById('btnEliminarVC').classList.add('hidden');
+    setCamposVCEditable(true);
 }
 
 function renderizarDetalleVC() {
@@ -311,26 +169,20 @@ function buscarVCInput() {
 
 function abrirBusquedaVC() {
     buscarXHRVC('listar_vc', {}, function(data) {
-        const tbody = document.getElementById('tablaBusquedaVC');
-        tbody.innerHTML = '';
-        if (data.lista) {
-            data.lista.forEach(p => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-aq-surface-2 cursor-pointer';
-                tr.onclick = function() {
-                    document.getElementById('modalBusquedaVC').classList.add('hidden');
-                    document.getElementById('vcNumero').value = p.numero;
-                    cargarVC(p.numero);
-                };
-                tr.innerHTML = `
-                    <td class="px-3 py-2 text-aq-text">${p.numero || ''}</td>
-                    <td class="px-3 py-2 text-aq-text">${p.fecha || ''}</td>
-                    <td class="px-3 py-2 text-aq-text">${p.tipodocref_nombre || ''}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-        document.getElementById('modalBusquedaVC').classList.remove('hidden');
+        abrirModalBusqueda({
+            titulo: 'Buscar Vale de Consumo',
+            columnas: [
+                {title: 'Número', field: 'numero', width: 120},
+                {title: 'Fecha', field: 'fecha', width: 120},
+                {title: 'Tipo Doc', field: 'tipodocref_nombre', width: 150},
+            ],
+            data: data.lista || [],
+            filtroCampos: ['numero', 'tipodocref_nombre'],
+            onSelect: function(row) {
+                document.getElementById('vcNumero').value = row.numero;
+                cargarVC(row.numero);
+            }
+        });
     });
 }
 
@@ -343,7 +195,6 @@ function cargarVC(numero) {
 
             document.getElementById('tab-detalle').classList.remove('hidden');
             document.getElementById('btnGuardarVC').classList.add('hidden');
-            document.getElementById('btnEditarVC').classList.remove('hidden');
             document.getElementById('btnEliminarVC').classList.remove('hidden');
 
         detallesVC = (data.data.detalles || []).map(d => ({
@@ -356,20 +207,11 @@ function cargarVC(numero) {
             fecha: d.fecha || ''
         }));
             renderizarDetalleVC();
+            setCamposVCEditable(false);
         } else {
             Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
         }
     });
-}
-
-function filtrarVC() {
-    const filtro = document.getElementById('filtroBusquedaVC').value.toLowerCase();
-    const tbody = document.getElementById('tablaBusquedaVC');
-    const rows = tbody.getElementsByTagName('tr');
-    for (let i = 0; i < rows.length; i++) {
-        const text = rows[i].textContent.toLowerCase();
-        rows[i].style.display = text.includes(filtro) ? '' : 'none';
-    }
 }
 
 function buscarArticuloVCInput() {

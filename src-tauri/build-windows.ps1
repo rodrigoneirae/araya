@@ -15,7 +15,7 @@ if (-not $SCRIPT_DIR) {
 
 Write-Host "Script directory: $SCRIPT_DIR"
 
-$VERSION = "0.1.0"
+$VERSION = "0.1.1"
 
 # Signing keys
 $KEY_FILE = "$SCRIPT_DIR\myapp.key"

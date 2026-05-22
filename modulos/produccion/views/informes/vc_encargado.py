@@ -270,7 +270,9 @@ class IndexInformeVCEncargadoView(LoginRequiredMixin, TemplateView):
             enc_data = list(data.values())[0] if data else None
 
             if not enc_data:
-                return HttpResponse("No hay datos", content_type="text/plain")
+                elems.append(Spacer(1, 20 * mm))
+                elems.append(Paragraph("No hay datos para los filtros seleccionados", subtitle_style))
+                return elems
 
             table_data = [header]
 

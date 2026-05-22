@@ -12,6 +12,14 @@ from modulos.maestros.models.procesos import Procesos
 from modulos.maestros.models.auxiliares import TipoArticulo, UnidadMedida
 
 
+def _get_movs_model():
+    try:
+        from modulos.inventario.models.movs import Movs
+        return Movs
+    except ImportError:
+        return None
+
+
 class IndexArticulosView(LoginRequiredMixin, TemplateView):
     template_name = "modulos/maestros/articulos.html"
 
@@ -33,8 +41,10 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
             return self._guardar(request.POST)
         elif action == "editar":
             return self._actualizar(request.POST)
-        elif action == "eliminar":
-            return self._eliminar(request.POST.get("codigo"))
+        elif action == "desactivar":
+            return self._desactivar(request.POST.get("codigo"))
+        elif action == "activar":
+            return self._activar(request.POST.get("codigo"))
         elif action == "listar_codigos":
             return self._listar_codigos()
         elif action == "listar_procesos":
@@ -118,13 +128,39 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
-    def _eliminar(self, codigo: str | None) -> JsonResponse:
+    def _desactivar(self, codigo: str | None) -> JsonResponse:
         if not codigo:
             return JsonResponse({"success": False, "message": "Código requerido"})
         try:
             articulo = Articulos.objects.get(codigo=codigo)
-            articulo.delete(using="default")
-            return JsonResponse({"success": True, "message": "Artículo eliminado correctamente"})
+            articulo.tipo = 'Inactivo'
+            articulo.usr = self.request.user.username
+            articulo.timeuser = timezone.now()
+            articulo.save(using="default")
+
+            Movs = _get_movs_model()
+            if Movs:
+                Movs.objects.filter(codigo=codigo, estado__isnull=True).update(estado='Inactivo')
+
+            return JsonResponse({"success": True, "message": "Artículo desactivado correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _activar(self, codigo: str | None) -> JsonResponse:
+        if not codigo:
+            return JsonResponse({"success": False, "message": "Código requerido"})
+        try:
+            articulo = Articulos.objects.get(codigo=codigo)
+            articulo.tipo = 'Activo'
+            articulo.usr = self.request.user.username
+            articulo.timeuser = timezone.now()
+            articulo.save(using="default")
+
+            Movs = _get_movs_model()
+            if Movs:
+                Movs.objects.filter(codigo=codigo, estado='Inactivo').update(estado='Cerrado')
+
+            return JsonResponse({"success": True, "message": "Artículo activado correctamente"})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 

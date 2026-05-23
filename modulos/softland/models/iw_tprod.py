@@ -1,6 +1,5 @@
 from django.db import models
 from django.forms import model_to_dict
-from modules.core.models.softland.iw_tlprprod import IwTlprprod
 
 class IwTprod(models.Model):
     codprod = models.CharField(db_column='CodProd', max_length=20, db_collation='SQL_Latin1_General_CP1_CI_AI',primary_key=True)  # Field name made lowercase.

@@ -1,5 +1,4 @@
-from modules.core.models.softland.cwtauxi import Cwtauxi
-from modules.core.models.prestashop.psy6_customer import Psy6Customer
+from modulos.softland.models.cwtauxi import Cwtauxi
 from django.db.models import Q
 class SoftlandCtaCteAPI:
     def __init__(self):
@@ -23,20 +22,6 @@ class SoftlandCtaCteAPI:
                     }
                     data_dict[email] = item
                     data.append(data_dict)
-
-            #correos ps
-            correos_ps = Psy6Customer.objects.all().exclude(email=None).using('prestashop')
-            for cliente in correos_ps:
-                email = cliente.email.lower() if cliente.email else None
-                if email and email not in data_dict and not '@sii.cl' in email:
-                    item = {
-                        'nombre': cliente.firstname.title() + ' ' + cliente.lastname.title() if cliente.firstname and cliente.lastname else None,
-                        'correo': email,
-                        'origen': 'prestashop',
-                    }
-                    data_dict[email] = item
-                    data.append(data_dict)
-            # Convertimos el diccionario a una lista
 
 
             data = list(data_dict.values())

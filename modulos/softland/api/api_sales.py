@@ -128,7 +128,7 @@ class SoftlandSalesAPI:
 
         """
 
-        print(query)
+
 
         try:
 

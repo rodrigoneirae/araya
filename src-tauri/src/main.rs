@@ -168,6 +168,15 @@ fn main() {
                     return Ok(());
                 }
 
+                #[cfg(windows)]
+                {
+                    let _ = Command::new("taskkill")
+                        .args(&["/F", "/IM", "araya-backend.exe"])
+                        .stdout(Stdio::null())
+                        .stderr(Stdio::null())
+                        .status();
+                }
+
                 let backend_exec_abs = fs::canonicalize(&backend_exec).unwrap_or(backend_exec.clone());
                 let resource_bin_dir = backend_exec_abs.parent().unwrap().to_path_buf();
 
@@ -186,14 +195,21 @@ fn main() {
                 }
                 fs::create_dir_all(&backend_dest).ok();
 
-                if let Ok(entries) = fs::read_dir(&resource_bin_dir) {
-                    for entry in entries.flatten() {
-                        if entry.file_type().map(|t| t.is_file()).unwrap_or(false) {
-                            let dest = backend_dest.join(entry.file_name());
-                            fs::copy(entry.path(), &dest).ok();
+                fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) {
+                    if let Ok(entries) = fs::read_dir(src) {
+                        for entry in entries.flatten() {
+                            let entry_path = entry.path();
+                            let dest_path = dst.join(entry.file_name());
+                            if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                                fs::create_dir_all(&dest_path).ok();
+                                copy_dir_recursive(&entry_path, &dest_path);
+                            } else {
+                                fs::copy(&entry_path, &dest_path).ok();
+                            }
                         }
                     }
                 }
+                copy_dir_recursive(&resource_bin_dir, &backend_dest);
 
                 #[cfg(windows)]
                 let backend_exe = backend_dest.join("araya-backend.exe");
@@ -218,10 +234,12 @@ fn main() {
                 println!("📂 Logs en: {:?}", logs_dir);
                 println!("📂 Backend copiado a: {:?}", backend_dest);
 
+                let app_version = app.package_info().version.to_string();
                 let mut cmd = Command::new(&backend_exe);
                 cmd.current_dir(&backend_dest)
                     .env("DJANGO_SETTINGS_MODULE", "araya.settings.desktop")
                     .env("AQUAI_BASE_DIR", &app_dir)
+                    .env("APP_VERSION", &app_version)
                     .env("PYTHONUNBUFFERED", "1")
                     .stdout(Stdio::from(stdout_file))
                     .stderr(Stdio::from(stderr_file));
@@ -285,8 +303,8 @@ fn main() {
                             }
                         });
 
-                        #[cfg(not(debug_assertions))]
-                        {
+                        let enable_updates = cfg!(not(debug_assertions)) || std::env::var("TAURI_DEV_UPDATES").unwrap_or_default() == "1";
+                        if enable_updates {
                             let handle = handle.clone();
                             tauri::async_runtime::spawn(async move {
                                 check_for_updates(handle).await;
@@ -356,7 +374,6 @@ fn kill_process(child: &mut Child) {
     }
 }
 
-#[cfg(not(debug_assertions))]
 async fn check_for_updates(app_handle: tauri::AppHandle) {
     use std::sync::atomic::Ordering;
     use tauri_plugin_updater::UpdaterExt;

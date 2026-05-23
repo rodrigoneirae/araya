@@ -15,7 +15,7 @@ if (-not $SCRIPT_DIR) {
 
 Write-Host "Script directory: $SCRIPT_DIR"
 
-$VERSION = "0.1.1"
+$VERSION = (Get-Content "$SCRIPT_DIR\tauri.conf.json" | ConvertFrom-Json).version
 
 # Signing keys
 $KEY_FILE = "$SCRIPT_DIR\myapp.key"
@@ -50,9 +50,16 @@ if (-Not (Test-Path $BINARIO_NUITKA)) {
     exit 1
 }
 
-Copy-Item -Path "$BINARIO_NUITKA\*" -Destination $COPIA_BINARIO -Recurse -Force
+$BackendExe = "araya-backend.exe"
+$ExeFile = "$BINARIO_NUITKA\$BackendExe"
+if (-Not (Test-Path $ExeFile)) {
+    Write-Error "Backend exe not found: $ExeFile"
+    exit 1
+}
 
-Write-Host "Copied Nuitka dist: $((Get-ChildItem -Path $COPIA_BINARIO -Recurse | Measure-Object).Count) archivos"
+Copy-Item -Path $ExeFile -Destination $COPIA_BINARIO -Force
+
+Write-Host "Copiado: $BackendExe"
 
 # ------------------------------------------------------------
 # COPY OPTIONAL ENV FILE
@@ -212,12 +219,11 @@ $manifest = @{
     }
 } | ConvertTo-Json -Depth 10
 
-# Save versioned manifest
+# Save versioned manifest (UTF-8 without BOM)
 $manifestPath = "$UPDATE_DIR\manifest.json"
 
-$manifest | Set-Content `
-    -Path $manifestPath `
-    -Encoding UTF8
+$Utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText($manifestPath, $manifest, $Utf8NoBom)
 
 # Copy latest manifest
 Copy-Item `

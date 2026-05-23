@@ -91,9 +91,17 @@ write_log(f"KEY_FILE: {KEY_FILE}")
 write_log(f"KEY_FILE exists: {KEY_FILE.exists()}")
 
 if not ENV_FILE.exists():
-    write_log("Creando archivo .env-desktop vacío")
-    ENV_FILE.touch()
-    write_log("Archivo creado")
+    write_log("Creando .env-desktop inicial con valores por defecto")
+    ENV_FILE.write_text(
+        f"SECRET_KEY=araya-cl-z8mlzmq32hj*jhzqw7yn-5uc(_9w3cirh^koh=$7270xn_#&5o\n"
+        f"FERNET_KEY=Xn6kYz8dR2p2R0cM5lMZx0C7yF3Xk3Wk8y8zqY9N0xE=\n"
+        f"ALLOWED_HOSTS=127.0.0.1,localhost\n"
+    )
+
+tauri_version = os.environ.get('APP_VERSION')
+if tauri_version:
+    write_log(f"APP_VERSION desde Tauri: {tauri_version}")
+    os.environ['APP_VERSION'] = tauri_version
 
 
 logger = logging.getLogger(__name__)
@@ -223,113 +231,34 @@ def probar_conexion():
 
 def guardar_credenciales():
     write_log("=== GUARDANDO CREDENCIALES ===")
-    write_log(f"APP_DIR: {APP_DIR}")
 
     encrypted_password = encrypt_password(password_var.get())
+    fields = [
+        ("APPHOST", host_var.get()),
+        ("APPPORT", port_var.get()),
+        ("APPDB", name_var.get()),
+        ("APPUSER", user_var.get()),
+        ("APPPASSWORD", encrypted_password),
+    ]
 
-    try:
-        set_key(str(ENV_FILE), "APPHOST", host_var.get(), quote_mode="never")
-    except Exception as e:
-        write_log(f"ERROR APPHOST: {e}")
-
-    try:
-        set_key(str(ENV_FILE), "APPPORT", port_var.get(), quote_mode="never")
-    except Exception as e:
-        write_log(f"ERROR APPPORT: {e}")
-
-    try:
-        set_key(str(ENV_FILE), "APPDB", name_var.get(), quote_mode="never")
-    except Exception as e:
-        write_log(f"ERROR APPDB: {e}")
-
-    try:
-        set_key(str(ENV_FILE), "APPUSER", user_var.get(), quote_mode="never")
-    except Exception as e:
-        write_log(f"ERROR APPUSER: {e}")
-
-    try:
-        set_key(str(ENV_FILE), "APPPASSWORD", encrypted_password, quote_mode="never")
-    except Exception as e:
-        write_log(f"ERROR APPPASSWORD: {e}")
-
-    encrypted_password = encrypt_password(
-        password_var.get()
-    )
-
-    try:
-        set_key(
-            str(ENV_FILE),
-            "APPHOST",
-            host_var.get(),
-            quote_mode="never"
-        )
-        write_log("APPHOST guardado")
-    except Exception as e:
-        write_log(f"ERROR APPHOST: {e}")
-
-    try:
-        set_key(
-            str(ENV_FILE),
-            "APPPORT",
-            port_var.get(),
-            quote_mode="never"
-        )
-        write_log("APPPORT guardado")
-    except Exception as e:
-        write_log(f"ERROR APPPORT: {e}")
-
-    try:
-        set_key(
-            str(ENV_FILE),
-            "APPDB",
-            name_var.get(),
-            quote_mode="never"
-        )
-        write_log("APPDB guardado")
-    except Exception as e:
-        write_log(f"ERROR APPDB: {e}")
-
-    try:
-        set_key(
-            str(ENV_FILE),
-            "APPUSER",
-            user_var.get(),
-            quote_mode="never"
-        )
-        write_log("APPUSER guardado")
-    except Exception as e:
-        write_log(f"ERROR APPUSER: {e}")
-
-    try:
-        set_key(
-            str(ENV_FILE),
-            "APPPASSWORD",
-            encrypted_password,
-            quote_mode="never"
-        )
-        write_log("APPPASSWORD guardado")
-    except Exception as e:
-        write_log(f"ERROR APPPASSWORD: {e}")
+    for key, value in fields:
+        try:
+            set_key(str(ENV_FILE), key, value, quote_mode="never")
+            write_log(f"{key} guardado")
+        except Exception as e:
+            write_log(f"ERROR {key}: {e}")
 
     write_log("Credenciales guardadas correctamente")
 
-    load_dotenv(
-        ENV_FILE,
-        override=True
-    )
+    load_dotenv(ENV_FILE, override=True)
 
     os.environ["APPDB"] = name_var.get()
-
     os.environ["APPUSER"] = user_var.get()
-
     os.environ["APPPASSWORD"] = encrypted_password
-
     os.environ["APPHOST"] = host_var.get()
-
     os.environ["APPPORT"] = port_var.get()
 
     actualizar_database_settings()
-
     connections.close_all()
 
 

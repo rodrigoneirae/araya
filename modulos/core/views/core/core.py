@@ -54,14 +54,13 @@ class IndexCoreView( LoginRequiredMixin,TemplateView):
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseRedirect | HttpResponse:
         self.init_app()
 
-        print(WEB,type(WEB))
-        if not WEB:
-            print('jaja')
-            version_actual=AppConfig.objects.filter(key='APP_VERSION').last()
-            print(version_actual._value)
-            if settings.APP_VERSION != version_actual._value:
-                success_url = reverse_lazy(settings.UPDATE_REDIRECT_URL)
-                return HttpResponseRedirect(success_url)
+        # if not WEB:
+        #
+        #     version_actual=AppConfig.objects.filter(key='APP_VERSION').last()
+        #
+        #     if settings.APP_VERSION != version_actual._value:
+        #         success_url = reverse_lazy(settings.UPDATE_REDIRECT_URL)
+        #         return HttpResponseRedirect(success_url)
 
         return super().dispatch(request, *args, **kwargs)
 

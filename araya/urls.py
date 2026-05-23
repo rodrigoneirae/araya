@@ -9,7 +9,6 @@ from modulos.core.views.auth.logout import LogoutView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("", IndexCoreView.as_view(), name="home"),
-    path("update/", IndexUpdateView.as_view(), name="update"),
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
 

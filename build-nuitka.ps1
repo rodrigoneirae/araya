@@ -114,7 +114,7 @@ Write-Host ""
 
 & $Python -m nuitka `
     --onefile `
-    --standalone `
+    --onefile-tempdir-spec=%CACHE_DIR%/araya-backend `
     --windows-console-mode=disable `
     --enable-plugin=tk-inter `
     --assume-yes-for-downloads `

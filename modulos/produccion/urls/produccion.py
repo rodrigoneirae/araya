@@ -7,6 +7,7 @@ from modulos.produccion.views.informes.pe_encargado import IndexInformePEEncarga
 from modulos.produccion.views.informes.producion_proceso import IndexInformeProduccionProcesoView
 from modulos.produccion.views.informes.resumen_ots import IndexInformeResumenOtsView
 from modulos.produccion.views.informes.vc_encargado import IndexInformeVCEncargadoView
+from modulos.produccion.views.ot.costos_ot import IndexCostosOTView
 from modulos.produccion.views.ot.ot import IndexIngresoOTView
 from modulos.produccion.views.pe.pe import IndexIngresoPEView
 from modulos.produccion.views.vc.vc import IndexIngresoVCView
@@ -24,6 +25,7 @@ urlpatterns = [
     path('informe/produccion-proceso/', IndexInformeProduccionProcesoView.as_view(), name='produccion_informe_produccion_proceso'),
     path('informe/consumo-proceso/', IndexInformeConsumoProcesoView.as_view(), name='produccion_informe_consumo_proceso'),
     path('informe/resumen-ots/', IndexInformeResumenOtsView.as_view(), name='produccion_informe_resumen_ots'),
+    path('calculo/costos-ot/', IndexCostosOTView.as_view(), name='produccion_calculo_ot'),
 
 
 ]

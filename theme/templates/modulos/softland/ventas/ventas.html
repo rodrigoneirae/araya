@@ -1,0 +1,107 @@
+{% extends 'plantilla/base/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard Ventas - Araya Ltda.{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Date Range Filter -->
+    <div class="bg-aq-surface border border-aq-border rounded-xl p-4 shadow-lg">
+        <form method="GET" class="flex items-center gap-3 flex-wrap">
+            <label class="text-sm text-aq-muted font-medium">Desde:</label>
+            <input type="date" name="fecha_desde" value="{{ fecha_desde }}"
+                   class="px-3 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-sm focus:outline-none focus:ring-2 focus:ring-aq-primary/40">
+            <label class="text-sm text-aq-muted font-medium">Hasta:</label>
+            <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}"
+                   class="px-3 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-sm focus:outline-none focus:ring-2 focus:ring-aq-primary/40">
+            <button type="submit" class="px-4 py-1.5 rounded-lg bg-aq-primary text-white text-sm font-medium hover:opacity-85 transition-opacity">
+                <i class='bx bx-filter-alt text-base align-middle mr-1'></i>Filtrar
+            </button>
+            <a href="." class="px-4 py-1.5 rounded-lg border border-aq-border text-aq-text text-sm font-medium hover:bg-aq-surface-2 transition-colors">
+                <i class='bx bx-reset text-base align-middle mr-1'></i>Limpiar
+            </a>
+        </form>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5 lg:gap-6">
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-5 shadow-lg">
+            <p class="text-xs text-aq-muted font-medium uppercase tracking-wider">Total Neto</p>
+            <p class="text-2xl font-bold text-aq-primary mt-2">{{ kpis.total_neto_clp }}</p>
+            <p class="text-xs text-aq-muted mt-1">ventas netas</p>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-5 shadow-lg">
+            <p class="text-xs text-aq-muted font-medium uppercase tracking-wider">Documentos</p>
+            <p class="text-2xl font-bold text-aq-text mt-2">{{ kpis.total_docs_fmt }}</p>
+            <p class="text-xs text-aq-muted mt-1">facturas/boletas</p>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-5 shadow-lg">
+            <p class="text-xs text-aq-muted font-medium uppercase tracking-wider">Productos Vend.</p>
+            <p class="text-2xl font-bold text-aq-text mt-2">{{ kpis.total_productos_fmt }}</p>
+            <p class="text-xs text-aq-muted mt-1">unidades</p>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-5 shadow-lg">
+            <p class="text-xs text-aq-muted font-medium uppercase tracking-wider">Margen Prom.</p>
+            <p class="text-2xl font-bold {% if kpis.margen > 0 %}text-aq-accent{% else %}text-red-500{% endif %} mt-2">{{ kpis.margen }}%</p>
+            <p class="text-xs text-aq-muted mt-1">utilidad bruta</p>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-5 shadow-lg">
+            <p class="text-xs text-aq-muted font-medium uppercase tracking-wider">Prom. x Documento</p>
+            <p class="text-2xl font-bold text-aq-text mt-2">{{ kpis.prom_doc_clp }}</p>
+            <p class="text-xs text-aq-muted mt-1">ticket promedio</p>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-5 shadow-lg">
+            <p class="text-xs text-aq-muted font-medium uppercase tracking-wider">Clientes</p>
+            <p class="text-2xl font-bold text-aq-text mt-2">{{ kpis.total_clientes_fmt }}</p>
+            <p class="text-xs text-aq-muted mt-1">compradores</p>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-4 sm:p-6 shadow-lg">
+            <h3 class="text-sm font-semibold text-aq-text mb-4">Ventas por Mes</h3>
+            <div class="relative" style="height:280px">
+                <canvas id="chartVentasMes"></canvas>
+            </div>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-4 sm:p-6 shadow-lg">
+            <h3 class="text-sm font-semibold text-aq-text mb-4">Top 10 Clientes</h3>
+            <div class="relative" style="height:280px">
+                <canvas id="chartTopVendedores"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-4 sm:p-6 shadow-lg">
+            <h3 class="text-sm font-semibold text-aq-text mb-4">Top 10 Productos</h3>
+            <div class="relative" style="height:280px">
+                <canvas id="chartTopProductos"></canvas>
+            </div>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-4 sm:p-6 shadow-lg">
+            <h3 class="text-sm font-semibold text-aq-text mb-4">Ventas por Marca</h3>
+            <div class="relative" style="height:280px">
+                <canvas id="chartVentasMarca"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Sales Table -->
+    <div class="bg-aq-surface border border-aq-border rounded-xl p-4 sm:p-6 shadow-lg">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-aq-text">Últimas Ventas</h3>
+            <span id="recentSalesCount" class="text-xs text-aq-muted">0 registros</span>
+        </div>
+        <div id="recentSalesTable" style="min-height:200px"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script id="dashboardData" type="application/json">{{ dashboard_json|safe }}</script>
+<script src="{% static 'libs/chartjs/chart.umd.min.js' %}"></script>
+<script type="module" src="{% static 'js/modulos/softland/dashboard_ventas.js' %}"></script>
+{% endblock %}

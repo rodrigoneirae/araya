@@ -15,6 +15,7 @@ urlpatterns = [
     path("maestros/", include("modulos.maestros.urls.maestros")),
     path("inventario/", include("modulos.inventario.urls.inventario")),
     path("produccion/", include("modulos.produccion.urls.produccion", namespace="produccion")),
+    path("softland/", include("modulos.softland.urls.softland", namespace="softland")),
 ]
 if settings.DEBUG:
     print('DEBUG:', settings.DEBUG)

@@ -221,36 +221,36 @@
                            class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
                             <i class='bx bx-download mr-2'></i>Productos Softland
                         </a>
-                        <div class="border-t border-aq-border my-1"></div>
-                        <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
-                            <i class='bx bx-chart mr-2'></i>Informes
-                        </a>
+{#                        <div class="border-t border-aq-border my-1"></div>#}
+{#                        <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">#}
+{#                            <i class='bx bx-chart mr-2'></i>Informes#}
+{#                        </a>#}
                     </div>
                 </div>
             </div>
 
             <!-- Dropdown: Informes -->
-            <div class="relative dropdown" id="informesDropdown">
-                <button class="flex items-center px-3 py-1.5 text-sm text-aq-text hover:bg-aq-border rounded-lg transition-colors">
-                    <i class='bx bx-chart mr-2'></i>Informes
-                    <i class='bx bx-chevron-down ml-1 text-xs'></i>
-                </button>
-                <div id="informesDropdownMenu"
-                     class="absolute top-full left-0 mt-1 w-56 bg-aq-surface border border-aq-border rounded-lg shadow-lg hidden">
-                    <div class="py-2">
-                        <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
-                            <i class='bx bx-box mr-2'></i>Inventario
-                        </a>
-                        <a href="{% url 'produccion:produccion_informe_produccion_proceso' %}"
-                           class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
-                            <i class='bx bx-cog mr-2'></i>Producción por proceso
-                        </a>
-                        <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
-                            <i class='bx bx-cart mr-2'></i>Ventas
-                        </a>
-                    </div>
-                </div>
-            </div>
+{#            <div class="relative dropdown" id="informesDropdown">#}
+{#                <button class="flex items-center px-3 py-1.5 text-sm text-aq-text hover:bg-aq-border rounded-lg transition-colors">#}
+{#                    <i class='bx bx-chart mr-2'></i>Informes#}
+{#                    <i class='bx bx-chevron-down ml-1 text-xs'></i>#}
+{#                </button>#}
+{#                <div id="informesDropdownMenu"#}
+{#                     class="absolute top-full left-0 mt-1 w-56 bg-aq-surface border border-aq-border rounded-lg shadow-lg hidden">#}
+{#                    <div class="py-2">#}
+{#                        <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">#}
+{#                            <i class='bx bx-box mr-2'></i>Inventario#}
+{#                        </a>#}
+{#                        <a href="{% url 'produccion:produccion_informe_produccion_proceso' %}"#}
+{#                           class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">#}
+{#                            <i class='bx bx-cog mr-2'></i>Producción por proceso#}
+{#                        </a>#}
+{#                        <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">#}
+{#                            <i class='bx bx-cart mr-2'></i>Ventas#}
+{#                        </a>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
 
             <!-- Dropdown: Utilitarios -->
             <div class="relative dropdown" id="utilitariosDropdown">
@@ -261,16 +261,16 @@
                 <div id="utilitariosDropdownMenu"
                      class="absolute top-full left-0 mt-1 w-64 bg-aq-surface border border-aq-border rounded-lg shadow-lg hidden">
                     <div class="py-2">
-                        <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
-                            <i class='bx bx-user-plus mr-2'></i>Definir Usuario
+                        <a href="{% url 'admin:index' %}" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
+                            <i class='bx bx-user-plus mr-2'></i>Administrador
                         </a>
-                        <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
-                            <i class='bx bx-calculator mr-2'></i>Contabilizar Factura
-                        </a>
-                        <div class="border-t border-aq-border my-1"></div>
-                        <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">
-                            <i class='bx bx-chart mr-2'></i>Mantención de Grúas (Informe)
-                        </a>
+{#                        <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">#}
+{#                            <i class='bx bx-calculator mr-2'></i>Contabilizar Factura#}
+{#                        </a>#}
+{#                        <div class="border-t border-aq-border my-1"></div>#}
+{#                        <a href="#" class="flex items-center px-4 py-2 text-sm text-aq-text hover:bg-aq-border">#}
+{#                            <i class='bx bx-chart mr-2'></i>Mantención de Grúas (Informe)#}
+{#                        </a>#}
                     </div>
                 </div>
             </div>

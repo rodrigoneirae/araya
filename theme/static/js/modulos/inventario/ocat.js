@@ -59,6 +59,7 @@ function cargarDatosIniciales() {
                 option.textContent = p.nombre;
                 select.appendChild(option);
             });
+            actualizarSelect2(select);
         }
     });
 
@@ -71,6 +72,7 @@ function cargarDatosIniciales() {
                 option.textContent = t.cod + ' - ' + t.nombre;
                 select.appendChild(option);
             });
+            actualizarSelect2(select);
         }
     });
 
@@ -83,6 +85,7 @@ function cargarDatosIniciales() {
                 option.textContent = e.nombre;
                 select.appendChild(option);
             });
+            actualizarSelect2(select);
         }
     });
 
@@ -95,6 +98,7 @@ function cargarDatosIniciales() {
                 option.textContent = b.nombre;
                 select.appendChild(option);
             });
+            actualizarSelect2(select);
         }
     });
 
@@ -107,6 +111,7 @@ function cargarDatosIniciales() {
                 option.textContent = t.nombre + ' (' + t.rut + ')';
                 select.appendChild(option);
             });
+            actualizarSelect2(select);
         }
     });
 
@@ -128,7 +133,10 @@ function cargarDatosIniciales() {
                             patenteSel.appendChild(option);
                         });
                     }
+                    actualizarSelect2(patenteSel);
                 });
+            } else {
+                actualizarSelect2(patenteSel);
             }
         });
     }
@@ -180,37 +188,54 @@ function nuevaOcat() {
     calcularTotalesOcat();
 }
 
+function actualizarSelect2(el) {
+    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+        var $el = jQuery(el);
+        if ($el.data('select2')) {
+            $el.trigger('change.select2');
+        } else {
+            $el.select2({
+                language: 'es',
+                width: '100%',
+                dropdownAutoWidth: true,
+                placeholder: $el.find('option:first').text() || 'Seleccionar...',
+                allowClear: true,
+            });
+        }
+    }
+}
+
 function setCamposOcatEditable(editable) {
     const inputs = ['ocatFecha', 'ocatProveedor', 'ocatTipoDoc', 'ocatRef', 'ocatEncargado', 'ocatArtCod', 'ocatArtCant', 'ocatArtPUnit', 'ocatArtFecha', 'ocatNeto', 'ocatTotal', 'ocatTransportista', 'ocatPatente', 'ocatPeso'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             if (el.tagName === 'SELECT') {
-                el.disabled = true;
+                el.disabled = !editable;
+                actualizarSelect2(el);
             } else {
-                el.readOnly = true;
+                el.readOnly = !editable;
             }
         }
     });
     const bodega = document.getElementById('ocatArtBodega');
-    if (bodega) bodega.disabled = true;
+    if (bodega) {
+        bodega.disabled = !editable;
+        actualizarSelect2(bodega);
+    }
     
     const provBtn = document.querySelector('#ocatProveedor + button');
-    if (provBtn) provBtn.disabled = true;
+    if (provBtn) provBtn.disabled = !editable;
     const artBtn = document.querySelector('#ocatArtCod + button');
-    if (artBtn) artBtn.disabled = true;
+    if (artBtn) artBtn.disabled = !editable;
     const agregarBtn = document.querySelector('#contenido-detalle button[onclick="agregarArticuloOcat()"]');
-    if (agregarBtn) agregarBtn.disabled = true;
-    
-    const proveedor = document.getElementById('ocatProveedor');
-    if (proveedor) proveedor.disabled = true;
-    const tipodoc = document.getElementById('ocatTipoDoc');
-    if (tipodoc) tipodoc.disabled = true;
-    const encargado = document.getElementById('ocatEncargado');
-    if (encargado) encargado.disabled = true;
+    if (agregarBtn) agregarBtn.disabled = !editable;
     
     const estado = document.getElementById('ocatEstado');
-    if (estado) estado.disabled = !editable;
+    if (estado) {
+        estado.disabled = !editable;
+        actualizarSelect2(estado);
+    }
     
     modoEdicionOcat = editable;
     renderizarDetalleOcat();
@@ -349,6 +374,7 @@ function agregarArticuloOcat() {
     document.getElementById('ocatArtCant').value = '';
     document.getElementById('ocatArtPUnit').value = '';
     document.getElementById('ocatArtBodega').value = 1;
+    actualizarSelect2(document.getElementById('ocatArtBodega'));
     document.getElementById('ocatArtCod').focus();
 
     renderizarDetalleOcat();
@@ -630,6 +656,7 @@ function cargarOcat(numero) {
                     provSelect.value = data.data.rut;
                 }
             }
+            actualizarSelect2(provSelect);
 
             const docSelect = document.getElementById('ocatTipoDoc');
             if (data.data.tipodocref) {
@@ -650,6 +677,7 @@ function cargarOcat(numero) {
                     docSelect.value = data.data.tipodocref;
                 }
             }
+            actualizarSelect2(docSelect);
 
             document.getElementById('ocatRef').value = data.data.docref || '';
             const encargadoSelect = document.getElementById('ocatEncargado');
@@ -670,6 +698,7 @@ function cargarOcat(numero) {
                     encargadoSelect.value = data.data.codencargado;
                 }
             }
+            actualizarSelect2(encargadoSelect);
             document.getElementById('ocatEstado').value = data.data.estado || 'Abierto';
             document.getElementById('ocatNeto').value = data.data.neto || 0;
             document.getElementById('ocatTotal').value = data.data.total || 0;
@@ -686,6 +715,7 @@ function cargarOcat(numero) {
                     }
                 }
             }
+            actualizarSelect2(transpSel);
             patenteSel.innerHTML = '<option value="">--- Seleccionar ---</option>';
             (data.data.patentes_disponibles || []).forEach(p => {
                 const option = document.createElement('option');
@@ -702,7 +732,10 @@ function cargarOcat(numero) {
                             break;
                         }
                     }
+                    actualizarSelect2(patenteSel);
                 }, 0);
+            } else {
+                actualizarSelect2(patenteSel);
             }
 
             detallesOcat = (data.data.detalles || []).map(d => ({

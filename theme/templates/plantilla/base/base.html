@@ -26,6 +26,54 @@
     <link rel="stylesheet" href="{% static 'libs/toastify/toastify.min.css' %}">
 
     <link rel="stylesheet" href="{% static 'libs/tabulator/css/tabulator.min.css' %}">
+    <link rel="stylesheet" href="{% static 'libs/select2/css/select2.min.css' %}">
+    <style>
+        .select2-container--default .select2-selection--single {
+            background-color: rgb(var(--aq-bg));
+            border-color: rgb(var(--aq-border));
+            border-radius: 0.5rem;
+            height: 38px;
+            padding-top: 4px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: rgb(var(--aq-text));
+            font-size: 0.875rem;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: rgb(var(--aq-muted));
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px;
+        }
+        .select2-dropdown {
+            background-color: rgb(var(--aq-surface));
+            border-color: rgb(var(--aq-border));
+            border-radius: 0.5rem;
+        }
+        .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+            background-color: rgb(var(--aq-primary));
+        }
+        .select2-container--default .select2-results__option {
+            color: rgb(var(--aq-text));
+            font-size: 0.875rem;
+        }
+        .select2-search--dropdown .select2-search__field {
+            background-color: rgb(var(--aq-bg));
+            border-color: rgb(var(--aq-border));
+            color: rgb(var(--aq-text));
+            border-radius: 0.375rem;
+        }
+        html.dark .select2-container--default .select2-selection--single {
+            background-color: rgb(var(--aq-surface));
+            border-color: rgb(var(--aq-border));
+        }
+        html.dark .select2-dropdown {
+            background-color: rgb(var(--aq-surface-2));
+        }
+        html.dark .select2-search--dropdown .select2-search__field {
+            background-color: rgb(var(--aq-bg));
+        }
+    </style>
     {% block extra_css %}{% endblock %}
     
     <link rel="stylesheet" href="/static/css/dist/styles.css">
@@ -109,6 +157,27 @@
 {% endblock %}
 
 
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script src="{% static 'libs/select2/js/select2.full.min.js' %}"></script>
+<script src="{% static 'libs/select2/js/i18n/es.js' %}"></script>
+<script>
+    function initSelect2(container) {
+        container = container || document;
+        if (typeof jQuery === 'undefined' || !jQuery.fn.select2) return;
+        jQuery(container).find('select:not([data-no-select2])').each(function () {
+            var $el = jQuery(this);
+            if ($el.data('select2')) return;
+            $el.select2({
+                language: 'es',
+                width: '100%',
+                dropdownAutoWidth: true,
+                placeholder: $el.find('option:first').text() || 'Seleccionar...',
+                allowClear: true,
+            });
+        });
+    }
+    document.addEventListener('DOMContentLoaded', function () { initSelect2(); });
+</script>
 <script src="{% static 'libs/toastify/toastify-js.js' %}"></script>
 <script src="{% static 'libs/tabulator/js/tabulator.min.js' %}"></script>
 <script src="{% static 'js/utils/modalConfirm.js' %}"></script>

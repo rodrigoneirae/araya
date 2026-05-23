@@ -27,6 +27,7 @@ PROJECT_APPS =[
     'modulos.maestros.apps.MaestrosConfig',
     'modulos.inventario.apps.InventarioConfig',
     'modulos.produccion.apps.ProduccionConfig',
+    'modulos.softland.apps.SoftlandConfig',
 ]
 THIRD_PARTY_APPS =[]
 
@@ -71,6 +72,18 @@ DATABASES = {
         'PASSWORD': os.environ.get("APPPASSWORD"),
         'HOST': os.environ.get("APPHOST"),
         'PORT': os.environ.get("APPPORT"),
+        'OPTIONS': {
+            'driver': 'ODBC Driver 18 for SQL Server',
+            'extra_params': 'TrustServerCertificate=yes',
+        },
+    },
+    'softland': {
+        'ENGINE': 'mssql',
+        'NAME': os.environ.get("SOFTLAND_DB"),
+        'USER': os.environ.get("SOFTLAND_USER"),
+        'PASSWORD': os.environ.get("SOFTLAND_PASSWORD"),
+        'HOST': os.environ.get("SOFTLAND_HOST"),
+        'PORT': os.environ.get("SOFTLAND_PORT"),
         'OPTIONS': {
             'driver': 'ODBC Driver 18 for SQL Server',
             'extra_params': 'TrustServerCertificate=yes',

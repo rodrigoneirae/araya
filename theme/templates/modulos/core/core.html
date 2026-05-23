@@ -1,1 +1,111 @@
 {% extends 'plantilla/base/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Date Range Filter -->
+    <div class="bg-aq-surface border border-aq-border rounded-xl p-4 shadow-lg">
+        <form method="GET" class="flex items-center gap-3 flex-wrap">
+            <label class="text-sm text-aq-muted font-medium">Desde:</label>
+            <input type="date" name="fecha_desde" value="{{ fecha_desde }}"
+                   class="px-3 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-sm focus:outline-none focus:ring-2 focus:ring-aq-primary/40">
+            <label class="text-sm text-aq-muted font-medium">Hasta:</label>
+            <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}"
+                   class="px-3 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-sm focus:outline-none focus:ring-2 focus:ring-aq-primary/40">
+            <button type="submit" class="px-4 py-1.5 rounded-lg bg-aq-primary text-white text-sm font-medium hover:opacity-85 transition-opacity">
+                <i class='bx bx-filter-alt text-base align-middle mr-1'></i>Filtrar
+            </button>
+            <a href="." class="px-4 py-1.5 rounded-lg border border-aq-border text-aq-text text-sm font-medium hover:bg-aq-surface-2 transition-colors">
+                <i class='bx bx-reset text-base align-middle mr-1'></i>Limpiar
+            </a>
+        </form>
+    </div>
+
+    <!-- KPI Cards Producción -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5 lg:gap-6">
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-5 shadow-lg">
+            <p class="text-xs text-aq-muted font-medium uppercase tracking-wider">Órdenes Trabajo</p>
+            <p class="text-2xl font-bold text-aq-primary mt-2">{{ kpis.ot_count }}</p>
+            <p class="text-xs text-aq-muted mt-1">OT</p>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-5 shadow-lg">
+            <p class="text-xs text-aq-muted font-medium uppercase tracking-wider">Partes Entrada</p>
+            <p class="text-2xl font-bold text-aq-text mt-2">{{ kpis.pe_count }}</p>
+            <p class="text-xs text-aq-muted mt-1">PE</p>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-5 shadow-lg">
+            <p class="text-xs text-aq-muted font-medium uppercase tracking-wider">Vales Consumo</p>
+            <p class="text-2xl font-bold text-aq-text mt-2">{{ kpis.vc_count }}</p>
+            <p class="text-xs text-aq-muted mt-1">VC</p>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-5 shadow-lg">
+            <p class="text-xs text-aq-muted font-medium uppercase tracking-wider">Neto Total Prod.</p>
+            <p class="text-2xl font-bold text-aq-accent mt-2">${{ kpis.total_neto|floatformat:0 }}</p>
+            <p class="text-xs text-aq-muted mt-1">OT + PE + VC</p>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-5 shadow-lg">
+            <p class="text-xs text-aq-muted font-medium uppercase tracking-wider">Docs. Este Mes</p>
+            <p class="text-2xl font-bold text-aq-text mt-2">{{ kpis.docs_mes }}</p>
+            <p class="text-xs text-aq-muted mt-1">producción</p>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-5 shadow-lg">
+            <p class="text-xs text-aq-muted font-medium uppercase tracking-wider">Pendiente</p>
+            <p class="text-2xl font-bold text-red-500 mt-2">${{ kpis.total_pendiente|floatformat:0 }}</p>
+            <p class="text-xs text-aq-muted mt-1">no pagado</p>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-4 sm:p-6 shadow-lg">
+            <h3 class="text-sm font-semibold text-aq-text mb-4">OT x Mes (Abierto / Cerrado)</h3>
+            <div class="relative" style="height:280px">
+                <canvas id="chartMonthlyProd"></canvas>
+            </div>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-4 sm:p-6 shadow-lg">
+            <h3 class="text-sm font-semibold text-aq-text mb-4">Stock por Artículo</h3>
+            <div class="flex items-center gap-3 mb-4 flex-wrap">
+                <select id="selectBodega" class="w-full max-w-xs px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-sm focus:outline-none focus:ring-2 focus:ring-aq-primary/40">
+                    <option value="">Seleccione bodega...</option>
+                </select>
+                <input type="text" id="stockBuscar" placeholder="Buscar artículo..." disabled
+                       class="flex-1 min-w-[160px] px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-sm focus:outline-none focus:ring-2 focus:ring-aq-primary/40 disabled:opacity-50">
+                <div id="stockLoader" class="hidden">
+                    <div class="w-5 h-5 border-2 border-aq-primary border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            </div>
+            <div id="stockTableWrap" class="hidden" style="height:280px"></div>
+            <div id="stockEmpty" class="hidden text-sm text-aq-muted text-center py-10">Seleccione una bodega para ver su stock.</div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-4 sm:p-6 shadow-lg">
+            <h3 class="text-sm font-semibold text-aq-text mb-4">Top 8 Encargados</h3>
+            <div class="relative" style="height:280px">
+                <canvas id="chartEncargados"></canvas>
+            </div>
+        </div>
+        <div class="bg-aq-surface border border-aq-border rounded-xl p-4 sm:p-6 shadow-lg">
+            <h3 class="text-sm font-semibold text-aq-text mb-4">Top 10 Productos Consumidos (VC)</h3>
+            <div class="relative" style="height:280px">
+                <canvas id="chartVCProducts"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script id="dashboardData" type="application/json">{{ dashboard_json|safe }}</script>
+<script src="{% static 'libs/chartjs/chart.umd.min.js' %}"></script>
+<script type="module" src="{% static 'js/modulos/core/dashboard.js' %}"></script>
+{% endblock %}

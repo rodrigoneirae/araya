@@ -16,6 +16,7 @@ from django.core.wsgi import get_wsgi_application
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
+import tkinter as tk
 from tkinter import messagebox, PhotoImage
 
 from waitress import serve
@@ -96,6 +97,16 @@ if not ENV_FILE.exists():
         f"SECRET_KEY=araya-cl-z8mlzmq32hj*jhzqw7yn-5uc(_9w3cirh^koh=$7270xn_#&5o\n"
         f"FERNET_KEY=Xn6kYz8dR2p2R0cM5lMZx0C7yF3Xk3Wk8y8zqY9N0xE=\n"
         f"ALLOWED_HOSTS=127.0.0.1,localhost\n"
+        f"APPHOST=localhost\n"
+        f"APPPORT=1433\n"
+        f"APPDB=Prod\n"
+        f"APPUSER=sa\n"
+        f"APPPASSWORD=\n"
+        f"SOFTLAND_HOST=localhost\n"
+        f"SOFTLAND_PORT=1433\n"
+        f"SOFTLAND_DB=\n"
+        f"SOFTLAND_USER=sa\n"
+        f"SOFTLAND_PASSWORD=\n"
     )
 
 tauri_version = os.environ.get('APP_VERSION')
@@ -209,6 +220,19 @@ def actualizar_database_settings():
 
     settings.DATABASES['default']['PORT'] = os.getenv("APPPORT")
 
+    if 'softland' in settings.DATABASES:
+        settings.DATABASES['softland']['NAME'] = os.getenv("SOFTLAND_DB")
+
+        settings.DATABASES['softland']['USER'] = os.getenv("SOFTLAND_USER")
+
+        settings.DATABASES['softland']['PASSWORD'] = decrypt_password(
+            os.getenv("SOFTLAND_PASSWORD", "")
+        )
+
+        settings.DATABASES['softland']['HOST'] = os.getenv("SOFTLAND_HOST")
+
+        settings.DATABASES['softland']['PORT'] = os.getenv("SOFTLAND_PORT")
+
 
 actualizar_database_settings()
 
@@ -233,12 +257,18 @@ def guardar_credenciales():
     write_log("=== GUARDANDO CREDENCIALES ===")
 
     encrypted_password = encrypt_password(password_var.get())
+    encrypted_soft_password = encrypt_password(soft_password_var.get())
     fields = [
         ("APPHOST", host_var.get()),
         ("APPPORT", port_var.get()),
         ("APPDB", name_var.get()),
         ("APPUSER", user_var.get()),
         ("APPPASSWORD", encrypted_password),
+        ("SOFTLAND_HOST", soft_host_var.get()),
+        ("SOFTLAND_PORT", soft_port_var.get()),
+        ("SOFTLAND_DB", soft_name_var.get()),
+        ("SOFTLAND_USER", soft_user_var.get()),
+        ("SOFTLAND_PASSWORD", encrypted_soft_password),
     ]
 
     for key, value in fields:
@@ -258,6 +288,12 @@ def guardar_credenciales():
     os.environ["APPHOST"] = host_var.get()
     os.environ["APPPORT"] = port_var.get()
 
+    os.environ["SOFTLAND_DB"] = soft_name_var.get()
+    os.environ["SOFTLAND_USER"] = soft_user_var.get()
+    os.environ["SOFTLAND_PASSWORD"] = encrypted_soft_password
+    os.environ["SOFTLAND_HOST"] = soft_host_var.get()
+    os.environ["SOFTLAND_PORT"] = soft_port_var.get()
+
     actualizar_database_settings()
     connections.close_all()
 
@@ -269,7 +305,7 @@ def test_conexion():
 
     if ok:
 
-        status_label.config(
+        status_label_araya.config(
             text="✓ Conexión exitosa",
             bootstyle="success"
         )
@@ -281,13 +317,58 @@ def test_conexion():
 
     else:
 
-        status_label.config(
+        status_label_araya.config(
             text="✗ Error de conexión",
             bootstyle="danger"
         )
 
         messagebox.showerror(
             "Error conexión",
+            mensaje
+        )
+
+
+def probar_conexion_softland():
+    try:
+        connections.close_all()
+
+        connection = connections['softland']
+
+        connection.ensure_connection()
+
+        return True, "Conexión exitosa"
+
+    except Exception as e:
+
+        return False, str(e)
+
+
+def test_conexion_softland():
+    guardar_credenciales()
+
+    ok, mensaje = probar_conexion_softland()
+
+    if ok:
+
+        status_label_softland.config(
+            text="✓ Conexión exitosa",
+            bootstyle="success"
+        )
+
+        messagebox.showinfo(
+            "Conexión Softland",
+            "Conexión exitosa"
+        )
+
+    else:
+
+        status_label_softland.config(
+            text="✗ Error de conexión",
+            bootstyle="danger"
+        )
+
+        messagebox.showerror(
+            "Error conexión Softland",
             mensaje
         )
 
@@ -309,27 +390,47 @@ def iniciar_servidor():
     os.environ['ALLOWED_HOSTS'] = '127.0.0.1,localhost'
 
     try:
-        ok, mensaje = probar_conexion()
-        write_log(f"Conexión DB: {ok} - {mensaje}")
+        ok_def, msg_def = probar_conexion()
+        write_log(f"Conexión Araya DB: {ok_def} - {msg_def}")
+        ok_soft, msg_soft = probar_conexion_softland()
+        write_log(f"Conexión Softland DB: {ok_soft} - {msg_soft}")
     except Exception as e:
         write_log(f"ERROR probar_conexion: {e}")
-        ok, mensaje = False, str(e)
+        ok_def, msg_def = False, str(e)
+        ok_soft, msg_soft = False, str(e)
 
-    logger.info(f"Conexión DB: {ok} - {mensaje}")
+    logger.info(f"Conexión Araya DB: {ok_def} - {msg_def}")
+    logger.info(f"Conexión Softland DB: {ok_soft} - {msg_soft}")
 
-    if not ok:
+    if not ok_def:
         status_label.config(
-            text="✗ Error de conexión",
+            text="✗ Error conexión Araya",
             bootstyle="danger"
         )
 
         messagebox.showerror(
-            "Error conexión",
-            mensaje
+            "Error conexión Araya",
+            msg_def
         )
 
-        logger.error(f"Error conexión: {mensaje}")
-        write_log(f"Error conexión: {mensaje}")
+        logger.error(f"Error conexión Araya: {msg_def}")
+        write_log(f"Error conexión Araya: {msg_def}")
+
+        return
+
+    if not ok_soft:
+        status_label.config(
+            text="✗ Error conexión Softland",
+            bootstyle="danger"
+        )
+
+        messagebox.showerror(
+            "Error conexión Softland",
+            msg_soft
+        )
+
+        logger.error(f"Error conexión Softland: {msg_soft}")
+        write_log(f"Error conexión Softland: {msg_soft}")
 
         return
 
@@ -412,9 +513,9 @@ root = ttk.Window(
     resizable=(True, True)
 )
 
-root.geometry("520x780")
+root.geometry("600x860")
 
-root.minsize(520, 780)
+root.minsize(600, 860)
 
 # =========================================================
 # CUSTOM STYLE
@@ -475,13 +576,35 @@ password_var = ttk.StringVar(
     )
 )
 
+soft_host_var = ttk.StringVar(
+    value=os.getenv("SOFTLAND_HOST", "localhost")
+)
+
+soft_port_var = ttk.StringVar(
+    value=os.getenv("SOFTLAND_PORT", "1433")
+)
+
+soft_name_var = ttk.StringVar(
+    value=os.getenv("SOFTLAND_DB", "")
+)
+
+soft_user_var = ttk.StringVar(
+    value=os.getenv("SOFTLAND_USER", "sa")
+)
+
+soft_password_var = ttk.StringVar(
+    value=decrypt_password(
+        os.getenv("SOFTLAND_PASSWORD", "")
+    )
+)
+
 # =========================================================
 # MAIN CONTAINER
 # =========================================================
 
 main = ttk.Frame(
     root,
-    padding=30
+    padding=15
 )
 
 main.pack(
@@ -519,27 +642,23 @@ if logo_path.exists():
     )
 
     logo_label.pack(
-        pady=(0, 10)
+        pady=(0, 8)
     )
 
 # =========================================================
-# FORM
+# NOTEBOOK WITH TABS
 # =========================================================
 
-form = ttk.Frame(main)
-
-form.pack(
-    fill=X,
-    expand=True
-)
+notebook = ttk.Notebook(main)
+notebook.pack(fill=BOTH, expand=True)
 
 
-def create_field(label, variable, show=None):
-    container = ttk.Frame(form)
+def create_field(parent, label, variable, show=None):
+    container = ttk.Frame(parent)
 
     container.pack(
         fill=X,
-        pady=10
+        pady=8
     )
 
     lbl = ttk.Label(
@@ -550,7 +669,7 @@ def create_field(label, variable, show=None):
 
     lbl.pack(
         anchor=W,
-        pady=(0, 5)
+        pady=(0, 4)
     )
 
     entry = ttk.Entry(
@@ -562,24 +681,99 @@ def create_field(label, variable, show=None):
 
     entry.pack(
         fill=X,
-        ipady=10
+        ipady=8
     )
 
     return entry
 
 
-create_field("Servidor SQL", host_var)
+def make_tab(parent, fields, test_cmd):
+    frame = ttk.Frame(parent, padding=8)
+    frame.pack(fill=BOTH, expand=True)
 
-create_field("Puerto", port_var)
+    try:
+        canvas_bg = style.lookup("TFrame", "background")
+    except Exception:
+        canvas_bg = "#1a1a2e"
+    canvas = tk.Canvas(frame, highlightthickness=0, bg=canvas_bg)
+    scrollbar = ttk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+    scrollable = ttk.Frame(canvas)
 
-create_field("Base de Datos", name_var)
+    scrollable.bind(
+        "<Configure>",
+        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+    )
 
-create_field("Usuario", user_var)
+    canvas.create_window((0, 0), window=scrollable, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
 
-create_field("Contraseña", password_var, show="•")
+    canvas.pack(side="left", fill=BOTH, expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    def _on_mousewheel(event):
+        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", _on_mousewheel, add="+"))
+    canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
+
+    row = ttk.Frame(scrollable)
+    row.pack(fill=BOTH, expand=True)
+
+    left = ttk.Frame(row)
+    left.pack(side=LEFT, fill=BOTH, expand=True)
+
+    for label, var, show in fields:
+        create_field(left, label, var, show=show)
+
+    right = ttk.Frame(row, padding=(20, 0, 0, 0))
+    right.pack(side=RIGHT, fill=Y)
+
+    status = ttk.Label(
+        right,
+        text="",
+        style="Status.TLabel"
+    )
+    status.pack(pady=(0, 10))
+
+    btn = ttk.Button(
+        right,
+        text="Probar\nconexión",
+        bootstyle="info",
+        command=test_cmd
+    )
+    btn.pack(ipady=12, ipadx=10)
+
+    return status
+
+
+# --- Tab Araya ---
+tab_araya = ttk.Frame(notebook)
+notebook.add(tab_araya, text="  Araya  ")
+
+araya_fields = [
+    ("Servidor SQL", host_var, None),
+    ("Puerto", port_var, None),
+    ("Base de Datos", name_var, None),
+    ("Usuario", user_var, None),
+    ("Contraseña", password_var, "•"),
+]
+status_label_araya = make_tab(tab_araya, araya_fields, test_conexion)
+
+# --- Tab Softland ---
+tab_softland = ttk.Frame(notebook)
+notebook.add(tab_softland, text="  Softland  ")
+
+softland_fields = [
+    ("Servidor SQL", soft_host_var, None),
+    ("Puerto", soft_port_var, None),
+    ("Base de Datos", soft_name_var, None),
+    ("Usuario", soft_user_var, None),
+    ("Contraseña", soft_password_var, "•"),
+]
+status_label_softland = make_tab(tab_softland, softland_fields, test_conexion_softland)
 
 # =========================================================
-# STATUS
+# BOTTOM STATUS
 # =========================================================
 
 status_label = ttk.Label(
@@ -589,7 +783,7 @@ status_label = ttk.Label(
 )
 
 status_label.pack(
-    pady=(20, 10)
+    pady=(8, 5)
 )
 
 # =========================================================
@@ -600,22 +794,7 @@ buttons = ttk.Frame(main)
 
 buttons.pack(
     fill=X,
-    pady=(10, 0)
-)
-
-btn_test = ttk.Button(
-    buttons,
-    text="Probar conexión",
-    bootstyle="info",
-    command=test_conexion
-)
-
-btn_test.pack(
-    side=LEFT,
-    expand=True,
-    fill=X,
-    padx=(0, 10),
-    ipady=12
+    pady=(5, 0)
 )
 
 btn_start = ttk.Button(
@@ -629,7 +808,6 @@ btn_start.pack(
     side=LEFT,
     expand=True,
     fill=X,
-    padx=(10, 0),
     ipady=12
 )
 
@@ -645,18 +823,19 @@ version_label = ttk.Label(
 
 version_label.pack(
     side=BOTTOM,
-    pady=(20, 0)
+    pady=(12, 0)
 )
 
 # =========================================================
 # AUTO TEST & AUTO START
 # =========================================================
 
-ok, _ = probar_conexion()
+ok_def, _ = probar_conexion()
+ok_soft, _ = probar_conexion_softland()
 
-if ok:
+if ok_def and ok_soft:
     status_label.config(
-        text="✓ Conexión encontrada — iniciando servidor...",
+        text="✓ Conexiones encontradas — iniciando servidor...",
         bootstyle="success"
     )
 
@@ -666,6 +845,16 @@ if ok:
     )
 
 else:
+    if not ok_def:
+        status_label_araya.config(
+            text="✗ Error de conexión",
+            bootstyle="danger"
+        )
+    if not ok_soft:
+        status_label_softland.config(
+            text="✗ Error de conexión",
+            bootstyle="danger"
+        )
 
     status_label.config(
         text="Configura las credenciales",

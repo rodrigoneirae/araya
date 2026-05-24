@@ -76,6 +76,7 @@ PROJECT_APPS =[
     'modulos.maestros.apps.MaestrosConfig',
     'modulos.inventario.apps.InventarioConfig',
     'modulos.produccion.apps.ProduccionConfig',
+    'modulos.softland.apps.SoftlandConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + PROJECT_APPS
@@ -107,7 +108,19 @@ DATABASES = {
             'driver': 'ODBC Driver 18 for SQL Server',
             'extra_params': 'TrustServerCertificate=yes',
         },
-    }
+    },
+    'softland': {
+        'ENGINE': 'mssql',
+        'NAME': os.environ.get("SOFTLAND_DB", ""),
+        'USER': os.environ.get("SOFTLAND_USER", "sa"),
+        'PASSWORD': os.environ.get("SOFTLAND_PASSWORD", ""),
+        'HOST': os.environ.get("SOFTLAND_HOST", "localhost"),
+        'PORT': os.environ.get("SOFTLAND_PORT", "1433"),
+        'OPTIONS': {
+            'driver': 'ODBC Driver 18 for SQL Server',
+            'extra_params': 'TrustServerCertificate=yes',
+        },
+    },
 }
 
 AUTH_PASSWORD_VALIDATORS = [

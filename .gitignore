@@ -223,3 +223,19 @@ ENV/
 /staticfiles/
 /nginx_logs/
 /cache/
+
+# Flutter mobile app (araya_mobile/)
+# Track only: lib/, test/, pubspec.yaml, pubspec.lock, analysis_options.yaml,
+# .metadata, and platform source dirs (android/app/src/, linux/runner/)
+araya_mobile/.dart_tool/
+araya_mobile/.pub-cache/
+araya_mobile/.pub/
+araya_mobile/.flutter-plugins
+araya_mobile/.flutter-plugins-dependencies
+araya_mobile/.packages
+araya_mobile/build/
+araya_mobile/android/.gradle/
+araya_mobile/android/local.properties
+araya_mobile/android/build/
+araya_mobile/linux/flutter/ephemeral/
+!araya_mobile/lib/

@@ -28,9 +28,11 @@ PROJECT_APPS =[
     'modulos.inventario.apps.InventarioConfig',
     'modulos.produccion.apps.ProduccionConfig',
     'modulos.softland.apps.SoftlandConfig',
+    'modulos.registros.apps.RegistrosConfig',
 ]
 THIRD_PARTY_APPS =[
-    'rest_framework'
+    'rest_framework',
+    'rest_framework.authtoken',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + PROJECT_APPS + THIRD_PARTY_APPS
@@ -129,6 +131,15 @@ LOGIN_URL = "login"
 LOGOUT_REDIRECT_URL = "login"
 UPDATE_REDIRECT_URL = "update"
 
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"

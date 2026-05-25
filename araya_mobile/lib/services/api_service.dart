@@ -3,6 +3,9 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
+import '../models/articulo.dart';
+import '../models/registro_articulo.dart';
+
 class BackendInfo {
   final String status;
   final String? detail;
@@ -22,25 +25,41 @@ class BackendInfo {
 class LoginResult {
   final bool success;
   final String? message;
+  final String? token;
+  final String? username;
 
-  LoginResult({required this.success, this.message});
+  LoginResult({required this.success, this.message, this.token, this.username});
 }
 
 class ApiService {
+  static final http.Client _sharedClient = http.Client();
+
   final String baseUrl;
+  final String? token;
   final http.Client _client;
 
-  ApiService({required this.baseUrl, http.Client? client})
-      : _client = client ?? http.Client();
+  ApiService({required this.baseUrl, this.token, http.Client? client})
+      : _client = client ?? _sharedClient;
 
   String get _healthUrl => '$baseUrl/api/health/';
-  String get _loginUrl => '$baseUrl/login/';
+  String get _loginApiUrl => '$baseUrl/api/auth/login/';
+  String get _articulosUrl => '$baseUrl/api/articulos/';
+  String get _registrosUrl => '$baseUrl/api/registros/';
+
+  Map<String, String> _headers({bool json = false}) {
+    final h = <String, String>{};
+    if (json) h['Content-Type'] = 'application/json';
+    if (token != null && token!.isNotEmpty) {
+      h['Authorization'] = 'Token $token';
+    }
+    return h;
+  }
 
   Future<BackendInfo> checkHealth() async {
     try {
       final uri = Uri.parse(_healthUrl);
       final response = await _client
-          .get(uri)
+          .get(uri, headers: _headers())
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
@@ -74,21 +93,28 @@ class ApiService {
     }
   }
 
-  Future<LoginResult> login(String username, String password) async {
+  Future<LoginResult> loginWithToken(String username, String password) async {
     try {
-      final uri = Uri.parse(_loginUrl);
+      final uri = Uri.parse(_loginApiUrl);
       final response = await _client
           .post(
             uri,
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: {'login': username, 'password': password},
+            headers: _headers(json: true),
+            body: jsonEncode({
+              'username': username,
+              'password': password,
+            }),
           )
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
         if (json['status'] == 'success') {
-          return LoginResult(success: true);
+          return LoginResult(
+            success: true,
+            token: json['token'] as String?,
+            username: json['username'] as String?,
+          );
         }
         return LoginResult(
           success: false,
@@ -113,7 +139,67 @@ class ApiService {
     }
   }
 
+  Future<List<Articulo>> searchArticulos(String query) async {
+    final uri = Uri.parse(_articulosUrl).replace(
+      queryParameters: {'q': query},
+    );
+    final response = await _client
+        .get(uri, headers: _headers())
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body) as List<dynamic>;
+      return data
+          .map((e) => Articulo.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    throw Exception('Error al buscar artículos');
+  }
+
+  Future<List<RegistroArticulo>> fetchRegistros({String? estado}) async {
+    final params = <String, String>{};
+    if (estado != null && estado.isNotEmpty) {
+      params['estado'] = estado;
+    }
+    final uri = Uri.parse(_registrosUrl).replace(queryParameters: params);
+    final response = await _client
+        .get(uri, headers: _headers())
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body) as List<dynamic>;
+      return data
+          .map((e) => RegistroArticulo.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    throw Exception('Error al cargar registros');
+  }
+
+  Future<bool> createRegistro({
+    required String documento,
+    required List<RegistroDetalle> detalles,
+  }) async {
+    final uri = Uri.parse(_registrosUrl);
+
+    final body = {
+      'documento': documento,
+      'detalles': detalles.map((d) => d.toJson()).toList(),
+    };
+
+    final response = await _client
+        .post(
+          uri,
+          headers: _headers(json: true),
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 15));
+
+    return response.statusCode == 201;
+  }
+
   void dispose() {
-    _client.close();
+    if (_client != _sharedClient) {
+      _client.close();
+    }
   }
 }

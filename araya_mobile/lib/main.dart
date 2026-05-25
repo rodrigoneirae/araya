@@ -64,7 +64,6 @@ class _StartupScreenState extends State<StartupScreen> {
 
     final api = ApiService(baseUrl: savedUrl);
     final info = await api.checkHealth();
-    api.dispose();
 
     if (!info.isOk) {
       if (!mounted) return;
@@ -80,11 +79,12 @@ class _StartupScreenState extends State<StartupScreen> {
 
     if (loggedIn && mounted) {
       final username = await config.getLastUser();
+      final token = await config.getToken();
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => HomeScreen(
-            apiService: ApiService(baseUrl: savedUrl),
+            apiService: ApiService(baseUrl: savedUrl, token: token),
             username: username,
           ),
         ),

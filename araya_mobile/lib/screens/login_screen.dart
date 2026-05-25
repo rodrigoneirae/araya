@@ -44,21 +44,26 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     final api = ApiService(baseUrl: widget.baseUrl);
-    final result = await api.login(username, password);
-    api.dispose();
+    final result = await api.loginWithToken(username, password);
 
     if (!mounted) return;
 
     if (result.success) {
       final config = ConfigService();
       await config.setLoggedIn(true);
-      await config.setLastUser(username);
+      await config.setLastUser(result.username ?? username);
+      if (result.token != null) {
+        await config.setToken(result.token!);
+      }
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => HomeScreen(
-            apiService: ApiService(baseUrl: widget.baseUrl),
-            username: username,
+            apiService: ApiService(
+              baseUrl: widget.baseUrl,
+              token: result.token,
+            ),
+            username: result.username ?? username,
           ),
         ),
       );

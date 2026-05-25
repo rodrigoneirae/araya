@@ -5,6 +5,8 @@ import '../services/api_service.dart';
 import '../services/config_service.dart';
 import '../services/theme_service.dart';
 import 'login_screen.dart';
+import 'registro_form_screen.dart';
+import 'registros_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ApiService apiService;
@@ -21,22 +23,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  BackendInfo? _info;
-  bool _loading = true;
+  final bool _loading = false;
 
   @override
   void initState() {
     super.initState();
-    _check();
-  }
-
-  Future<void> _check() async {
-    setState(() => _loading = true);
-    final info = await widget.apiService.checkHealth();
-    setState(() {
-      _info = info;
-      _loading = false;
-    });
   }
 
   Future<void> _logout() async {
@@ -92,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _check,
+            onPressed: () {},
             tooltip: 'Refrescar',
           ),
           IconButton(
@@ -102,57 +93,80 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Center(
-        child: _loading
-            ? CircularProgressIndicator(color: cs.primary)
-            : _buildStatus(theme, cs, isDark),
-      ),
+      body: _loading
+          ? Center(child: CircularProgressIndicator(color: cs.primary))
+          : _buildMenu(theme, cs, isDark),
     );
   }
 
-  Widget _buildStatus(ThemeData theme, ColorScheme cs, bool isDark) {
-    final ok = _info?.isOk ?? false;
+  Widget _buildMenu(ThemeData theme, ColorScheme cs, bool isDark) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            ok ? Icons.check_circle : Icons.error,
-            size: 80,
-            color: ok ? cs.primary : Colors.red,
-          ),
           const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.asset('assets/images/logo.png', height: 64),
+          ),
+          const SizedBox(height: 6),
           Text(
-            ok ? 'Conectado' : 'Error de conexión',
-            style: theme.textTheme.headlineSmall?.copyWith(
+            'ARAYA',
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: cs.primary,
               fontWeight: FontWeight.bold,
+              letterSpacing: 4,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            ok
-                ? 'El backend REST Framework está funcionando'
-                : _info?.detail ?? 'Error desconocido',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+          if (widget.username != null)
+            Text(
+              widget.username!,
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+              ),
             ),
-          ),
           const SizedBox(height: 32),
           Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _infoRow('Estado', ok ? 'Operativo' : 'Caído',
-                      ok ? cs.primary : Colors.red, isDark),
-                  const Divider(height: 20),
-                  _infoRow('Servidor', widget.apiService.baseUrl, null, isDark),
-                  const Divider(height: 20),
-                  _infoRow('Usuario', widget.username ?? '-', null, isDark),
-                ],
-              ),
+            child: Column(
+              children: [
+                _menuItem(
+                  icon: Icons.add_circle_outline,
+                  title: 'Nuevo Registro',
+                  subtitle: 'Ingresar artículos',
+                  color: cs.primary,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => RegistroFormScreen(
+                        apiService: widget.apiService,
+                      ),
+                    ),
+                  ),
+                ),
+                Divider(height: 1, indent: 16, endIndent: 16,
+                    color: isDark ? ArayaColors.darkBorder : ArayaColors.lightBorder),
+                _menuItem(
+                  icon: Icons.list_alt,
+                  title: 'Mis Registros',
+                  subtitle: 'Ver registros ingresados',
+                  color: cs.primary,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => RegistrosListScreen(
+                        apiService: widget.apiService,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'v1.0.0',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
             ),
           ),
         ],
@@ -160,27 +174,29 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _infoRow(String label, String value, Color? valueColor, bool isDark) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
-            fontSize: 13,
-          ),
+  Widget _menuItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: valueColor ??
-                (isDark ? ArayaColors.darkText : ArayaColors.lightText),
-            fontSize: 13,
-          ),
-        ),
-      ],
+        child: Icon(icon, color: color),
+      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+      trailing: const Icon(Icons.chevron_right, size: 20),
+      onTap: onTap,
     );
   }
+
+
 }

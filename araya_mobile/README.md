@@ -1,6 +1,6 @@
 # araya_mobile
 
-Araya Ltda
+A new Flutter project.
 
 ## Getting Started
 

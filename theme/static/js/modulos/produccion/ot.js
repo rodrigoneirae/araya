@@ -278,6 +278,11 @@ function nuevaOt() {
     const fecha = new Date().toISOString().split('T')[0];
     document.getElementById('otFecha').value = fecha;
     document.getElementById('otEstado').value = 'Abierto';
+    document.getElementById('otEstado').dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('otEncargado').value = '';
+    document.getElementById('otEncargado').dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('otProceso').value = '';
+    document.getElementById('otNumero').value = '';
     document.getElementById('tab-detalle').classList.add('hidden');
     document.getElementById('contenido-detalle').classList.add('hidden');
     document.getElementById('tab-encabezado').classList.add('active');
@@ -297,25 +302,29 @@ function setCamposOtEditable(editable) {
         const el = document.getElementById(id);
         if (el) {
             if (el.tagName === 'SELECT') {
-                el.disabled = true;
+                el.disabled = !editable;
             } else {
-                el.readOnly = true;
+                el.readOnly = !editable;
             }
         }
     });
 
     const inputOR = document.getElementById('inputOR');
-    if (inputOR) inputOR.disabled = true;
+    if (inputOR) inputOR.disabled = !editable;
     const inputPE = document.getElementById('inputPE');
-    if (inputPE) inputPE.disabled = true;
+    if (inputPE) inputPE.disabled = !editable;
 
     const buttons = document.querySelectorAll('#contenido-detalle button');
     buttons.forEach(btn => {
-        btn.disabled = true;
+        btn.disabled = !editable;
     });
 
     const estado = document.getElementById('otEstado');
-    if (estado) estado.disabled = !editable;
+    if (estado) { estado.disabled = !editable; estado.dispatchEvent(new Event('change', { bubbles: true })); }
+
+    // Sync Select2 for encargado only (proceso has side effects via cargarListasORPE)
+    const encargado = document.getElementById('otEncargado');
+    if (encargado) encargado.dispatchEvent(new Event('change', { bubbles: true }));
 
     modoEdicionOt = editable;
     renderizarDetalleOt();
@@ -748,6 +757,7 @@ function cargarOt(numero) {
                     encargadoSelect.appendChild(option);
                     encargadoSelect.value = data.data.encargado;
                 }
+                encargadoSelect.dispatchEvent(new Event('change', { bubbles: true }));
             }
 
             const procesoSelect = document.getElementById('otProceso');
@@ -767,9 +777,11 @@ function cargarOt(numero) {
                     procesoSelect.appendChild(option);
                     procesoSelect.value = data.data.proceso;
                 }
+                procesoSelect.dispatchEvent(new Event('change', { bubbles: true }));
             }
 
             document.getElementById('otEstado').value = data.data.estado || 'Abierto';
+            document.getElementById('otEstado').dispatchEvent(new Event('change', { bubbles: true }));
 
             detallesOt = (data.data.detalles || []).map(d => ({
                 codigo: d.codigo || '',

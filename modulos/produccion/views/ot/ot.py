@@ -210,7 +210,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                 "data": {
                     "numero": encabezado.numero,
                     "fecha": fecha,
-                    "encargado": str(encabezado.codencargado) if encabezado.codencargado else "",
+                    "encargado": str(int(encabezado.codencargado)) if encabezado.codencargado else "",
                     "encargado_nombre": encargado_nombre,
                     "proceso": str(encabezado.proceso) if encabezado.proceso else "",
                     "proceso_nombre": proceso_nombre,
@@ -345,7 +345,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
         # Equivalente a:
         # WHERE Articulos.Prc = X
         if prc and prc != '':
-            filtros["codigo__prc"] = int(prc)
+            filtros["codigo__prc"] = int(float(prc))
 
         print("\n=========== DEBUG ACCESS MATCH ===========")
         print("FILTROS:", filtros)

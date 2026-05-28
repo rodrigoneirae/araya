@@ -455,6 +455,20 @@ def iniciar_servidor():
         logger.info("Obteniendo WSGI application...")
 
         # =========================
+        # MIGRATIONS
+        # =========================
+
+        write_log("Ejecutando migrate...")
+
+        call_command(
+            'migrate',
+            interactive=False,
+            verbosity=0,
+        )
+
+        write_log("migrate completado")
+
+        # =========================
         # COLLECTSTATIC
         # =========================
 

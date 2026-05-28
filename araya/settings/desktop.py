@@ -77,6 +77,7 @@ PROJECT_APPS =[
     'modulos.inventario.apps.InventarioConfig',
     'modulos.produccion.apps.ProduccionConfig',
     'modulos.softland.apps.SoftlandConfig',
+    'modulos.registros.apps.RegistrosConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + PROJECT_APPS

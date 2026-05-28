@@ -21,9 +21,7 @@ $OutName = "araya-backend"
 $OutputDir = "dist-nuitka\bin"
 
 $env:PYTHONPATH = $ScriptDir
-
 $env:DJANGO_SETTINGS_MODULE = "araya.settings.desktop"
-
 
 # =========================================================
 # CLEAN
@@ -52,7 +50,8 @@ foreach ($dir in $cleanDirs) {
         Remove-Item `
             -Recurse `
             -Force `
-            $dir
+            $dir `
+            -ErrorAction SilentlyContinue
     }
 }
 
@@ -64,8 +63,8 @@ Get-ChildItem `
     -ErrorAction SilentlyContinue |
     Remove-Item `
         -Recurse `
-        -Force
-
+        -Force `
+        -ErrorAction SilentlyContinue
 
 # =========================================================
 # CHECK DEPENDENCIES
@@ -86,8 +85,10 @@ import ttkbootstrap
 import tkinter
 import cryptography
 import waitress
-"
+import rest_framework
 
+print('DEPENDENCIAS OK')
+"
 
 # =========================================================
 # COLLECTSTATIC
@@ -101,7 +102,6 @@ Write-Host ""
 
 & $Python manage.py collectstatic --noinput
 
-
 # =========================================================
 # BUILD NUITKA
 # =========================================================
@@ -113,7 +113,9 @@ Write-Host "====================================="
 Write-Host ""
 
 & $Python -m nuitka `
+    --standalone `
     --onefile `
+    --follow-imports `
     --onefile-tempdir-spec=%CACHE_DIR%/araya-backend `
     --windows-console-mode=disable `
     --enable-plugin=tk-inter `
@@ -130,6 +132,7 @@ Write-Host ""
     --include-package=django.middleware `
     --include-package=django.contrib.auth `
     --include-package=django.contrib.sessions `
+    --include-package=rest_framework `
     --include-package=whitenoise `
     --include-package=dotenv `
     --include-package=mssql `
@@ -140,13 +143,24 @@ Write-Host ""
     --include-package=ttkbootstrap `
     --include-package-data=django `
     --include-package-data=ttkbootstrap `
+    --include-package-data=rest_framework `
     --include-module=pyodbc `
+    --include-module=rest_framework.parsers `
+    --include-module=rest_framework.renderers `
+    --include-module=rest_framework.serializers `
+    --include-module=rest_framework.views `
+    --include-module=rest_framework.permissions `
+    --include-module=rest_framework.authentication `
+    --include-module=rest_framework.pagination `
+    --include-module=rest_framework.response `
+    --include-module=rest_framework.status `
+    --include-module=rest_framework.decorators `
+    --include-module=rest_framework.exceptions `
     --include-data-dir=theme/templates=theme/templates `
     --include-data-dir=theme/static=theme/static `
     --include-data-dir=staticfiles=staticfiles `
     --nofollow-import-to=pytest,pydoc `
     $Entry
-
 
 # =========================================================
 # DONE
@@ -162,4 +176,4 @@ Write-Host "EXE:"
 Write-Host "$OutputDir\$OutName.exe"
 
 Write-Host ""
-Write-Host "Araya Desktop compilado: $OutputDir\$OutName"
+Write-Host "Araya Desktop compilado: $OutputDir\$OutName.exe"

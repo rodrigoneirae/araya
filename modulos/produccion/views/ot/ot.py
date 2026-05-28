@@ -205,6 +205,70 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                 if proc:
                     proceso_nombre = proc.nombre
 
+            pe_relacionados = list(Movs.objects.filter(
+                numero=numero, tipo=8
+            ).exclude(linea=0, tipodocref__isnull=True, tipodocref=0).exclude(
+                tipodocref__in=[6]
+            ).values("docref", "tipodocref"))
+
+            tipo_pe_docs = Docs.objects.filter(cod=6).first()
+            pe_docs_numeros = set()
+            for d in detalles:
+                if d.get("tipodocref") == 6 and d.get("docref"):
+                    pe_docs_numeros.add(d["docref"])
+
+            pe_relacionados = []
+            if pe_docs_numeros:
+                movs_pe = Movs.objects.filter(
+                    numero__in=pe_docs_numeros,
+                    tipo=6,
+                    linea=0
+                ).select_related("codencargado").order_by("-numero")
+                for m in movs_pe:
+                    encargado_pe = ""
+                    if m.codencargado:
+                        emp = Empleados.objects.filter(cod=m.codencargado).first()
+                        if emp:
+                            encargado_pe = emp.nombre
+                    pe_relacionados.append({
+                        "numero": m.numero,
+                        "fecha": m.fecha.strftime("%Y-%m-%d") if m.fecha else "",
+                        "estado": m.estado or "",
+                        "encargado": encargado_pe,
+                    })
+
+            vc_relacionados = []
+            movs_vc = Movs.objects.filter(
+                tipodocref__in=[8, 10],
+                docref=numero,
+                linea=0
+            ).order_by("-numero")
+            for m in movs_vc:
+                tipo_nombre = "VC"
+                if m.tipo and m.tipo.cod == 10:
+                    tipo_nombre = "VC"
+                elif m.tipo and m.tipo.cod == 6:
+                    tipo_nombre = "PE"
+                vc_relacionados.append({
+                    "numero": m.numero,
+                    "tipo": tipo_nombre,
+                    "fecha": m.fecha.strftime("%Y-%m-%d") if m.fecha else "",
+                    "estado": m.estado or "",
+                    "encargado": str(int(m.codencargado)) if m.codencargado else "",
+                })
+
+            movs_vc_directos = Movs.objects.filter(
+                numero=float(numero), tipo=10, linea=0
+            ).order_by("-numero")
+            for m in movs_vc_directos:
+                vc_relacionados.append({
+                    "numero": m.numero,
+                    "tipo": "VC",
+                    "fecha": m.fecha.strftime("%Y-%m-%d") if m.fecha else "",
+                    "estado": m.estado or "",
+                    "encargado": str(int(m.codencargado)) if m.codencargado else "",
+                })
+
             return JsonResponse({
                 "success": True,
                 "data": {
@@ -216,6 +280,8 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                     "proceso_nombre": proceso_nombre,
                     "estado": encabezado.estado or "",
                     "detalles": detalles,
+                    "pe_relacionados": pe_relacionados,
+                    "vc_relacionados": vc_relacionados,
                 }
             })
         except Exception as e:

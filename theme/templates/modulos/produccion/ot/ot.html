@@ -24,7 +24,7 @@
         </div>
 
         <div class="p-4 w-full flex-1 overflow-hidden flex flex-col">
-            <div id="contenido-encabezado" class="tab-content h-full">
+            <div id="contenido-encabezado" class="tab-content h-full overflow-auto">
                 <form id="otForm" class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                         <div>
@@ -61,6 +61,51 @@
                                 <option value="Cerrado">Cerrado</option>
                                 <option value="Terminado">Terminado</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <div id="seccionRelacionados" class="hidden space-y-4">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div class="bg-aq-surface-2 border border-aq-border rounded-lg p-3">
+                                <h4 class="text-sm font-semibold text-aq-text mb-2 flex items-center gap-1">
+                                    <i class='bx bx-file'></i> Partes de Entrada (PE) Relacionados
+                                </h4>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full border-collapse min-w-[400px]">
+                                        <thead>
+                                            <tr class="bg-aq-primary text-white text-xs">
+                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">N° PE</th>
+                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">Fecha</th>
+                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">Encargado</th>
+                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaPeRelacionados">
+                                            <tr><td colspan="4" class="px-3 py-2 text-center text-aq-muted text-xs">Sin PE relacionados</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="bg-aq-surface-2 border border-aq-border rounded-lg p-3">
+                                <h4 class="text-sm font-semibold text-aq-text mb-2 flex items-center gap-1">
+                                    <i class='bx bx-file'></i> Vales de Consumo (VC) Relacionados
+                                </h4>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full border-collapse min-w-[400px]">
+                                        <thead>
+                                            <tr class="bg-aq-primary text-white text-xs">
+                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">N° VC</th>
+                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">Tipo</th>
+                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">Fecha</th>
+                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaVcRelacionados">
+                                            <tr><td colspan="4" class="px-3 py-2 text-center text-aq-muted text-xs">Sin VC relacionados</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </form>

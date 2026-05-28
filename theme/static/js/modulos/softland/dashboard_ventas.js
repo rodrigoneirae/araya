@@ -49,9 +49,61 @@ function initChart(id, config) {
 const charts = [];
 
 if (data.monthly_labels?.length) {
-    charts.push(initChart('chartVentasMes', chartConfig('bar', data.monthly_labels, [
-        { label: 'Ventas Netas', data: data.monthly_neto, backgroundColor: '#4a7c59', borderRadius: 3 },
-    ], {})));
+    const prevYear = new Date().getFullYear() - 1;
+    const monthlyTotalPrev = (data.monthly_afecto_prev || []).map((v, i) => v + ((data.monthly_exento_prev || [])[i] || 0));
+    const allValues = [...(data.monthly_afecto || []), ...(data.monthly_exento || []), ...monthlyTotalPrev];
+    const maxValue = Math.max(...allValues.filter(v => v > 0), 1);
+    const chartConfig = {
+        type: 'bar',
+        data: {
+            labels: data.monthly_labels,
+            datasets: [
+                {
+                    label: 'Afecto ' + new Date().getFullYear(),
+                    data: data.monthly_afecto,
+                    backgroundColor: '#4a7c59',
+                    borderRadius: 3,
+                },
+                {
+                    label: 'Exento ' + new Date().getFullYear(),
+                    data: data.monthly_exento,
+                    backgroundColor: '#c9842d',
+                    borderRadius: 3,
+                },
+                {
+                    label: 'Afecto ' + prevYear,
+                    data: data.monthly_afecto_prev,
+                    backgroundColor: 'rgba(74, 124, 89, 0.5)',
+                    borderRadius: 3,
+                },
+                {
+                    label: 'Exento ' + prevYear,
+                    data: data.monthly_exento_prev,
+                    backgroundColor: 'rgba(201, 132, 45, 0.5)',
+                    borderRadius: 3,
+                },
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    labels: { color: getChartDefaults().textColor, boxWidth: 12, padding: 12, font: { size: 11 } },
+                    position: 'bottom',
+                },
+            },
+            scales: {
+                x: { grid: { color: getChartDefaults().gridColor }, ticks: { color: getChartDefaults().textColor, font: { size: 10 } } },
+                y: { beginAtZero: true, max: maxValue * 1.15, grid: { color: getChartDefaults().gridColor }, ticks: { color: getChartDefaults().textColor, font: { size: 10 }, callback: function(v) { return '$' + (v/1000000).toFixed(0) + 'M'; } } },
+            },
+        }
+    };
+    charts.push(initChart('chartVentasMes', chartConfig));
 }
 
 if (data.cliente_labels?.length) {

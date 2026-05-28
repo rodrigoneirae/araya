@@ -93,6 +93,10 @@ class SoftlandSalesAPI:
             g.TotLinea - CASE WHEN (s.NetoAfecto + s.TotalDesc) = 0 THEN 0 ELSE (g.TotLinea * s.TotalDesc) / (s.NetoAfecto + s.TotalDesc) / 100 END AS [Real], 
             s.NetoAfecto + s.TotalDesc AS Total,
             CASE WHEN (s.NetoAfecto + s.TotalDesc) = 0 THEN 0 ELSE (s.TotalDesc * 100) / (s.NetoAfecto + s.TotalDesc) END AS Dcto2, 
+            CASE WHEN (s.NetoAfecto + s.NetoExento) = 0 THEN 0 ELSE (g.TotLinea * s.NetoAfecto) / (s.NetoAfecto + s.NetoExento) END AS NetoAfectoLinea,
+            CASE WHEN (s.NetoAfecto + s.NetoExento) = 0 THEN 0 ELSE (g.TotLinea * s.NetoExento) / (s.NetoAfecto + s.NetoExento) END AS NetoExentoLinea,
+            s.NetoAfecto AS NetoAfectoDoc,
+            s.NetoExento AS NetoExentoDoc,
             s.CodBode, 
             s.CodListaPrecio, 
             CONVERT(CHAR(19), s.FecHoraCreacion, 120) AS Fcreacion,
@@ -115,7 +119,7 @@ class SoftlandSalesAPI:
         AND s.Tipo IN ('B', 'F', 'N', 'D') 
         AND s.Folio > 0 
         AND s.Estado = 'V' 
-        AND s.NetoAfecto <> 0 
+        AND (s.NetoAfecto <> 0 OR s.NetoExento <> 0)
     ) ventas
     OUTER APPLY (
         SELECT TOP 1 c.CostoUnitario 
@@ -128,7 +132,7 @@ class SoftlandSalesAPI:
 
         """
 
-
+        # print(query)
 
         try:
 

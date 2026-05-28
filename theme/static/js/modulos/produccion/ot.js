@@ -293,6 +293,12 @@ function nuevaOt() {
     document.getElementById('btnGuardarOt').classList.remove('hidden');
     document.getElementById('inputOR').value = '';
     document.getElementById('inputPE').value = '';
+    const seccionRelacionados = document.getElementById('seccionRelacionados');
+    if (seccionRelacionados) seccionRelacionados.classList.add('hidden');
+    const tablaPe = document.getElementById('tablaPeRelacionados');
+    if (tablaPe) tablaPe.innerHTML = '<tr><td colspan="4" class="px-3 py-2 text-center text-aq-muted text-xs">Sin PE relacionados</td></tr>';
+    const tablaVc = document.getElementById('tablaVcRelacionados');
+    if (tablaVc) tablaVc.innerHTML = '<tr><td colspan="4" class="px-3 py-2 text-center text-aq-muted text-xs">Sin VC relacionados</td></tr>';
     setCamposOtEditable(true);
 }
 
@@ -320,11 +326,15 @@ function setCamposOtEditable(editable) {
     });
 
     const estado = document.getElementById('otEstado');
-    if (estado) { estado.disabled = !editable; estado.dispatchEvent(new Event('change', { bubbles: true })); }
+    if (estado) {
+        estado.disabled = !editable;
+        if (editable) {
+            estado.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
 
-    // Sync Select2 for encargado only (proceso has side effects via cargarListasORPE)
     const encargado = document.getElementById('otEncargado');
-    if (encargado) encargado.dispatchEvent(new Event('change', { bubbles: true }));
+    if (encargado && editable) encargado.dispatchEvent(new Event('change', { bubbles: true }));
 
     modoEdicionOt = editable;
     renderizarDetalleOt();
@@ -361,7 +371,7 @@ function eliminarOt() {
                 Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
                 nuevaOt();
             } else {
-                Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                Toastify({text:data.message, style: {background: '#f44336'}}).showToast();
             }
         });
     }});
@@ -775,7 +785,7 @@ function cargarOt(numero) {
                     option.value = data.data.proceso;
                     option.textContent = data.data.proceso_nombre || data.data.proceso;
                     procesoSelect.appendChild(option);
-                    procesoSelect.value = data.data.proceso;
+ procesoSelect.value = data.data.proceso;
                 }
                 procesoSelect.dispatchEvent(new Event('change', { bubbles: true }));
             }
@@ -798,6 +808,53 @@ function cargarOt(numero) {
                 canttotal: d.canttotal || 0,
             }));
             renderizarDetalleOt();
+
+            const seccionRelacionados = document.getElementById('seccionRelacionados');
+            if (seccionRelacionados) {
+                seccionRelacionados.classList.remove('hidden');
+            }
+
+            const tablaPe = document.getElementById('tablaPeRelacionados');
+            if (tablaPe) {
+                tablaPe.innerHTML = '';
+                const peRelacionados = data.data.pe_relacionados || [];
+                if (peRelacionados.length === 0) {
+                    tablaPe.innerHTML = '<tr><td colspan="4" class="px-3 py-2 text-center text-aq-muted text-xs">Sin PE relacionados</td></tr>';
+                } else {
+                    peRelacionados.forEach(pe => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-aq-surface text-xs border-b border-aq-border';
+                        tr.innerHTML = `
+                            <td class="px-2 py-1.5 text-aq-text">${pe.numero || ''}</td>
+                            <td class="px-2 py-1.5 text-aq-text">${pe.fecha || ''}</td>
+                            <td class="px-2 py-1.5 text-aq-text">${pe.encargado || ''}</td>
+                            <td class="px-2 py-1.5 text-aq-text">${pe.estado || ''}</td>
+                        `;
+                        tablaPe.appendChild(tr);
+                    });
+                }
+            }
+
+            const tablaVc = document.getElementById('tablaVcRelacionados');
+            if (tablaVc) {
+                tablaVc.innerHTML = '';
+                const vcRelacionados = data.data.vc_relacionados || [];
+                if (vcRelacionados.length === 0) {
+                    tablaVc.innerHTML = '<tr><td colspan="4" class="px-3 py-2 text-center text-aq-muted text-xs">Sin VC relacionados</td></tr>';
+                } else {
+                    vcRelacionados.forEach(vc => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-aq-surface text-xs border-b border-aq-border';
+                        tr.innerHTML = `
+                            <td class="px-2 py-1.5 text-aq-text">${vc.numero || ''}</td>
+                            <td class="px-2 py-1.5 text-aq-text">${vc.tipo || ''}</td>
+                            <td class="px-2 py-1.5 text-aq-text">${vc.fecha || ''}</td>
+                            <td class="px-2 py-1.5 text-aq-text">${vc.estado || ''}</td>
+                        `;
+                        tablaVc.appendChild(tr);
+                    });
+                }
+            }
 
             if (data.data.estado === 'Cerrado' || data.data.estado === 'Terminado') {
                 setCamposOtEditable(false);

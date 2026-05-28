@@ -5,7 +5,8 @@ from pathlib import Path
 DEBUG = False
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_COOKIE_AGE = 360
+SESSION_COOKIE_AGE = 86400
+SESSION_SAVE_EVERY_REQUEST = True
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'araya-desktop-secret-key-fallback')
 APP_VERSION = os.environ.get('APP_VERSION', '0.1.0')

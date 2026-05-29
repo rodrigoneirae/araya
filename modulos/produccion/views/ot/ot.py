@@ -99,22 +99,24 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": False, "message": str(e)})
 
     def _listar_encargados(self) -> JsonResponse:
-        empleados = Empleados.objects.values("cod", "nombre").order_by("nombre")
+        empleados = Empleados.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"encargados": list(empleados)})
 
     def _listar_procesos(self) -> JsonResponse:
-        procesos = Procesos.objects.values("cod", "nombre").order_by("nombre")
+        procesos = Procesos.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"procesos": list(procesos)})
 
     def _listar_bodegas(self) -> JsonResponse:
-        bodegas = Bodegas.objects.values("cod", "nombre").order_by("nombre")
+        bodegas = Bodegas.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"bodegas": list(bodegas)})
 
     def _buscar_articulo(self, codigo: str | None) -> JsonResponse:
         if not codigo:
             return JsonResponse({"success": False})
         try:
-            articulo = Articulos.objects.get(codigo=codigo)
+            articulo = Articulos.objects.filter(codigo=codigo).exclude(tipo='Inactivo').first()
+            if not articulo:
+                return JsonResponse({"success": False, "message": "Artículo no encontrado"})
             return JsonResponse({
                 "success": True,
                 "data": {
@@ -124,11 +126,11 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                     "precio": articulo.precio or 0,
                 }
             })
-        except Articulos.DoesNotExist:
+        except Exception as e:
             return JsonResponse({"success": False, "message": "Artículo no encontrado"})
 
     def _listar_articulos(self) -> JsonResponse:
-        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").order_by("descr")[:100]
+        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").exclude(tipo='Inactivo').order_by("descr")
         return JsonResponse({"articulos": list(articulos)})
 
     def _listar_ot(self) -> JsonResponse:
@@ -149,7 +151,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                     proceso_nombre = proc.nombre
             fecha = ""
             if m["fecha"]:
-                fecha = m["fecha"].strftime("%d-%m-%Y")
+                fecha = m["fecha"].strftime("%Y-%m-%d")
             resultado.append({
                 "numero": m["numero"],
                 "fecha": fecha,
@@ -310,6 +312,21 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": False, "message": str(e)})
 
     def _guardar_ot(self, data: dict[str, Any]) -> JsonResponse:
+        def parse_fecha(val, fallback=True):
+            if not val or val == "":
+                if fallback:
+                    return timezone.now()
+                return None
+            from datetime import datetime
+            for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
+                try:
+                    return datetime.strptime(str(val), fmt)
+                except ValueError:
+                    continue
+            if fallback:
+                return timezone.now()
+            return None
+
         try:
             numero_existente = data.get("numero", "")
             if numero_existente:
@@ -321,7 +338,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
 
             codencargado = float(data.get("encargado", 0)) if data.get("encargado") else None
             proceso = float(data.get("proceso", 0)) if data.get("proceso") else None
-            fecha = data.get("fecha")
+            fecha = parse_fecha(data.get("fecha"))
             estado = data.get("estado", "Abierto")
 
             detalles_raw = data.get("detalles", "[]")
@@ -353,23 +370,27 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                 codigo_art = None
                 if det.get("codigo"):
                     codigo_art = Articulos.objects.filter(codigo=det.get("codigo")).first()
-                det_tipodocref = tipodocref_cod
-                if det.get("tipo"):
+                det_tipo = det.get("tipo")
+                if det_tipo and str(det_tipo).strip():
                     try:
-                        det_tipodocref = int(float(det.get("tipo")))
+                        det_tipodocref = int(float(det_tipo))
                     except (ValueError, TypeError):
-                        det_tipodocref = tipodocref_cod
+                        det_tipodocref = None
+                else:
+                    det_tipodocref = None
+                det_fecha = parse_fecha(det.get("fecha")) if det.get("fecha") else fecha
                 Movs.objects.create(
                     numero=numero,
                     tipo=tipo,
                     linea=1,
-                    fecha=det.get("fecha", fecha),
+                    fecha=det_fecha,
                     codencargado=codencargado,
                     proceso=proceso,
                     codigo=codigo_art,
-                    cantidad=float(det.get("cantidad", 0)) *-1,
+                    cantidad=float(det.get("cantidad", 0)),
+                    punit=float(det["punit"]) if det.get("punit") not in (None, "", 0) else None,
                     estado=det.get("estado", "Abierto"),
-                    bodega=float(det.get("bodega")) if det.get("bodega") else None,
+                    bodega=float(det.get("bodega")) if det.get("bodega") else 1,
                     docref=float(det.get("docref")) if det.get("docref") else None,
                     tipodocref=det_tipodocref,
                     usr=usr,
@@ -441,13 +462,19 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
             if m.codigo and m.codigo.prc is not None:
                 proceso_nombre = procesos.get(int(m.codigo.prc), "")
 
+            punit = m.punit
+            if not punit and m.codigo and m.codigo.precio:
+                punit = m.codigo.precio
+
             resultado.append({
                 "numero": m.numero,
-                "fecha": m.fecha.strftime("%d-%m-%Y") if m.fecha else "",
+                "fecha": m.fecha.strftime("%Y-%m-%d") if m.fecha else "",
                 "rut": m.rut or "",
                 "codigo": m.codigo.codigo if m.codigo else "",
+                "nombre": m.codigo.descr if m.codigo else "",
                 "bodega": str(m.bodega) if m.bodega else "",
                 "cantidad": m.cantidad or 0,
+                "punit": punit or 0,
                 "proceso_nombre": proceso_nombre,
                 "estado": m.estado or "",
             })
@@ -636,14 +663,19 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
         encargado_obj = Empleados.objects.filter(cod=encabezado.codencargado).first() if encabezado.codencargado else None
         proceso_obj = Procesos.objects.filter(cod=encabezado.proceso).first() if encabezado.proceso else None
 
-        cell_style = ParagraphStyle("CellStyle", parent=getSampleStyleSheet()["Normal"], fontSize=7, leading=9)
+        cell_style = ParagraphStyle("CellStyle", parent=getSampleStyleSheet()["Normal"], fontSize=6, leading=7)
         center_style = ParagraphStyle("CenterStyle", parent=cell_style, alignment=1)
         right_style = ParagraphStyle("RightStyle", parent=cell_style, alignment=2)
 
+        def fmt_chile(n):
+            if n is None:
+                return ''
+            return f"{int(n):,}".replace(',', '.')
+
         def build_elements():
             styles = getSampleStyleSheet()
-            title_style = ParagraphStyle("CustomTitle", parent=styles["Heading2"], spaceAfter=4 * mm, fontSize=14)
-            subtitle_style = ParagraphStyle("CustomSub", parent=styles["Normal"], spaceAfter=3 * mm, fontSize=9)
+            title_style = ParagraphStyle("CustomTitle", parent=styles["Heading2"], spaceAfter=2 * mm, fontSize=11)
+            subtitle_style = ParagraphStyle("CustomSub", parent=styles["Normal"], spaceAfter=2 * mm, fontSize=8)
 
             elems = []
             elems.append(Paragraph("Orden de Trabajo", title_style))
@@ -651,7 +683,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
             enc_headers = ["N° OT", "Fecha", "Estado", "Encargado", "Proceso", "H.Inicio", "H.Término"]
             enc_data = [enc_headers]
             enc_data.append([
-                Paragraph(str(int(numero)), center_style),
+                Paragraph(fmt_chile(numero), center_style),
                 Paragraph(encabezado.fecha.strftime('%d-%m-%Y') if encabezado.fecha else '', center_style),
                 Paragraph(encabezado.estado or '', center_style),
                 Paragraph(encargado_obj.nombre if encargado_obj else '', cell_style),
@@ -669,73 +701,125 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 7),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("FONTSIZE", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
             ]))
             elems.append(enc_tbl)
-            elems.append(Spacer(1, 3 * mm))
+            elems.append(Spacer(1, 2 * mm))
 
-            header = ["DocRef", "Tipo", "Fecha", "Código", "Artículo", "Cant."]
-            col_widths = [22 * mm, 18 * mm, 28 * mm, 30 * mm, 72 * mm, 20 * mm]
-            table_data = [header]
-
-            total_cant = 0
-
+            prod_gen = []
+            referencias = []
             for det in detalles:
-                tipo_ref = int(det.tipodocref) if det.tipodocref else 0
-                if tipo_ref == 7:
-                    tipo_nombre = 'OR'
-                elif tipo_ref == 6:
-                    tipo_nombre = 'PE'
+                if det.docref and det.tipodocref:
+                    referencias.append(det)
                 else:
-                    tipo_nombre = ''
+                    prod_gen.append(det)
 
-                cant = abs(det.cantidad) if det.cantidad else 0
-                total_cant += cant
+            if prod_gen:
+                elems.append(Paragraph("Código a Generar", title_style))
+                header_prod = ["Código", "Artículo", "Cant.", "Fecha"]
+                col_widths_prod = [25 * mm, 105 * mm, 20 * mm, 40 * mm]
+                table_data_prod = [header_prod]
+                total_cant_prod = 0
 
-                table_data.append([
-                    Paragraph(str(int(det.docref)) if det.docref else '', center_style),
-                    Paragraph(tipo_nombre, center_style),
-                    Paragraph(det.fecha.strftime('%d-%m-%Y') if det.fecha else '', center_style),
-                    Paragraph(det.codigo.codigo if det.codigo else '', cell_style),
-                    Paragraph(det.codigo.descr if det.codigo else '', cell_style),
-                    Paragraph(str(int(cant)), right_style),
+                for det in prod_gen:
+                    cant = abs(det.cantidad) if det.cantidad else 0
+                    total_cant_prod += cant
+                    table_data_prod.append([
+                        Paragraph(det.codigo.codigo if det.codigo else '', cell_style),
+                        Paragraph(det.codigo.descr if det.codigo else '', cell_style),
+                        Paragraph(fmt_chile(cant), right_style),
+                        Paragraph(det.fecha.strftime('%d-%m-%Y') if det.fecha else '', center_style),
+                    ])
+
+                table_data_prod.append([
+                    Paragraph("", cell_style),
+                    Paragraph("TOTAL", cell_style),
+                    Paragraph(fmt_chile(total_cant_prod), right_style),
+                    Paragraph("", cell_style),
                 ])
 
-            if len(detalles) > 0:
-                table_data.append([
+                tbl_prod = Table(table_data_prod, colWidths=col_widths_prod, repeatRows=1)
+                style_cmds_prod = [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2937")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -2), [colors.white, colors.HexColor("#f9fafb")]),
+                    ("TOPPADDING", (0, 0), (-1, -1), 2),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                    ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+                ]
+                style_cmds_prod.append(("BACKGROUND", (0, len(prod_gen) + 1), (-1, len(prod_gen) + 1), colors.HexColor("#e5e7eb")))
+                style_cmds_prod.append(("FONTNAME", (0, len(prod_gen) + 1), (-1, len(prod_gen) + 1), "Helvetica-Bold"))
+                tbl_prod.setStyle(TableStyle(style_cmds_prod))
+                elems.append(tbl_prod)
+                elems.append(Spacer(1, 3 * mm))
+
+            if referencias:
+                elems.append(Paragraph("Referencias", title_style))
+                header_ref = ["DocRef", "Tipo", "Fecha", "Código", "Artículo", "Cant."]
+                col_widths_ref = [22 * mm, 18 * mm, 28 * mm, 30 * mm, 72 * mm, 20 * mm]
+                table_data_ref = [header_ref]
+                total_cant_ref = 0
+
+                for det in referencias:
+                    tipo_ref = int(det.tipodocref) if det.tipodocref else 0
+                    if tipo_ref == 7:
+                        tipo_nombre = 'OR'
+                    elif tipo_ref == 6:
+                        tipo_nombre = 'PE'
+                    else:
+                        tipo_nombre = ''
+
+                    cant = abs(det.cantidad) if det.cantidad else 0
+                    total_cant_ref += cant
+
+                    table_data_ref.append([
+                        Paragraph(fmt_chile(det.docref) if det.docref else '', center_style),
+                        Paragraph(tipo_nombre, center_style),
+                        Paragraph(det.fecha.strftime('%d-%m-%Y') if det.fecha else '', center_style),
+                        Paragraph(det.codigo.codigo if det.codigo else '', cell_style),
+                        Paragraph(det.codigo.descr if det.codigo else '', cell_style),
+                        Paragraph(fmt_chile(cant), right_style),
+                    ])
+
+                table_data_ref.append([
                     Paragraph("", cell_style),
                     Paragraph("", cell_style),
                     Paragraph("", cell_style),
                     Paragraph("", cell_style),
                     Paragraph("TOTAL", cell_style),
-                    Paragraph(str(total_cant), right_style),
+                    Paragraph(fmt_chile(total_cant_ref), right_style),
                 ])
 
-            tbl = Table(table_data, colWidths=col_widths, repeatRows=1)
-            style_cmds = [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2937")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("FONTSIZE", (0, 0), (-1, -1), 7),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-                ("ALIGN", (0, 0), (-1, 0), "CENTER"),
-            ]
-            if len(detalles) > 0:
-                style_cmds.append(("BACKGROUND", (0, len(detalles) + 1), (-1, len(detalles) + 1), colors.HexColor("#e5e7eb")))
-                style_cmds.append(("FONTNAME", (0, len(detalles) + 1), (-1, len(detalles) + 1), "Helvetica-Bold"))
-            tbl.setStyle(TableStyle(style_cmds))
-            elems.append(tbl)
-            elems.append(Spacer(1, 10 * mm))
+                tbl_ref = Table(table_data_ref, colWidths=col_widths_ref, repeatRows=1)
+                style_cmds_ref = [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2937")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -2), [colors.white, colors.HexColor("#f9fafb")]),
+                    ("TOPPADDING", (0, 0), (-1, -1), 2),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                    ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+                ]
+                style_cmds_ref.append(("BACKGROUND", (0, len(referencias) + 1), (-1, len(referencias) + 1), colors.HexColor("#e5e7eb")))
+                style_cmds_ref.append(("FONTNAME", (0, len(referencias) + 1), (-1, len(referencias) + 1), "Helvetica-Bold"))
+                tbl_ref.setStyle(TableStyle(style_cmds_ref))
+                elems.append(tbl_ref)
+                elems.append(Spacer(1, 3 * mm))
+
+            elems.append(Spacer(1, 2 * mm))
 
             elems.append(Paragraph("Entrega de Trabajo", title_style))
             elems.append(Paragraph("Fecha de Entrega: _________________", subtitle_style))
-            elems.append(Spacer(1, 3 * mm))
+            elems.append(Spacer(1, 2 * mm))
 
             ent_headers = ["Código Terminado", "Cant.", "Fecha", "Código Insumo", "Cant.", "Fecha"]
             ent_widths = [35 * mm, 20 * mm, 25 * mm, 35 * mm, 20 * mm, 25 * mm]
@@ -750,15 +834,15 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("FONTSIZE", (0, 0), (-1, -1), 7),
+                ("FONTSIZE", (0, 0), (-1, -1), 6),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
                 ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
-                ("TOPPADDING", (0, 0), (-1, -1), 6),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
             ]))
             elems.append(t_ent)
-            elems.append(Spacer(1, 15 * mm))
+            elems.append(Spacer(1, 20 * mm))
 
             datos_firmas = [[encargado_obj.nombre]]
             t_fir = Table(datos_firmas, colWidths=[80 * mm])
@@ -900,16 +984,16 @@ class ImprimirOTView(TemplateView):
                 
                 cant = abs(det.cantidad) if det.cantidad else 0
                 total_cant += cant
-                
+
                 table_data.append([
-                    Paragraph(str(int(det.docref)) if det.docref else '', center_style),
+                    Paragraph(fmt_chile(det.docref) if det.docref else '', center_style),
                     Paragraph(tipo_nombre, center_style),
                     Paragraph(det.fecha.strftime('%d-%m-%Y') if det.fecha else '', center_style),
                     Paragraph(det.codigo.codigo if det.codigo else '', cell_style),
                     Paragraph(det.codigo.descr if det.codigo else '', cell_style),
-                    Paragraph(str(int(cant)), right_style),
+                    Paragraph(fmt_chile(cant), right_style),
                 ])
-            
+
             if len(detalles) > 0:
                 table_data.append([
                     Paragraph("", cell_style),
@@ -917,7 +1001,7 @@ class ImprimirOTView(TemplateView):
                     Paragraph("", cell_style),
                     Paragraph("", cell_style),
                     Paragraph("TOTAL", cell_style),
-                    Paragraph(str(total_cant), right_style),
+                    Paragraph(fmt_chile(total_cant), right_style),
                 ])
             
             tbl = Table(table_data, colWidths=col_widths, repeatRows=1)
@@ -938,36 +1022,36 @@ class ImprimirOTView(TemplateView):
                 style_cmds.append(("FONTNAME", (0, len(detalles) + 1), (-1, len(detalles) + 1), "Helvetica-Bold"))
             tbl.setStyle(TableStyle(style_cmds))
             elems.append(tbl)
-            elems.append(Spacer(1, 10 * mm))
-            
+            elems.append(Spacer(1, 6 * mm))
+
             elems.append(Paragraph("Entrega de Trabajo", title_style))
-            elems.append(Spacer(1, 3 * mm))
-            
+            elems.append(Spacer(1, 2 * mm))
+
             ent_headers = ["Código Terminado", "Cant.", "Fecha", "Código Insumo", "Cant.", "Fecha"]
             ent_widths = [22 * mm, 18 * mm, 28 * mm, 30 * mm, 72 * mm, 20 * mm]
             ent_data = [ent_headers]
-            
+
             for _ in range(10):
                 ent_data.append(['', '', '', '', '', ''])
-            
+
             t_ent = Table(ent_data, colWidths=ent_widths, repeatRows=1)
             t_ent.setStyle(TableStyle([
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2937")),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("FONTSIZE", (0, 0), (-1, -1), 7),
+                ("FONTSIZE", (0, 0), (-1, -1), 6),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
                 ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
-                ("TOPPADDING", (0, 0), (-1, -1), 6),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
             ]))
             elems.append(t_ent)
-            elems.append(Spacer(1, 5 * mm))
-            
+            elems.append(Spacer(1, 3 * mm))
+
             elems.append(Paragraph("Fecha de Entrega: _________________", subtitle_style))
-            elems.append(Spacer(1, 15 * mm))
+            elems.append(Spacer(1, 10 * mm))
             
             datos_firmas = [['Encargado', 'Supervisor']]
             t_fir = Table(datos_firmas, colWidths=[80 * mm, 80 * mm])

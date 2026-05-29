@@ -51,18 +51,20 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
         return JsonResponse({"proveedores": list(proveedores)})
 
     def _listar_tiposdoc(self) -> JsonResponse:
-        docs = Docs.objects.values("cod", "nombre").order_by("nombre")
+        docs = Docs.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"tiposdoc": list(docs)})
 
     def _listar_encargados(self) -> JsonResponse:
-        empleados = Empleados.objects.values("cod", "nombre").order_by("nombre")
+        empleados = Empleados.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"encargados": list(empleados)})
 
     def _buscar_articulo(self, codigo: str | None) -> JsonResponse:
         if not codigo:
             return JsonResponse({"success": False})
         try:
-            articulo = Articulos.objects.get(codigo=codigo)
+            articulo = Articulos.objects.filter(codigo=codigo).exclude(tipo='Inactivo').first()
+            if not articulo:
+                return JsonResponse({"success": False, "message": "Artículo no encontrado"})
             return JsonResponse({
                 "success": True,
                 "data": {
@@ -73,15 +75,15 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     "prc": articulo.prc
                 }
             })
-        except Articulos.DoesNotExist:
+        except Exception as e:
             return JsonResponse({"success": False, "message": "Artículo no encontrado"})
 
     def _listar_articulos(self) -> JsonResponse:
-        articulos = Articulos.objects.values("codigo", "descr", "um", "precio", "prc").order_by("descr")
+        articulos = Articulos.objects.values("codigo", "descr", "um", "precio", "prc").exclude(tipo='Inactivo').order_by("descr")
         return JsonResponse({"articulos": list(articulos)})
 
     def _listar_bodegas(self) -> JsonResponse:
-        bodegas = Bodegas.objects.values("cod", "nombre").order_by("nombre")
+        bodegas = Bodegas.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"bodegas": list(bodegas)})
 
     def _listar_ocat(self) -> JsonResponse:
@@ -365,20 +367,20 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": False, "message": str(e)})
 
     def _listar_transportistas(self) -> JsonResponse:
-        transportistas = Transportistas.objects.values("rut", "nombre").order_by("nombre")
+        transportistas = Transportistas.objects.values("rut", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"transportistas": list(transportistas)})
 
     def _listar_patentes(self, rut: str | None) -> JsonResponse:
         if not rut:
             return JsonResponse({"patentes": []})
-        patentes = Patentes.objects.filter(transportista__rut=rut).values("id", "patente")
+        patentes = Patentes.objects.filter(transportista__rut=rut, transportista__estado='Activo').values("id", "patente")
         return JsonResponse({"patentes": list(patentes)})
 
     def _buscar_por_patente(self, patente: str | None) -> JsonResponse:
         if not patente:
             return JsonResponse({"success": False})
         try:
-            p = Patentes.objects.get(patente=patente)
+            p = Patentes.objects.get(patente=patente, transportista__estado='Activo')
             return JsonResponse({
                 "success": True,
                 "data": {

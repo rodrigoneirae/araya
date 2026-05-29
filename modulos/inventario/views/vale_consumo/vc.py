@@ -44,7 +44,9 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
         if not codigo:
             return JsonResponse({"success": False})
         try:
-            articulo = Articulos.objects.get(codigo=codigo)
+            articulo = Articulos.objects.filter(codigo=codigo).exclude(tipo='Inactivo').first()
+            if not articulo:
+                return JsonResponse({"success": False, "message": "Artículo no encontrado"})
             return JsonResponse({
                 "success": True,
                 "data": {
@@ -53,15 +55,15 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
                     "um": articulo.um or ""
                 }
             })
-        except Articulos.DoesNotExist:
+        except Exception as e:
             return JsonResponse({"success": False, "message": "Artículo no encontrado"})
 
     def _listar_articulos(self) -> JsonResponse:
-        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").order_by("descr")[:100]
+        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").exclude(tipo='Inactivo').order_by("descr")[:100]
         return JsonResponse({"articulos": list(articulos)})
 
     def _listar_bodegas(self) -> JsonResponse:
-        bodegas = Bodegas.objects.values("cod", "nombre").order_by("nombre")
+        bodegas = Bodegas.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"bodegas": list(bodegas)})
 
     def _listar_vc(self) -> JsonResponse:

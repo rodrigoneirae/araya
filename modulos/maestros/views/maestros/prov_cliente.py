@@ -64,6 +64,7 @@ class IndexProvClienteView(LoginRequiredMixin, TemplateView):
             {"cod": "Cliente", "descr": "Cliente"},
             {"cod": "Proveedor", "descr": "Proveedor"},
             {"cod": "Ambos", "descr": "Ambos"},
+            {"cod": "Inactivo", "descr": "Inactivo"},
         ]
         return JsonResponse({"tipos": tipos})
 

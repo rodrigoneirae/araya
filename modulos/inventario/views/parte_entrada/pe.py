@@ -48,18 +48,20 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
         return JsonResponse({"proveedores": list(proveedores)})
 
     def _listar_tiposdoc(self) -> JsonResponse:
-        docs = Docs.objects.values("cod", "nombre").order_by("nombre")
+        docs = Docs.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"tiposdoc": list(docs)})
 
     def _listar_encargados(self) -> JsonResponse:
-        empleados = Empleados.objects.values("cod", "nombre").order_by("nombre")
+        empleados = Empleados.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"encargados": list(empleados)})
 
     def _buscar_articulo(self, codigo: str | None) -> JsonResponse:
         if not codigo:
             return JsonResponse({"success": False})
         try:
-            articulo = Articulos.objects.get(codigo=codigo)
+            articulo = Articulos.objects.filter(codigo=codigo).exclude(tipo='Inactivo').first()
+            if not articulo:
+                return JsonResponse({"success": False, "message": "Artículo no encontrado"})
             return JsonResponse({
                 "success": True,
                 "data": {
@@ -70,15 +72,15 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
                     "prc": articulo.prc or ""
                 }
             })
-        except Articulos.DoesNotExist:
+        except Exception as e:
             return JsonResponse({"success": False, "message": "Artículo no encontrado"})
 
     def _listar_articulos(self) -> JsonResponse:
-        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").order_by("descr")
+        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").exclude(tipo='Inactivo').order_by("descr")
         return JsonResponse({"articulos": list(articulos)})
 
     def _listar_bodegas(self) -> JsonResponse:
-        bodegas = Bodegas.objects.values("cod", "nombre").order_by("nombre")
+        bodegas = Bodegas.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"bodegas": list(bodegas)})
 
     def _listar_pe(self) -> JsonResponse:

@@ -4,6 +4,9 @@ from django.db import models
 class Transportistas(models.Model):
     rut = models.CharField(primary_key=True, max_length=13)
     nombre = models.CharField(max_length=100)
+    estado = models.CharField(max_length=20, default='Activo')
+    usr = models.CharField(max_length=15, blank=True, null=True)
+    timeuser = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         db_table = 'Transportistas'

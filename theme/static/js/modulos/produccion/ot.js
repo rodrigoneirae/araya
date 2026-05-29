@@ -84,6 +84,19 @@ function cargarDatosIniciales() {
         }
     });
 
+    buscarXHROt('listar_bodegas', {}, function(data) {
+        const select = document.getElementById('otProdBodega');
+        if (select && data.bodegas) {
+            select.innerHTML = '<option value="">Bod.</option>';
+            data.bodegas.forEach(b => {
+                const option = document.createElement('option');
+                option.value = b.cod;
+                option.textContent = b.nombre;
+                select.appendChild(option);
+            });
+        }
+    });
+
     document.getElementById('otProceso')?.addEventListener('change', function() {
         cargarListasORPE();
     });
@@ -123,69 +136,72 @@ function abrirModalORUnico() {
                     { title: 'N° OR', field: 'numero', width: 80 },
                     { title: 'Fecha', field: 'fecha', width: 100 },
                     { title: 'Código', field: 'codigo', width: 90 },
+                    { title: 'Nombre', field: 'nombre' },
                     { title: 'Cant', field: 'cantidad', width: 70 },
                     { title: 'Bodega', field: 'bodega', width: 80 },
                 ],
                 data: [],
-                filtroCampos: ['numero', 'codigo'],
+                filtroCampos: ['numero', 'codigo', 'nombre'],
                 onSelect: null,
                 onRefresh: function(opts) { abrirModalORUnico(); },
             });
             return;
         }
-        let articulos = [];
-        let pendientes = docs.length;
-        docs.forEach(or => {
-            buscarXHROt('buscar_referencia', {numero: or.numero, tipo: 7}, function(resp) {
-                if (resp.success && resp.detalles) {
-                    resp.detalles.forEach(d => {
-                        d.numeroDoc = or.numero;
-                        let fechaFmt = '';
-                        if (d.fecha) {
-                            const f = (typeof d.fecha === 'string') ? d.fecha.split('T')[0] : '';
-                            if (f) fechaFmt = f.split('-').reverse().join('-');
-                        }
-                        d.fecha = fechaFmt;
-                        articulos.push(d);
-                    });
+        const dataOR = docs.map(d => ({ ...d, numeroDoc: d.numero }));
+        const preselectedOR = dataOR.filter(d => {
+            const key = (d.codigo || '') + '|' + (d.numero || '');
+            return detallesOt.some(item => (item.codigo || '') + '|' + (item.docref || '') === key && item.tipo === '7');
+        });
+        abrirModalBusqueda({
+            titulo: 'Seleccionar Artículos de OR',
+            multiSelect: true,
+            preselectedKeys: ['codigo', 'numero'],
+            preselected: preselectedOR,
+            columnas: [
+                { title: 'N° OR', field: 'numero', width: 80 },
+                { title: 'Fecha', field: 'fecha', width: 100 },
+                { title: 'Código', field: 'codigo', width: 90 },
+                { title: 'Nombre', field: 'nombre' },
+                { title: 'Cant', field: 'cantidad', width: 70 },
+                { title: 'Bodega', field: 'bodega', width: 80 },
+            ],
+            data: dataOR,
+            filtroCampos: ['numero', 'codigo', 'nombre'],
+            onSelect: function(row) {
+                const key = (row.codigo || '') + '|' + (row.numero || '');
+                const yaExiste = detallesOt.some(d => (d.codigo || '') + '|' + (d.docref || '') === key);
+                if (yaExiste) {
+                    Toastify({text: 'Artículo ya agregado', style: {background: '#f44336'}}).showToast();
+                    return;
                 }
-                pendientes--;
-                if (pendientes === 0) {
-                    abrirModalBusqueda({
-                        titulo: 'Seleccionar Artículos de OR',
-                        columnas: [
-                            { title: 'DocRef', field: 'numeroDoc', width: 80 },
-                            { title: 'Fecha', field: 'fecha', width: 100 },
-                            { title: 'Código', field: 'codigo', width: 90 },
-                            { title: 'Nombre', field: 'nombre' },
-                            { title: 'Cant', field: 'cantidad', width: 70 },
-                            { title: 'Bodega', field: 'bodega', width: 80 },
-                        ],
-                        data: articulos,
-                        filtroCampos: ['numeroDoc', 'codigo', 'nombre'],
-                        onSelect: function(row) {
-                            document.getElementById('inputOR').value = row.numeroDoc || '';
-                            detallesOt.push({
-                                codigo: row.codigo || '',
-                                nombre: row.nombre || '',
-                                cantidad: Math.abs(row.cantidad || 0),
-                                punit: row.punit || 0,
-                                um: row.um || '',
-                                bodega: row.bodega || '',
-                                fecha: row.fecha || '',
-                                estado: 'Abierto',
-                                docref: row.numeroDoc || '',
-                                tipo: '7',
-                                rut: row.rut || '',
-                                canttotal: row.canttotal || 0,
-                            });
-                            renderizarDetalleOt();
-                            Toastify({text: 'Artículo de OR agregado', style: {background: '#4caf50'}}).showToast();
-                        },
-                        onRefresh: function(opts) { abrirModalORUnico(); },
-                    });
+                document.getElementById('inputOR').value = row.numero || '';
+                detallesOt.push({
+                    codigo: row.codigo || '',
+                    nombre: row.nombre || '',
+                    cantidad: Math.abs(row.cantidad || 0),
+                    punit: row.punit || 0,
+                    um: row.um || '',
+                    bodega: row.bodega || '',
+                    fecha: row.fecha || '',
+                    estado: 'Abierto',
+                    docref: row.numero || '',
+                    tipo: '7',
+                    rut: row.rut || '',
+                    canttotal: row.cantidad || 0,
+                });
+                renderizarDetalleOt();
+                Toastify({text: 'Artículo de OR agregado', style: {background: '#4caf50'}}).showToast();
+            },
+            onDeselect: function(row) {
+                const key = (row.codigo || '') + '|' + (row.numero || '');
+                const idx = detallesOt.findIndex(d => (d.codigo || '') + '|' + (d.docref || '') === key);
+                if (idx !== -1) {
+                    detallesOt.splice(idx, 1);
+                    renderizarDetalleOt();
+                    Toastify({text: 'Artículo removido', style: {background: '#ff9800'}}).showToast();
                 }
-            });
+            },
+            onRefresh: function(opts) { abrirModalORUnico(); },
         });
     });
 }
@@ -203,69 +219,72 @@ function abrirModalPEUnico() {
                     { title: 'N° PE', field: 'numero', width: 80 },
                     { title: 'Fecha', field: 'fecha', width: 100 },
                     { title: 'Código', field: 'codigo', width: 90 },
+                    { title: 'Nombre', field: 'nombre' },
                     { title: 'Cant', field: 'cantidad', width: 70 },
                     { title: 'Bodega', field: 'bodega', width: 80 },
                 ],
                 data: [],
-                filtroCampos: ['numero', 'codigo'],
+                filtroCampos: ['numero', 'codigo', 'nombre'],
                 onSelect: null,
                 onRefresh: function(opts) { abrirModalPEUnico(); },
             });
             return;
         }
-        let articulos = [];
-        let pendientes = docs.length;
-        docs.forEach(pe => {
-            buscarXHROt('buscar_referencia', {numero: pe.numero, tipo: 6}, function(resp) {
-                if (resp.success && resp.detalles) {
-                    resp.detalles.forEach(d => {
-                        d.numeroDoc = pe.numero;
-                        let fechaFmt = '';
-                        if (d.fecha) {
-                            const f = (typeof d.fecha === 'string') ? d.fecha.split('T')[0] : '';
-                            if (f) fechaFmt = f.split('-').reverse().join('-');
-                        }
-                        d.fecha = fechaFmt;
-                        articulos.push(d);
-                    });
+        const dataPE = docs.map(d => ({ ...d, numeroDoc: d.numero }));
+        const preselectedPE = dataPE.filter(d => {
+            const key = (d.codigo || '') + '|' + (d.numero || '');
+            return detallesOt.some(item => (item.codigo || '') + '|' + (item.docref || '') === key && item.tipo === '6');
+        });
+        abrirModalBusqueda({
+            titulo: 'Seleccionar Artículos de PE',
+            multiSelect: true,
+            preselectedKeys: ['codigo', 'numero'],
+            preselected: preselectedPE,
+            columnas: [
+                { title: 'N° PE', field: 'numero', width: 80 },
+                { title: 'Fecha', field: 'fecha', width: 100 },
+                { title: 'Código', field: 'codigo', width: 90 },
+                { title: 'Nombre', field: 'nombre' },
+                { title: 'Cant', field: 'cantidad', width: 70 },
+                { title: 'Bodega', field: 'bodega', width: 80 },
+            ],
+            data: dataPE,
+            filtroCampos: ['numero', 'codigo', 'nombre'],
+            onSelect: function(row) {
+                const key = (row.codigo || '') + '|' + (row.numero || '');
+                const yaExiste = detallesOt.some(d => (d.codigo || '') + '|' + (d.docref || '') === key);
+                if (yaExiste) {
+                    Toastify({text: 'Artículo ya agregado', style: {background: '#f44336'}}).showToast();
+                    return;
                 }
-                pendientes--;
-                if (pendientes === 0) {
-                    abrirModalBusqueda({
-                        titulo: 'Seleccionar Artículos de PE',
-                        columnas: [
-                            { title: 'DocRef', field: 'numeroDoc', width: 80 },
-                            { title: 'Fecha', field: 'fecha', width: 100 },
-                            { title: 'Código', field: 'codigo', width: 90 },
-                            { title: 'Nombre', field: 'nombre' },
-                            { title: 'Cant', field: 'cantidad', width: 70 },
-                            { title: 'Bodega', field: 'bodega', width: 80 },
-                        ],
-                        data: articulos,
-                        filtroCampos: ['numeroDoc', 'codigo', 'nombre'],
-                        onSelect: function(row) {
-                            document.getElementById('inputPE').value = row.numeroDoc || '';
-                            detallesOt.push({
-                                codigo: row.codigo || '',
-                                nombre: row.nombre || '',
-                                cantidad: Math.abs(row.cantidad || 0),
-                                punit: row.punit || 0,
-                                um: row.um || '',
-                                bodega: row.bodega || '',
-                                fecha: row.fecha || '',
-                                estado: 'Abierto',
-                                docref: row.numeroDoc || '',
-                                tipo: '6',
-                                rut: row.rut || '',
-                                canttotal: row.canttotal || 0,
-                            });
-                            renderizarDetalleOt();
-                            Toastify({text: 'Artículo de PE agregado', style: {background: '#4caf50'}}).showToast();
-                        },
-                        onRefresh: function(opts) { abrirModalPEUnico(); },
-                    });
+                document.getElementById('inputPE').value = row.numero || '';
+                detallesOt.push({
+                    codigo: row.codigo || '',
+                    nombre: row.nombre || '',
+                    cantidad: Math.abs(row.cantidad || 0),
+                    punit: row.punit || 0,
+                    um: row.um || '',
+                    bodega: row.bodega || '',
+                    fecha: row.fecha || '',
+                    estado: 'Abierto',
+                    docref: row.numero || '',
+                    tipo: '6',
+                    rut: row.rut || '',
+                    canttotal: row.cantidad || 0,
+                });
+                renderizarDetalleOt();
+                Toastify({text: 'Artículo de PE agregado', style: {background: '#4caf50'}}).showToast();
+            },
+            onDeselect: function(row) {
+                const key = (row.codigo || '') + '|' + (row.numero || '');
+                const idx = detallesOt.findIndex(d => (d.codigo || '') + '|' + (d.docref || '') === key);
+                if (idx !== -1) {
+                    detallesOt.splice(idx, 1);
+                    renderizarDetalleOt();
+                    Toastify({text: 'Artículo removido', style: {background: '#ff9800'}}).showToast();
                 }
-            });
+            },
+            onRefresh: function(opts) { abrirModalPEUnico(); },
         });
     });
 }
@@ -421,78 +440,164 @@ function imprimirOt() {
     });
 }
 
+function abrirListaProductos() {
+    buscarXHROt('listar_articulos', {}, function(data) {
+        const articulos = (data.articulos || []).map(a => ({
+            codigo: a.codigo || '',
+            nombre: a.descr || '',
+            um: a.um || '',
+            precio: a.precio || 0,
+        }));
+        abrirModalBusqueda({
+            titulo: 'Seleccionar Producto',
+            ancho: 'xl',
+            columnas: [
+                { title: 'Código', field: 'codigo', width: 100 },
+                { title: 'Nombre', field: 'nombre' },
+                { title: 'UM', field: 'um', width: 60 },
+                { title: 'Precio', field: 'precio', width: 80 },
+            ],
+            data: articulos,
+            filtroCampos: ['codigo', 'nombre'],
+            onSelect: function(row) {
+                document.getElementById('otProdCod').value = row.codigo || '';
+                document.getElementById('otProdNombre').value = row.nombre || '';
+                document.getElementById('otProdUM').value = row.um || '';
+                window.productoPrc = row.precio || null;
+            },
+        });
+    });
+}
+
+function agregarProductoOt() {
+    const cod = document.getElementById('otProdCod').value.trim();
+    const nombre = document.getElementById('otProdNombre').value.trim();
+    const um = document.getElementById('otProdUM').value.trim();
+    const cant = parseFloat(document.getElementById('otProdCant').value) || 0;
+    const bodega = document.getElementById('otProdBodega').value;
+
+    if (!cod) {
+        Toastify({text: 'Seleccione un producto', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+    if (cant <= 0) {
+        Toastify({text: 'Ingrese cantidad', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+
+    const key = cod + '|producto';
+    const yaExiste = detallesOt.some(d => (d.codigo || '') + '|' + (d.producto ? 'producto' : '') === key);
+    if (yaExiste) {
+        Toastify({text: 'Producto ya agregado', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+
+    detallesOt.push({
+        codigo: cod,
+        nombre: nombre,
+        cantidad: cant,
+        punit: window.productoPrc || 0,
+        um: um,
+        bodega: bodega,
+        fecha: '',
+        estado: 'Abierto',
+        docref: '',
+        tipo: '',
+        rut: '',
+        canttotal: cant,
+        producto: true,
+    });
+
+    document.getElementById('otProdCod').value = '';
+    document.getElementById('otProdNombre').value = '';
+    document.getElementById('otProdUM').value = '';
+    document.getElementById('otProdCant').value = '';
+    document.getElementById('otProdBodega').value = '';
+    window.productoPrc = null;
+
+    renderizarDetalleOt();
+    Toastify({text: 'Producto agregado', style: {background: '#4caf50'}}).showToast();
+}
+
 function abrirListaOR() {
     const proceso = document.getElementById('otProceso').value;
     buscarXHROt('listar_or', {proceso: proceso}, function(data) {
         const docs = data.documentos || [];
-        let articulos = [];
-        let pendientes = docs.length;
-        if (pendientes === 0) {
+        if (docs.length === 0) {
             abrirModalBusqueda({
                 titulo: 'Seleccionar Artículos de OR',
                 columnas: [
-                    { title: 'DocRef', field: 'numeroDoc', width: 80 },
+                    { title: 'N° OR', field: 'numero', width: 80 },
+                    { title: 'Fecha', field: 'fecha', width: 100 },
                     { title: 'Código', field: 'codigo', width: 90 },
                     { title: 'Nombre', field: 'nombre' },
                     { title: 'Cant', field: 'cantidad', width: 70 },
                     { title: 'Bodega', field: 'bodega', width: 80 },
                 ],
                 data: [],
-                filtroCampos: ['numeroDoc', 'codigo', 'nombre'],
+                filtroCampos: ['numero', 'codigo', 'nombre'],
                 onSelect: null,
                 onRefresh: function(opts) { abrirListaOR(); },
             });
             return;
         }
-        docs.forEach(or => {
-            buscarXHROt('buscar_referencia', {numero: or.numero, tipo: 7}, function(resp) {
-                if (resp.success && resp.detalles) {
-                    resp.detalles.forEach(d => {
-                        d.numeroDoc = or.numero;
-                        articulos.push(d);
-                    });
+        const dataOR = docs.map(d => ({ ...d, numeroDoc: d.numero }));
+        const preselectedOR = dataOR.filter(d => {
+            const key = (d.codigo || '') + '|' + (d.numero || '');
+            return detallesOt.some(item => (item.codigo || '') + '|' + (item.docref || '') === key && item.tipo === '7');
+        });
+        abrirModalBusqueda({
+            titulo: 'Seleccionar Artículos de OR',
+            multiSelect: true,
+            preselectedKeys: ['codigo', 'numero'],
+            preselected: preselectedOR,
+            ancho: 'xl',
+            columnas: [
+                { title: 'N° OR', field: 'numero', width: 80 },
+                { title: 'Fecha', field: 'fecha', width: 100 },
+                { title: 'Código', field: 'codigo', width: 90 },
+                { title: 'Nombre', field: 'nombre' },
+                { title: 'Cant', field: 'cantidad', width: 70 },
+                { title: 'Bodega', field: 'bodega', width: 80 },
+            ],
+            data: dataOR,
+            filtroCampos: ['numero', 'codigo', 'nombre'],
+            onSelect: function(row) {
+                const key = (row.codigo || '') + '|' + (row.numero || '');
+                const yaExiste = detallesOt.some(d => (d.codigo || '') + '|' + (d.docref || '') === key);
+                if (yaExiste) {
+                    Toastify({text: 'Artículo ya agregado', style: {background: '#f44336'}}).showToast();
+                    return;
                 }
-                pendientes--;
-                if (pendientes === 0) {
-                    abrirModalBusqueda({
-                        titulo: 'Seleccionar Artículos de OR',
-                        ancho: 'xl',
-                        columnas: [
-                            { title: 'DocRef', field: 'numeroDoc', width: 80 },
-                            { title: 'Fecha', field: 'fecha', width: 100 },
-                            { title: 'Código', field: 'codigo', width: 90 },
-                            { title: 'Nombre', field: 'nombre' },
-                            { title: 'Cant', field: 'cantidad', width: 70 },
-                            { title: 'Bodega', field: 'bodega', width: 80 },
-                        ],
-                        data: articulos,
-                        filtroCampos: ['numeroDoc', 'codigo', 'nombre'],
-                        onSelect: function(row) {
-                            const numsOR = [...new Set([row.numeroDoc]).filter(n => n)];
-                            document.getElementById('inputOR').value = numsOR.length > 1
-                                ? numsOR.join(', ')
-                                : (numsOR[0] || '');
-                            detallesOt.push({
-                                codigo: row.codigo || '',
-                                nombre: row.nombre || '',
-                                cantidad: Math.abs(row.cantidad || 0),
-                                punit: row.punit || 0,
-                                um: row.um || '',
-                                bodega: row.bodega || '',
-                                fecha: row.fecha || '',
-                                estado: 'Abierto',
-                                docref: row.numeroDoc || '',
-                                tipo: '7',
-                                rut: row.rut || '',
-                                canttotal: row.canttotal || 0,
-                            });
-                            renderizarDetalleOt();
-                            Toastify({text: 'Artículo de OR agregado', style: {background: '#4caf50'}}).showToast();
-                        },
-                        onRefresh: function(opts) { abrirListaOR(); },
-                    });
+                const numsOR = [...new Set([row.numero])].filter(n => n);
+                document.getElementById('inputOR').value = numsOR.join(', ');
+                detallesOt.push({
+                    codigo: row.codigo || '',
+                    nombre: row.nombre || '',
+                    cantidad: Math.abs(row.cantidad || 0),
+                    punit: row.punit || 0,
+                    um: row.um || '',
+                    bodega: row.bodega || '',
+                    fecha: row.fecha || '',
+                    estado: 'Abierto',
+                    docref: row.numero || '',
+                    tipo: '7',
+                    rut: row.rut || '',
+                    canttotal: row.cantidad || 0,
+                });
+                renderizarDetalleOt();
+                Toastify({text: 'Artículo de OR agregado', style: {background: '#4caf50'}}).showToast();
+            },
+            onDeselect: function(row) {
+                const key = (row.codigo || '') + '|' + (row.numero || '');
+                const idx = detallesOt.findIndex(d => (d.codigo || '') + '|' + (d.docref || '') === key);
+                if (idx !== -1) {
+                    detallesOt.splice(idx, 1);
+                    renderizarDetalleOt();
+                    Toastify({text: 'Artículo removido', style: {background: '#ff9800'}}).showToast();
                 }
-            });
+            },
+            onRefresh: function(opts) { abrirListaOR(); },
         });
     });
 }
@@ -501,74 +606,81 @@ function abrirListaPE() {
     const proceso = document.getElementById('otProceso').value;
     buscarXHROt('listar_pe', {proceso: proceso}, function(data) {
         const docs = data.documentos || [];
-        let articulos = [];
-        let pendientes = docs.length;
-        if (pendientes === 0) {
+        if (docs.length === 0) {
             abrirModalBusqueda({
                 titulo: 'Seleccionar Artículos de PE',
                 columnas: [
-                    { title: 'DocRef', field: 'numeroDoc', width: 80 },
+                    { title: 'N° PE', field: 'numero', width: 80 },
+                    { title: 'Fecha', field: 'fecha', width: 100 },
                     { title: 'Código', field: 'codigo', width: 90 },
                     { title: 'Nombre', field: 'nombre' },
                     { title: 'Cant', field: 'cantidad', width: 70 },
                     { title: 'Bodega', field: 'bodega', width: 80 },
                 ],
                 data: [],
-                filtroCampos: ['numeroDoc', 'codigo', 'nombre'],
+                filtroCampos: ['numero', 'codigo', 'nombre'],
                 onSelect: null,
                 onRefresh: function(opts) { abrirListaPE(); },
             });
             return;
         }
-        docs.forEach(pe => {
-            buscarXHROt('buscar_referencia', {numero: pe.numero, tipo: 6}, function(resp) {
-                if (resp.success && resp.detalles) {
-                    resp.detalles.forEach(d => {
-                        d.numeroDoc = pe.numero;
-                        articulos.push(d);
-                    });
+        const dataPE = docs.map(d => ({ ...d, numeroDoc: d.numero }));
+        const preselectedPE = dataPE.filter(d => {
+            const key = (d.codigo || '') + '|' + (d.numero || '');
+            return detallesOt.some(item => (item.codigo || '') + '|' + (item.docref || '') === key && item.tipo === '6');
+        });
+        abrirModalBusqueda({
+            titulo: 'Seleccionar Artículos de PE',
+            multiSelect: true,
+            preselectedKeys: ['codigo', 'numero'],
+            preselected: preselectedPE,
+            ancho: 'xl',
+            columnas: [
+                { title: 'N° PE', field: 'numero', width: 80 },
+                { title: 'Fecha', field: 'fecha', width: 100 },
+                { title: 'Código', field: 'codigo', width: 90 },
+                { title: 'Nombre', field: 'nombre' },
+                { title: 'Cant', field: 'cantidad', width: 70 },
+                { title: 'Bodega', field: 'bodega', width: 80 },
+            ],
+            data: dataPE,
+            filtroCampos: ['numero', 'codigo', 'nombre'],
+            onSelect: function(row) {
+                const key = (row.codigo || '') + '|' + (row.numero || '');
+                const yaExiste = detallesOt.some(d => (d.codigo || '') + '|' + (d.docref || '') === key);
+                if (yaExiste) {
+                    Toastify({text: 'Artículo ya agregado', style: {background: '#f44336'}}).showToast();
+                    return;
                 }
-                pendientes--;
-                if (pendientes === 0) {
-                    abrirModalBusqueda({
-                        titulo: 'Seleccionar Artículos de PE',
-                        ancho: 'xl',
-                        columnas: [
-                            { title: 'DocRef', field: 'numeroDoc', width: 80 },
-                            { title: 'Fecha', field: 'fecha', width: 100 },
-                            { title: 'Código', field: 'codigo', width: 90 },
-                            { title: 'Nombre', field: 'nombre' },
-                            { title: 'Cant', field: 'cantidad', width: 70 },
-                            { title: 'Bodega', field: 'bodega', width: 80 },
-                        ],
-                        data: articulos,
-                        filtroCampos: ['numeroDoc', 'codigo', 'nombre'],
-                        onSelect: function(row) {
-                            const numsPE = [...new Set([row.numeroDoc]).filter(n => n)];
-                            document.getElementById('inputPE').value = numsPE.length > 1
-                                ? numsPE.join(', ')
-                                : (numsPE[0] || '');
-                            detallesOt.push({
-                                codigo: row.codigo || '',
-                                nombre: row.nombre || '',
-                                cantidad: Math.abs(row.cantidad || 0),
-                                punit: row.punit || 0,
-                                um: row.um || '',
-                                bodega: row.bodega || '',
-                                fecha: row.fecha || '',
-                                estado: 'Abierto',
-                                docref: row.numeroDoc || '',
-                                tipo: '6',
-                                rut: row.rut || '',
-                                canttotal: row.canttotal || 0,
-                            });
-                            renderizarDetalleOt();
-                            Toastify({text: 'Artículo de PE agregado', style: {background: '#4caf50'}}).showToast();
-                        },
-                        onRefresh: function(opts) { abrirListaPE(); },
-                    });
+                const numsPE = [...new Set([row.numero])].filter(n => n);
+                document.getElementById('inputPE').value = numsPE.join(', ');
+                detallesOt.push({
+                    codigo: row.codigo || '',
+                    nombre: row.nombre || '',
+                    cantidad: Math.abs(row.cantidad || 0),
+                    punit: row.punit || 0,
+                    um: row.um || '',
+                    bodega: row.bodega || '',
+                    fecha: row.fecha || '',
+                    estado: 'Abierto',
+                    docref: row.numero || '',
+                    tipo: '6',
+                    rut: row.rut || '',
+                    canttotal: row.cantidad || 0,
+                });
+                renderizarDetalleOt();
+                Toastify({text: 'Artículo de PE agregado', style: {background: '#4caf50'}}).showToast();
+            },
+            onDeselect: function(row) {
+                const key = (row.codigo || '') + '|' + (row.numero || '');
+                const idx = detallesOt.findIndex(d => (d.codigo || '') + '|' + (d.docref || '') === key);
+                if (idx !== -1) {
+                    detallesOt.splice(idx, 1);
+                    renderizarDetalleOt();
+                    Toastify({text: 'Artículo removido', style: {background: '#ff9800'}}).showToast();
                 }
-            });
+            },
+            onRefresh: function(opts) { abrirListaPE(); },
         });
     });
 }
@@ -633,7 +745,7 @@ function renderizarDetalleOt() {
 function guardarOt() {
     const numero = document.getElementById('otNumero').value;
 
-    if (modoEdicionOt) {
+    if (!modoEdicionOt) {
         const estado = document.getElementById('otEstado').value;
         mostrarModalConfirm({titulo: 'Guardar OT', mensaje: '¿Está seguro de actualizar el estado de esta OT?', tipo: 'confirm', onConfirm: function() {
             buscarXHROt('editar_estado', {
@@ -667,7 +779,7 @@ function guardarOt() {
 
     mostrarModalConfirm({titulo: 'Guardar OT', mensaje: '¿Está seguro de guardar esta Orden de Trabajo?\n\nLos artículos referenciados serán marcados como Cerrados.', tipo: 'confirm', onConfirm: function() {
         buscarXHROt('nuevo', {
-            numero: numero,
+            numero: '',
             fecha: fecha,
             encargado: encargado,
             proceso: proceso,

@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models.auxiliares import TipoArticulo, UnidadMedida
 from .models.transportistas import Transportistas, Patentes
+from .models.empleados import Empleados
 
 
 @admin.register(TipoArticulo)
@@ -35,3 +36,11 @@ class PatentesAdmin(admin.ModelAdmin):
     list_display = ('patente', 'transportista')
     search_fields = ('patente', 'transportista__nombre', 'transportista__rut')
     ordering = ('patente',)
+
+
+@admin.register(Empleados)
+class EmpleadosAdmin(admin.ModelAdmin):
+    list_display = ('cod', 'nombre', 'estado', 'user')
+    search_fields = ('cod', 'nombre')
+    list_filter = ('estado',)
+    raw_id_fields = ('user',)

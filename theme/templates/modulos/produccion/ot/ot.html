@@ -111,25 +111,44 @@
                 </form>
             </div>
 
-            <div id="contenido-detalle" class="tab-content hidden flex flex-col h-full">
+<div id="contenido-detalle" class="tab-content hidden flex flex-col h-full">
                 <h3 class="text-lg font-semibold text-aq-text mb-3">Detalle de Insumos / Productos</h3>
-                <div class="w-full">
-                    <div class="flex gap-2 mb-3 flex-wrap items-start">
+                <div class="w-full mb-3">
+                    <div class="flex gap-3 items-end flex-wrap">
                         <div class="flex flex-col gap-1">
                             <span class="text-xs text-aq-muted font-medium">Orden de Requisición (OR)</span>
-                            <div class="flex gap-1">
-                                <input type="text" id="inputOR" onclick="abrirModalORUnico()" readonly class="w-32 px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px] cursor-pointer hover:border-aq-primary" placeholder="-- Seleccionar --">
-                                <button type="button" onclick="abrirListaOR()" class="px-3 py-1.5 rounded-lg bg-amber-500 text-white hover:opacity-85 text-xs h-[34px]" title="Selección múltiple">
-                                    <i class='bx bx-checkbox-checked'></i>
+                            <div class="flex h-[34px]">
+                                <input type="text" id="inputOR" onclick="abrirModalORUnico()" readonly class="w-28 px-2 py-1.5 rounded-l-lg border border-aq-border bg-aq-bg text-aq-text text-xs cursor-pointer hover:border-aq-primary" placeholder="-- OR --">
+                                <button type="button" onclick="abrirListaOR()" class="px-2 py-1.5 bg-amber-500 text-white hover:opacity-85 border border-l-0 border-aq-border rounded-r-lg" title="Selección múltiple">
+                                    <i class='bx bx-checkbox-checked text-xs'></i>
                                 </button>
                             </div>
                         </div>
                         <div class="flex flex-col gap-1">
                             <span class="text-xs text-aq-muted font-medium">Parte de Entrada (PE)</span>
-                            <div class="flex gap-1">
-                                <input type="text" id="inputPE" onclick="abrirModalPEUnico()" readonly class="w-32 px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px] cursor-pointer hover:border-aq-primary" placeholder="-- Seleccionar --">
-                                <button type="button" onclick="abrirListaPE()" class="px-3 py-1.5 rounded-lg bg-blue-500 text-white hover:opacity-85 text-xs h-[34px]" title="Selección múltiple">
-                                    <i class='bx bx-checkbox-checked'></i>
+                            <div class="flex h-[34px]">
+                                <input type="text" id="inputPE" onclick="abrirModalPEUnico()" readonly class="w-28 px-2 py-1.5 rounded-l-lg border border-aq-border bg-aq-bg text-aq-text text-xs cursor-pointer hover:border-aq-primary" placeholder="-- PE --">
+                                <button type="button" onclick="abrirListaPE()" class="px-2 py-1.5 bg-blue-500 text-white hover:opacity-85 border border-l-0 border-aq-border rounded-r-lg" title="Selección múltiple">
+                                    <i class='bx bx-checkbox-checked text-xs'></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="h-[34px] w-px bg-aq-border mx-1"></div>
+                        <div class="flex flex-col gap-1">
+                            <span class="text-xs text-aq-muted font-medium">Producto a Generar</span>
+                            <div class="flex h-[34px]">
+                                <input type="text" id="otProdCod" onchange="buscarProductoOt()" class="w-24 px-2 py-1.5 rounded-l-lg border border-aq-border bg-aq-bg text-aq-text text-xs" placeholder="Código">
+                                <button type="button" onclick="abrirListaProductos()" class="px-2 py-1.5 bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white border border-l-0 border-aq-border" title="Buscar">
+                                    <i class='bx bx-search text-xs'></i>
+                                </button>
+                                <input type="text" id="otProdNombre" class="w-36 px-2 py-1.5 border border-aq-border bg-aq-bg text-aq-text text-xs" placeholder="Nombre" readonly>
+                                <input type="text" id="otProdUM" class="w-14 px-2 py-1.5 border border-aq-border bg-aq-bg text-aq-text text-xs" placeholder="UM" readonly>
+                                <input type="number" id="otProdCant" class="w-20 px-2 py-1.5 border border-aq-border bg-aq-bg text-aq-text text-xs" placeholder="Cant">
+                                <select id="otProdBodega" class="w-24 px-2 py-0 border border-aq-border bg-aq-bg text-aq-text text-xs !h-[34px] leading-[34px]">
+                                    <option value="">Bod.</option>
+                                </select>
+                                <button type="button" onclick="agregarProductoOt()" class="px-3 py-1.5 bg-aq-primary text-white hover:opacity-85 border border-l-0 border-aq-border rounded-r-lg" title="Agregar">
+                                    <i class='bx bx-plus text-xs'></i>
                                 </button>
                             </div>
                         </div>
@@ -140,6 +159,7 @@
                         <table class="w-full border-collapse min-w-[900px]">
                             <thead>
                                 <tr class="bg-aq-surface-2 text-aq-text text-xs">
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">Producto</th>
                                     <th class="px-1 py-2 text-left whitespace-nowrap">DocRef</th>
                                     <th class="px-1 py-2 text-left whitespace-nowrap">Tipo</th>
                                     <th class="px-1 py-2 text-left whitespace-nowrap">Fecha</th>

@@ -242,6 +242,17 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
                                                 ),
                                                 const Spacer(),
                                                 Text(
+                                                  'N° ${r.id}',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: isDark
+                                                        ? ArayaColors.darkText
+                                                        : ArayaColors.lightText,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
                                                   _formatFecha(r.fechaHora),
                                                   style: TextStyle(
                                                     fontSize: 12,
@@ -344,6 +355,17 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
                       ),
                       const Spacer(),
                       Text(
+                        'N° ${r.id}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? ArayaColors.darkText
+                              : ArayaColors.lightText,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
                         _formatFecha(r.fechaHora),
                         style: TextStyle(
                           fontSize: 12,
@@ -392,7 +414,7 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
                                   style: const TextStyle(fontSize: 14),
                                 ),
                                 Text(
-                                  '$d.articuloCodigo · $d.articuloUm',
+                                  '${d.articuloCodigo} · ${d.articuloUm}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: isDark

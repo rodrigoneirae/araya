@@ -131,9 +131,9 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
 
     if (!mounted) return;
 
-    if (result) {
+    if (result != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registro creado exitosamente')),
+        SnackBar(content: Text('Registro N° ${result.id} creado exitosamente')),
       );
       Navigator.of(context).pop(true);
     } else {

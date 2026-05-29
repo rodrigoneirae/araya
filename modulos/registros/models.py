@@ -21,6 +21,13 @@ class RegistroArticuloCabecera(models.Model):
         choices=Estado.choices,
         default=Estado.INGRESADO,
     )
+    folio = models.IntegerField(db_index=True, blank=True, null=True, verbose_name="Folio")
+
+    def save(self, *args, **kwargs):
+        if not self.folio:
+            max_folio = RegistroArticuloCabecera.objects.aggregate(models.Max('folio'))['folio__max']
+            self.folio = (max_folio or 0) + 1
+        super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'RegistroArticuloCabecera'
@@ -48,3 +55,4 @@ class RegistroArticuloDetalle(models.Model):
         db_table = 'RegistroArticuloDetalle'
         verbose_name = 'Detalle de Registro'
         verbose_name_plural = 'Detalles de Registros'
+#26978

@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -15,14 +16,11 @@ class ArticuloSearchAPIView(APIView):
 
     def get(self, request):
         query = request.query_params.get('q', '').strip()
-        if not query:
+        if len(query) < 2:
             return Response([])
         articulos = Articulos.objects.filter(
-            descr__icontains=query,
-        ) | Articulos.objects.filter(
-            codigo__icontains=query,
-        )
-        articulos = articulos.distinct()[:20]
+            Q(descr__icontains=query) | Q(codigo__icontains=query)
+        ).distinct()[:20]
         serializer = ArticuloSerializer(articulos, many=True)
         return Response(serializer.data)
 

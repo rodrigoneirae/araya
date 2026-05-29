@@ -36,7 +36,7 @@ function buscarXHRBodega(action, datos, callback) {
 
 let modoEdicionBodega = false;
 let modoNuevoBodega = false;
-let codigoBodegaEliminar = null;
+let estadoOriginalBodega = 'Activo';
 
 function buscarPorCodigoBodega() {
     const cod = document.getElementById('bodegaCod').value.trim();
@@ -50,15 +50,19 @@ function buscarPorCodigoBodega() {
             document.getElementById('bodegaCod').value = data.data.cod;
             document.getElementById('bodegaNombre').value = data.data.nombre || '';
             document.getElementById('bodegaGlosa').value = data.data.glosa || '';
+            document.getElementById('bodegaEstado').checked = data.data.estado === 'Activo';
+            estadoOriginalBodega = data.data.estado || 'Activo';
             setCamposBodegaDisabled(true);
             document.getElementById('btnGuardarBodega').classList.add('hidden');
             document.getElementById('btnEditarBodega').classList.remove('hidden');
-            document.getElementById('btnEliminarBodega').classList.remove('hidden');
+            actualizarBtnEliminarBodega();
             modoEdicionBodega = false;
             resetBtnEditarBodega();
         } else {
             document.getElementById('bodegaForm').reset();
             document.getElementById('bodegaCod').value = cod;
+            document.getElementById('bodegaEstado').checked = true;
+            estadoOriginalBodega = 'Activo';
             setCamposBodegaDisabled(false);
             document.getElementById('btnGuardarBodega').classList.remove('hidden');
             document.getElementById('btnEditarBodega').classList.add('hidden');
@@ -170,19 +174,43 @@ function editarBodega() {
     }
 }
 
-function eliminarBodega() {
+function actualizarBtnEliminarBodega() {
+    const btn = document.getElementById('btnEliminarBodega');
+    if (!btn) return;
+    const esActivo = estadoOriginalBodega === 'Activo';
+    btn.title = esActivo ? 'Desactivar' : 'Activar';
+    btn.querySelector('i').className = esActivo ? 'bx bx-no-entry text-xl' : 'bx bx-check-circle text-xl';
+    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'bg-amber-500', 'hover:bg-amber-600');
+    btn.classList.add(esActivo ? 'bg-amber-500' : 'bg-green-500', esActivo ? 'hover:bg-amber-600' : 'hover:bg-green-600');
+}
+
+function desactivarBodega() {
     const cod = document.getElementById('bodegaCod').value.trim();
     if (!cod) {
         Toastify({text: 'Seleccione una bodega', style: {background: '#f44336'}}).showToast();
         return;
     }
+    const esActivo = estadoOriginalBodega === 'Activo';
     mostrarModalConfirm({
-        mensaje: '¿Está seguro de eliminar la bodega código "' + cod + '"?',
+        datos: [
+            { label: 'Código', value: cod },
+            { label: 'Nombre', value: document.getElementById('bodegaNombre').value || '—' },
+        ],
+        titulo: esActivo ? 'Desactivar Bodega' : 'Activar Bodega',
+        mensaje: esActivo ? '¿Está seguro de desactivar esta bodega?' : '¿Está seguro de activar esta bodega?',
+        icono: esActivo ? 'bx bx-no-entry text-xl sm:text-2xl text-amber-500' : 'bx bx-check-circle text-xl sm:text-2xl text-green-500',
+        textoBoton: esActivo ? 'Desactivar' : 'Activar',
+        colorBoton: esActivo ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-green-500 text-white hover:bg-green-600',
         onConfirm: function() {
-            buscarXHRBodega('eliminar_bodega', {cod: cod}, function(data) {
+            const action = esActivo ? 'desactivar_bodega' : 'activar_bodega';
+            buscarXHRBodega(action, {cod: cod}, function(data) {
                 if (data.success) {
                     Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-                    nuevaBodega();
+                    if (esActivo) {
+                        nuevaBodega();
+                    } else {
+                        buscarPorCodigoBodega();
+                    }
                 } else {
                     Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
                 }
@@ -232,7 +260,7 @@ function seleccionarBodega(cod, nombre, glosa) {
 
 let modoEdicionDoc = false;
 let modoNuevoDoc = false;
-let codigoDocEliminar = null;
+let estadoOriginalDoc = 'Activo';
 
 function buscarXHRDoc(action, datos, callback) {
     const formData = new FormData();
@@ -259,16 +287,25 @@ function buscarPorCodigoDoc() {
         if (data.success && data.data) {
             document.getElementById('docCod').value = data.data.cod;
             document.getElementById('docNombre').value = data.data.nombre || '';
-            document.getElementById('docSigno').value = data.data.signo !== null && data.data.signo !== '' ? data.data.signo : '';
+            const signoVal = data.data.signo !== null && data.data.signo !== '' ? String(data.data.signo) : '';
+            if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery('#docSigno').data('select2')) {
+                jQuery('#docSigno').val(signoVal).trigger('change');
+            } else {
+                document.getElementById('docSigno').value = signoVal;
+            }
+            document.getElementById('docEstado').checked = data.data.estado === 'Activo';
+            estadoOriginalDoc = data.data.estado || 'Activo';
             setCamposDocDisabled(true);
             document.getElementById('btnGuardarDoc').classList.add('hidden');
             document.getElementById('btnEditarDoc').classList.remove('hidden');
-            document.getElementById('btnEliminarDoc').classList.remove('hidden');
+            actualizarBtnEliminarDoc();
             modoEdicionDoc = false;
             resetBtnEditarDoc();
         } else {
             document.getElementById('docForm').reset();
             document.getElementById('docCod').value = cod;
+            document.getElementById('docEstado').checked = true;
+            estadoOriginalDoc = 'Activo';
             setCamposDocDisabled(false);
             document.getElementById('btnGuardarDoc').classList.remove('hidden');
             document.getElementById('btnEditarDoc').classList.add('hidden');
@@ -280,10 +317,26 @@ function buscarPorCodigoDoc() {
 }
 
 function setCamposDocDisabled(disabled) {
-    ['docNombre', 'docSigno'].forEach(id => {
+    ['docNombre'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.disabled = disabled;
     });
+    const signoSel = document.getElementById('docSigno');
+    if (signoSel) {
+        if (disabled) {
+            if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery(signoSel).data('select2')) {
+                jQuery(signoSel).select2('enable', false);
+            } else {
+                signoSel.disabled = true;
+            }
+        } else {
+            if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery(signoSel).data('select2')) {
+                jQuery(signoSel).select2('enable', true);
+            } else {
+                signoSel.disabled = false;
+            }
+        }
+    }
 }
 
 function nuevaDoc() {
@@ -386,19 +439,43 @@ function eliminarDoc() {
         Toastify({text: 'Seleccione un documento', style: {background: '#f44336'}}).showToast();
         return;
     }
+    const esActivo = estadoOriginalDoc === 'Activo';
     mostrarModalConfirm({
-        mensaje: '¿Está seguro de eliminar el documento código "' + cod + '"?',
+        datos: [
+            { label: 'Código', value: cod },
+            { label: 'Nombre', value: document.getElementById('docNombre').value || '—' },
+        ],
+        titulo: esActivo ? 'Desactivar Documento' : 'Activar Documento',
+        mensaje: esActivo ? '¿Está seguro de desactivar este documento?' : '¿Está seguro de activar este documento?',
+        icono: esActivo ? 'bx bx-no-entry text-xl sm:text-2xl text-amber-500' : 'bx bx-check-circle text-xl sm:text-2xl text-green-500',
+        textoBoton: esActivo ? 'Desactivar' : 'Activar',
+        colorBoton: esActivo ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-green-500 text-white hover:bg-green-600',
         onConfirm: function() {
-            buscarXHRDoc('eliminar_doc', {cod: cod}, function(data) {
+            const action = esActivo ? 'desactivar_doc' : 'activar_doc';
+            buscarXHRDoc(action, {cod: cod}, function(data) {
                 if (data.success) {
                     Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-                    nuevaDoc();
+                    if (esActivo) {
+                        nuevaDoc();
+                    } else {
+                        buscarPorCodigoDoc();
+                    }
                 } else {
                     Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
                 }
             });
         }
     });
+}
+
+function actualizarBtnEliminarDoc() {
+    const btn = document.getElementById('btnEliminarDoc');
+    if (!btn) return;
+    const esActivo = estadoOriginalDoc === 'Activo';
+    btn.title = esActivo ? 'Desactivar' : 'Activar';
+    btn.querySelector('i').className = esActivo ? 'bx bx-no-entry text-xl' : 'bx bx-check-circle text-xl';
+    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'bg-amber-500', 'hover:bg-amber-600');
+    btn.classList.add(esActivo ? 'bg-amber-500' : 'bg-green-500', esActivo ? 'hover:bg-amber-600' : 'hover:bg-green-600');
 }
 
 function abrirListaDocs() {
@@ -429,7 +506,12 @@ function abrirListaDocs() {
 function seleccionarDoc(cod, nombre, signo) {
     document.getElementById('docCod').value = cod;
     document.getElementById('docNombre').value = nombre;
-    document.getElementById('docSigno').value = signo !== null && signo !== '' ? signo : '';
+    const signoVal = signo !== null && signo !== '' ? String(signo) : '';
+    if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery('#docSigno').data('select2')) {
+        jQuery('#docSigno').val(signoVal).trigger('change');
+    } else {
+        document.getElementById('docSigno').value = signoVal;
+    }
     setCamposDocDisabled(true);
     document.getElementById('btnGuardarDoc').classList.add('hidden');
     document.getElementById('btnEditarDoc').classList.remove('hidden');
@@ -443,7 +525,7 @@ function seleccionarDoc(cod, nombre, signo) {
 
 let modoEdicionProceso = false;
 let modoNuevoProceso = false;
-let codigoProcesoEliminar = null;
+let estadoOriginalProceso = 'Activo';
 
 function buscarXHRProceso(action, datos, callback) {
     const formData = new FormData();
@@ -471,15 +553,19 @@ function buscarPorCodigoProceso() {
             document.getElementById('procesoCod').value = data.data.cod;
             document.getElementById('procesoNombre').value = data.data.nombre || '';
             document.getElementById('procesoGlosa').value = data.data.glosa || '';
+            document.getElementById('procesoEstado').checked = data.data.estado === 'Activo';
+            estadoOriginalProceso = data.data.estado || 'Activo';
             setCamposProcesoDisabled(true);
             document.getElementById('btnGuardarProceso').classList.add('hidden');
             document.getElementById('btnEditarProceso').classList.remove('hidden');
-            document.getElementById('btnEliminarProceso').classList.remove('hidden');
+            actualizarBtnEliminarProceso();
             modoEdicionProceso = false;
             resetBtnEditarProceso();
         } else {
             document.getElementById('procesoForm').reset();
             document.getElementById('procesoCod').value = cod;
+            document.getElementById('procesoEstado').checked = true;
+            estadoOriginalProceso = 'Activo';
             setCamposProcesoDisabled(false);
             document.getElementById('btnGuardarProceso').classList.remove('hidden');
             document.getElementById('btnEditarProceso').classList.add('hidden');
@@ -597,19 +683,43 @@ function eliminarProceso() {
         Toastify({text: 'Seleccione un proceso', style: {background: '#f44336'}}).showToast();
         return;
     }
+    const esActivo = estadoOriginalProceso === 'Activo';
     mostrarModalConfirm({
-        mensaje: '¿Está seguro de eliminar el proceso código "' + cod + '"?',
+        datos: [
+            { label: 'Código', value: cod },
+            { label: 'Nombre', value: document.getElementById('procesoNombre').value || '—' },
+        ],
+        titulo: esActivo ? 'Desactivar Proceso' : 'Activar Proceso',
+        mensaje: esActivo ? '¿Está seguro de desactivar este proceso?' : '¿Está seguro de activar este proceso?',
+        icono: esActivo ? 'bx bx-no-entry text-xl sm:text-2xl text-amber-500' : 'bx bx-check-circle text-xl sm:text-2xl text-green-500',
+        textoBoton: esActivo ? 'Desactivar' : 'Activar',
+        colorBoton: esActivo ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-green-500 text-white hover:bg-green-600',
         onConfirm: function() {
-            buscarXHRProceso('eliminar_proceso', {cod: cod}, function(data) {
+            const action = esActivo ? 'desactivar_proceso' : 'activar_proceso';
+            buscarXHRProceso(action, {cod: cod}, function(data) {
                 if (data.success) {
                     Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-                    nuevoProceso();
+                    if (esActivo) {
+                        nuevoProceso();
+                    } else {
+                        buscarPorCodigoProceso();
+                    }
                 } else {
                     Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
                 }
             });
         }
     });
+}
+
+function actualizarBtnEliminarProceso() {
+    const btn = document.getElementById('btnEliminarProceso');
+    if (!btn) return;
+    const esActivo = estadoOriginalProceso === 'Activo';
+    btn.title = esActivo ? 'Desactivar' : 'Activar';
+    btn.querySelector('i').className = esActivo ? 'bx bx-no-entry text-xl' : 'bx bx-check-circle text-xl';
+    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'bg-amber-500', 'hover:bg-amber-600');
+    btn.classList.add(esActivo ? 'bg-amber-500' : 'bg-green-500', esActivo ? 'hover:bg-amber-600' : 'hover:bg-green-600');
 }
 
 function abrirListaProcesos() {
@@ -653,7 +763,7 @@ function seleccionarProceso(cod, nombre, glosa) {
 
 let modoEdicionEmpleado = false;
 let modoNuevoEmpleado = false;
-let codigoEmpleadoEliminar = null;
+let estadoOriginalEmpleado = 'Activo';
 
 function buscarXHREmpleado(action, datos, callback) {
     const formData = new FormData();
@@ -681,15 +791,19 @@ function buscarPorCodigoEmpleado() {
             document.getElementById('empleadoCod').value = data.data.cod;
             document.getElementById('empleadoNombre').value = data.data.nombre || '';
             document.getElementById('empleadoGlosa').value = data.data.glosa || '';
+            document.getElementById('empleadoEstado').checked = data.data.estado === 'Activo';
+            estadoOriginalEmpleado = data.data.estado || 'Activo';
             setCamposEmpleadoDisabled(true);
             document.getElementById('btnGuardarEmpleado').classList.add('hidden');
             document.getElementById('btnEditarEmpleado').classList.remove('hidden');
-            document.getElementById('btnEliminarEmpleado').classList.remove('hidden');
+            actualizarBtnEliminarEmpleado();
             modoEdicionEmpleado = false;
             resetBtnEditarEmpleado();
         } else {
             document.getElementById('empleadoForm').reset();
             document.getElementById('empleadoCod').value = cod;
+            document.getElementById('empleadoEstado').checked = true;
+            estadoOriginalEmpleado = 'Activo';
             setCamposEmpleadoDisabled(false);
             document.getElementById('btnGuardarEmpleado').classList.remove('hidden');
             document.getElementById('btnEditarEmpleado').classList.add('hidden');
@@ -807,19 +921,43 @@ function eliminarEmpleado() {
         Toastify({text: 'Seleccione un empleado', style: {background: '#f44336'}}).showToast();
         return;
     }
+    const esActivo = estadoOriginalEmpleado === 'Activo';
     mostrarModalConfirm({
-        mensaje: '¿Está seguro de eliminar el empleado código "' + cod + '"?',
+        datos: [
+            { label: 'Código', value: cod },
+            { label: 'Nombre', value: document.getElementById('empleadoNombre').value || '—' },
+        ],
+        titulo: esActivo ? 'Desactivar Empleado' : 'Activar Empleado',
+        mensaje: esActivo ? '¿Está seguro de desactivar este empleado?' : '¿Está seguro de activar este empleado?',
+        icono: esActivo ? 'bx bx-no-entry text-xl sm:text-2xl text-amber-500' : 'bx bx-check-circle text-xl sm:text-2xl text-green-500',
+        textoBoton: esActivo ? 'Desactivar' : 'Activar',
+        colorBoton: esActivo ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-green-500 text-white hover:bg-green-600',
         onConfirm: function() {
-            buscarXHREmpleado('eliminar_empleado', {cod: cod}, function(data) {
+            const action = esActivo ? 'desactivar_empleado' : 'activar_empleado';
+            buscarXHREmpleado(action, {cod: cod}, function(data) {
                 if (data.success) {
                     Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-                    nuevoEmpleado();
+                    if (esActivo) {
+                        nuevoEmpleado();
+                    } else {
+                        buscarPorCodigoEmpleado();
+                    }
                 } else {
                     Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
                 }
             });
         }
     });
+}
+
+function actualizarBtnEliminarEmpleado() {
+    const btn = document.getElementById('btnEliminarEmpleado');
+    if (!btn) return;
+    const esActivo = estadoOriginalEmpleado === 'Activo';
+    btn.title = esActivo ? 'Desactivar' : 'Activar';
+    btn.querySelector('i').className = esActivo ? 'bx bx-no-entry text-xl' : 'bx bx-check-circle text-xl';
+    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'bg-amber-500', 'hover:bg-amber-600');
+    btn.classList.add(esActivo ? 'bg-amber-500' : 'bg-green-500', esActivo ? 'hover:bg-amber-600' : 'hover:bg-green-600');
 }
 
 function abrirListaEmpleados() {
@@ -863,7 +1001,7 @@ function seleccionarEmpleado(cod, nombre, glosa) {
 
 let modoEdicionCpago = false;
 let modoNuevoCpago = false;
-let codigoCpagoEliminar = null;
+let estadoOriginalCpago = 'Activo';
 
 function buscarXRHCpago(action, datos, callback) {
     const formData = new FormData();
@@ -892,15 +1030,19 @@ function buscarPorCodigoCpago() {
             document.getElementById('cpagoDescr').value = data.data.descr || '';
             document.getElementById('cpagoDias').value = data.data.dias || '';
             document.getElementById('cpagoGlosa').value = data.data.glosa || '';
+            document.getElementById('cpagoEstado').checked = data.data.estado === 'Activo';
+            estadoOriginalCpago = data.data.estado || 'Activo';
             setCamposCpagoDisabled(true);
             document.getElementById('btnGuardarCpago').classList.add('hidden');
             document.getElementById('btnEditarCpago').classList.remove('hidden');
-            document.getElementById('btnEliminarCpago').classList.remove('hidden');
+            actualizarBtnEliminarCpago();
             modoEdicionCpago = false;
             resetBtnEditarCpago();
         } else {
             document.getElementById('cpagoForm').reset();
             document.getElementById('cpagoCod').value = cod;
+            document.getElementById('cpagoEstado').checked = true;
+            estadoOriginalCpago = 'Activo';
             setCamposCpagoDisabled(false);
             document.getElementById('btnGuardarCpago').classList.remove('hidden');
             document.getElementById('btnEditarCpago').classList.add('hidden');
@@ -1020,19 +1162,43 @@ function eliminarCpago() {
         Toastify({text: 'Seleccione una condición de pago', style: {background: '#f44336'}}).showToast();
         return;
     }
+    const esActivo = estadoOriginalCpago === 'Activo';
     mostrarModalConfirm({
-        mensaje: '¿Está seguro de eliminar la condición de pago código "' + cod + '"?',
+        datos: [
+            { label: 'Código', value: cod },
+            { label: 'Descripción', value: document.getElementById('cpagoDescr').value || '—' },
+        ],
+        titulo: esActivo ? 'Desactivar Condición de Pago' : 'Activar Condición de Pago',
+        mensaje: esActivo ? '¿Está seguro de desactivar esta condición de pago?' : '¿Está seguro de activar esta condición de pago?',
+        icono: esActivo ? 'bx bx-no-entry text-xl sm:text-2xl text-amber-500' : 'bx bx-check-circle text-xl sm:text-2xl text-green-500',
+        textoBoton: esActivo ? 'Desactivar' : 'Activar',
+        colorBoton: esActivo ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-green-500 text-white hover:bg-green-600',
         onConfirm: function() {
-            buscarXRHCpago('eliminar_cpago', {cod: cod}, function(data) {
+            const action = esActivo ? 'desactivar_cpago' : 'activar_cpago';
+            buscarXRHCpago(action, {cod: cod}, function(data) {
                 if (data.success) {
                     Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-                    nuevoCpago();
+                    if (esActivo) {
+                        nuevoCpago();
+                    } else {
+                        buscarPorCodigoCpago();
+                    }
                 } else {
                     Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
                 }
             });
         }
     });
+}
+
+function actualizarBtnEliminarCpago() {
+    const btn = document.getElementById('btnEliminarCpago');
+    if (!btn) return;
+    const esActivo = estadoOriginalCpago === 'Activo';
+    btn.title = esActivo ? 'Desactivar' : 'Activar';
+    btn.querySelector('i').className = esActivo ? 'bx bx-no-entry text-xl' : 'bx bx-check-circle text-xl';
+    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'bg-amber-500', 'hover:bg-amber-600');
+    btn.classList.add(esActivo ? 'bg-amber-500' : 'bg-green-500', esActivo ? 'hover:bg-amber-600' : 'hover:bg-green-600');
 }
 
 function abrirListaCpagos() {
@@ -1077,7 +1243,7 @@ function seleccionarCpago(cod, descr, glosa, dias) {
 
 let modoEdicionTransportista = false;
 let modoNuevoTransportista = false;
-let rutTransportistaEliminar = null;
+let estadoOriginalTransportista = 'Activo';
 let transportistaActualPatentes = null;
 
 function buscarXHRTransportista(action, datos, callback) {
@@ -1105,10 +1271,12 @@ function buscarPorRutTransportista() {
         if (data.success && data.data) {
             document.getElementById('transportistaRut').value = data.data.rut;
             document.getElementById('transportistaNombre').value = data.data.nombre || '';
+            document.getElementById('transportistaEstado').checked = data.data.estado === 'Activo';
+            estadoOriginalTransportista = data.data.estado || 'Activo';
             setCamposTransportistaDisabled(true);
             document.getElementById('btnGuardarTransportista').classList.add('hidden');
             document.getElementById('btnEditarTransportista').classList.remove('hidden');
-            document.getElementById('btnEliminarTransportista').classList.remove('hidden');
+            actualizarBtnEliminarTransportista();
             modoEdicionTransportista = false;
             resetBtnEditarTransportista();
             transportistaActualPatentes = data.data.rut;
@@ -1116,6 +1284,8 @@ function buscarPorRutTransportista() {
         } else {
             document.getElementById('transportistaForm').reset();
             document.getElementById('transportistaRut').value = rut;
+            document.getElementById('transportistaEstado').checked = true;
+            estadoOriginalTransportista = 'Activo';
             setCamposTransportistaDisabled(false);
             document.getElementById('btnGuardarTransportista').classList.remove('hidden');
             document.getElementById('btnEditarTransportista').classList.add('hidden');
@@ -1235,19 +1405,43 @@ function eliminarTransportista() {
         Toastify({text: 'Seleccione un transportista', style: {background: '#f44336'}}).showToast();
         return;
     }
+    const esActivo = estadoOriginalTransportista === 'Activo';
     mostrarModalConfirm({
-        mensaje: '¿Está seguro de eliminar el transportista RUT "' + rut + '"?',
+        datos: [
+            { label: 'RUT', value: rut },
+            { label: 'Nombre', value: document.getElementById('transportistaNombre').value || '—' },
+        ],
+        titulo: esActivo ? 'Desactivar Transportista' : 'Activar Transportista',
+        mensaje: esActivo ? '¿Está seguro de desactivar este transportista?' : '¿Está seguro de activar este transportista?',
+        icono: esActivo ? 'bx bx-no-entry text-xl sm:text-2xl text-amber-500' : 'bx bx-check-circle text-xl sm:text-2xl text-green-500',
+        textoBoton: esActivo ? 'Desactivar' : 'Activar',
+        colorBoton: esActivo ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-green-500 text-white hover:bg-green-600',
         onConfirm: function() {
-            buscarXHRTransportista('eliminar_transportista', {rut: rut}, function(data) {
+            const action = esActivo ? 'desactivar_transportista' : 'activar_transportista';
+            buscarXHRTransportista(action, {rut: rut}, function(data) {
                 if (data.success) {
                     Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-                    nuevoTransportista();
+                    if (esActivo) {
+                        nuevoTransportista();
+                    } else {
+                        buscarPorRutTransportista();
+                    }
                 } else {
                     Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
                 }
             });
         }
     });
+}
+
+function actualizarBtnEliminarTransportista() {
+    const btn = document.getElementById('btnEliminarTransportista');
+    if (!btn) return;
+    const esActivo = estadoOriginalTransportista === 'Activo';
+    btn.title = esActivo ? 'Desactivar' : 'Activar';
+    btn.querySelector('i').className = esActivo ? 'bx bx-no-entry text-xl' : 'bx bx-check-circle text-xl';
+    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'bg-amber-500', 'hover:bg-amber-600');
+    btn.classList.add(esActivo ? 'bg-amber-500' : 'bg-green-500', esActivo ? 'hover:bg-amber-600' : 'hover:bg-green-600');
 }
 
 function abrirListaTransportistas() {

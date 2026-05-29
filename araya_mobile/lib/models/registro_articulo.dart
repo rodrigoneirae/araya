@@ -33,10 +33,15 @@ class RegistroDetalle {
       'observacion': observacion,
     };
   }
+
+  @override
+  String toString() =>
+      'RegistroDetalle($articuloCodigo - $articuloDescr, x$cantidad)';
 }
 
 class RegistroArticulo {
   final int id;
+  final int? folio;
   final String usuarioUsername;
   final String fechaHora;
   final String documento;
@@ -45,6 +50,7 @@ class RegistroArticulo {
 
   RegistroArticulo({
     required this.id,
+    this.folio,
     required this.usuarioUsername,
     required this.fechaHora,
     this.documento = '',
@@ -55,6 +61,7 @@ class RegistroArticulo {
   factory RegistroArticulo.fromJson(Map<String, dynamic> json) {
     return RegistroArticulo(
       id: json['id'] as int? ?? 0,
+      folio: json['folio'] as int?,
       usuarioUsername: json['usuario_username'] as String? ?? '',
       fechaHora: json['fecha_hora'] as String? ?? '',
       documento: json['documento'] as String? ?? '',
@@ -65,4 +72,7 @@ class RegistroArticulo {
           [],
     );
   }
+
+  @override
+  String toString() => 'RegistroArticulo(#$id, $estado, ${detalles.length} items)';
 }

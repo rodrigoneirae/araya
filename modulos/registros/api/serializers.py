@@ -35,10 +35,10 @@ class RegistroArticuloCabeceraSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegistroArticuloCabecera
         fields = [
-            'id', 'usuario', 'usuario_username', 'fecha_hora',
+            'id', 'folio', 'usuario', 'usuario_username', 'fecha_hora',
             'documento', 'estado', 'detalles',
         ]
-        read_only_fields = ['usuario', 'fecha_hora']
+        read_only_fields = ['usuario', 'fecha_hora', 'folio']
 
 
 class RegistroArticuloCreateSerializer(serializers.Serializer):

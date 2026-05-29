@@ -175,7 +175,7 @@ class ApiService {
     throw Exception('Error al cargar registros');
   }
 
-  Future<bool> createRegistro({
+  Future<RegistroArticulo?> createRegistro({
     required String documento,
     required List<RegistroDetalle> detalles,
   }) async {
@@ -194,7 +194,11 @@ class ApiService {
         )
         .timeout(const Duration(seconds: 15));
 
-    return response.statusCode == 201;
+    if (response.statusCode == 201) {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return RegistroArticulo.fromJson(json);
+    }
+    return null;
   }
 
   void dispose() {

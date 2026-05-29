@@ -30,11 +30,12 @@ class UnidadMedida(models.Model):
 
 
 class Cpago(models.Model):
-    cod = models.SmallIntegerField(db_column='Cod', primary_key=True)  # Field name made lowercase.
-    descr = models.CharField(db_column='Descr', max_length=50, db_collation='Modern_Spanish_CI_AS', blank=True, null=True)  # Field name made lowercase.
-    glosa = models.CharField(db_column='Glosa', max_length=50, db_collation='Modern_Spanish_CI_AS', blank=True, null=True)  # Field name made lowercase.
-    dias = models.SmallIntegerField(db_column='Dias', blank=True, null=True)  # Field name made lowercase.
+    cod = models.SmallIntegerField(db_column='Cod', primary_key=True)
+    descr = models.CharField(db_column='Descr', max_length=50, db_collation='Modern_Spanish_CI_AS', blank=True, null=True)
+    glosa = models.CharField(db_column='Glosa', max_length=50, db_collation='Modern_Spanish_CI_AS', blank=True, null=True)
+    dias = models.SmallIntegerField(db_column='Dias', blank=True, null=True)
+    estado = models.CharField(max_length=20, default='Activo')
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'CPago'

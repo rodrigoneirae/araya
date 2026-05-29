@@ -49,37 +49,43 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
             "buscar_bodega": lambda d: self._buscar_bodega(d.get("cod")),
             "nueva_bodega": self._guardar_bodega,
             "editar_bodega": self._actualizar_bodega,
-            "eliminar_bodega": lambda d: self._eliminar_bodega(d.get("cod")),
+            "desactivar_bodega": lambda d: self._desactivar_bodega(d.get("cod")),
+            "activar_bodega": lambda d: self._activar_bodega(d.get("cod")),
             "listar_bodegas": lambda d: self._listar_bodegas(),
             # Docs
             "buscar_doc": lambda d: self._buscar_doc(d.get("cod")),
             "nueva_doc": self._guardar_doc,
             "editar_doc": self._actualizar_doc,
-            "eliminar_doc": lambda d: self._eliminar_doc(d.get("cod")),
+            "desactivar_doc": lambda d: self._desactivar_doc(d.get("cod")),
+            "activar_doc": lambda d: self._activar_doc(d.get("cod")),
             "listar_docs": lambda d: self._listar_docs(),
             # Procesos
             "buscar_proceso": lambda d: self._buscar_proceso(d.get("cod")),
             "nuevo_proceso": self._guardar_proceso,
             "editar_proceso": self._actualizar_proceso,
-            "eliminar_proceso": lambda d: self._eliminar_proceso(d.get("cod")),
+            "desactivar_proceso": lambda d: self._desactivar_proceso(d.get("cod")),
+            "activar_proceso": lambda d: self._activar_proceso(d.get("cod")),
             "listar_procesos": lambda d: self._listar_procesos(),
             # Empleados
             "buscar_empleado": lambda d: self._buscar_empleado(d.get("cod")),
             "nuevo_empleado": self._guardar_empleado,
             "editar_empleado": self._actualizar_empleado,
-            "eliminar_empleado": lambda d: self._eliminar_empleado(d.get("cod")),
+            "desactivar_empleado": lambda d: self._desactivar_empleado(d.get("cod")),
+            "activar_empleado": lambda d: self._activar_empleado(d.get("cod")),
             "listar_empleados": lambda d: self._listar_empleados(),
             # Cpagos
             "buscar_cpago": lambda d: self._buscar_cpago(d.get("cod")),
             "nuevo_cpago": self._guardar_cpago,
             "editar_cpago": self._actualizar_cpago,
-            "eliminar_cpago": lambda d: self._eliminar_cpago(d.get("cod")),
+            "desactivar_cpago": lambda d: self._desactivar_cpago(d.get("cod")),
+            "activar_cpago": lambda d: self._activar_cpago(d.get("cod")),
             "listar_cpagos": lambda d: self._listar_cpagos(),
             # Transportistas
             "buscar_transportista": lambda d: self._buscar_transportista(d.get("rut")),
             "nuevo_transportista": self._guardar_transportista,
             "editar_transportista": self._actualizar_transportista,
-            "eliminar_transportista": lambda d: self._eliminar_transportista(d.get("rut")),
+            "desactivar_transportista": lambda d: self._desactivar_transportista(d.get("rut")),
+            "activar_transportista": lambda d: self._activar_transportista(d.get("rut")),
             "listar_transportistas": lambda d: self._listar_transportistas(),
             # Patentes
             "listar_patentes": lambda d: self._listar_patentes(d.get("rut")),
@@ -105,7 +111,8 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
                 "data": {
                     "cod": bodega.cod,
                     "nombre": bodega.nombre or "",
-                    "glosa": bodega.glosa or ""
+                    "glosa": bodega.glosa or "",
+                    "estado": bodega.estado or "Activo"
                 }
             })
         except Bodegas.DoesNotExist:
@@ -137,12 +144,29 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
-    def _eliminar_bodega(self, cod: str | None) -> JsonResponse:
+    def _desactivar_bodega(self, cod: str | None) -> JsonResponse:
         if not cod:
             return JsonResponse({"success": False, "message": "Código requerido"})
         try:
-            Bodegas.objects.get(cod=cod).delete(using="default")
-            return JsonResponse({"success": True, "message": "Bodega eliminada correctamente"})
+            bodega = Bodegas.objects.get(cod=cod)
+            bodega.estado = 'Inactivo'
+            bodega.usr = self.request.user.username
+            bodega.timeuser = timezone.now()
+            bodega.save(using="default")
+            return JsonResponse({"success": True, "message": "Bodega desactivada correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _activar_bodega(self, cod: str | None) -> JsonResponse:
+        if not cod:
+            return JsonResponse({"success": False, "message": "Código requerido"})
+        try:
+            bodega = Bodegas.objects.get(cod=cod)
+            bodega.estado = 'Activo'
+            bodega.usr = self.request.user.username
+            bodega.timeuser = timezone.now()
+            bodega.save(using="default")
+            return JsonResponse({"success": True, "message": "Bodega activada correctamente"})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
@@ -163,7 +187,8 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
                 "data": {
                     "cod": doc.cod,
                     "nombre": doc.nombre or "",
-                    "signo": doc.signo if doc.signo is not None else ""
+                    "signo": doc.signo if doc.signo is not None else "",
+                    "estado": doc.estado or "Activo"
                 }
             })
         except Docs.DoesNotExist:
@@ -195,12 +220,29 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
-    def _eliminar_doc(self, cod: str | None) -> JsonResponse:
+    def _desactivar_doc(self, cod: str | None) -> JsonResponse:
         if not cod:
             return JsonResponse({"success": False, "message": "Código requerido"})
         try:
-            Docs.objects.get(cod=cod).delete(using="default")
-            return JsonResponse({"success": True, "message": "Documento eliminado correctamente"})
+            doc = Docs.objects.get(cod=cod)
+            doc.estado = 'Inactivo'
+            doc.usr = self.request.user.username
+            doc.timeuser = timezone.now()
+            doc.save(using="default")
+            return JsonResponse({"success": True, "message": "Documento desactivado correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _activar_doc(self, cod: str | None) -> JsonResponse:
+        if not cod:
+            return JsonResponse({"success": False, "message": "Código requerido"})
+        try:
+            doc = Docs.objects.get(cod=cod)
+            doc.estado = 'Activo'
+            doc.usr = self.request.user.username
+            doc.timeuser = timezone.now()
+            doc.save(using="default")
+            return JsonResponse({"success": True, "message": "Documento activado correctamente"})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
@@ -221,7 +263,8 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
                 "data": {
                     "cod": proceso.cod,
                     "nombre": proceso.nombre or "",
-                    "glosa": proceso.glosa or ""
+                    "glosa": proceso.glosa or "",
+                    "estado": proceso.estado or "Activo"
                 }
             })
         except Procesos.DoesNotExist:
@@ -253,12 +296,29 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
-    def _eliminar_proceso(self, cod: str | None) -> JsonResponse:
+    def _desactivar_proceso(self, cod: str | None) -> JsonResponse:
         if not cod:
             return JsonResponse({"success": False, "message": "Código requerido"})
         try:
-            Procesos.objects.get(cod=cod).delete(using="default")
-            return JsonResponse({"success": True, "message": "Proceso eliminado correctamente"})
+            proceso = Procesos.objects.get(cod=cod)
+            proceso.estado = 'Inactivo'
+            proceso.usr = self.request.user.username
+            proceso.timeuser = timezone.now()
+            proceso.save(using="default")
+            return JsonResponse({"success": True, "message": "Proceso desactivado correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _activar_proceso(self, cod: str | None) -> JsonResponse:
+        if not cod:
+            return JsonResponse({"success": False, "message": "Código requerido"})
+        try:
+            proceso = Procesos.objects.get(cod=cod)
+            proceso.estado = 'Activo'
+            proceso.usr = self.request.user.username
+            proceso.timeuser = timezone.now()
+            proceso.save(using="default")
+            return JsonResponse({"success": True, "message": "Proceso activado correctamente"})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
@@ -279,7 +339,8 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
                 "data": {
                     "cod": empleado.cod,
                     "nombre": empleado.nombre or "",
-                    "glosa": empleado.glosa or ""
+                    "glosa": empleado.glosa or "",
+                    "estado": empleado.estado or "Activo"
                 }
             })
         except Empleados.DoesNotExist:
@@ -311,12 +372,29 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
-    def _eliminar_empleado(self, cod: str | None) -> JsonResponse:
+    def _desactivar_empleado(self, cod: str | None) -> JsonResponse:
         if not cod:
             return JsonResponse({"success": False, "message": "Código requerido"})
         try:
-            Empleados.objects.get(cod=cod).delete(using="default")
-            return JsonResponse({"success": True, "message": "Empleado eliminado correctamente"})
+            empleado = Empleados.objects.get(cod=cod)
+            empleado.estado = 'Inactivo'
+            empleado.usr = self.request.user.username
+            empleado.timeuser = timezone.now()
+            empleado.save(using="default")
+            return JsonResponse({"success": True, "message": "Empleado desactivado correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _activar_empleado(self, cod: str | None) -> JsonResponse:
+        if not cod:
+            return JsonResponse({"success": False, "message": "Código requerido"})
+        try:
+            empleado = Empleados.objects.get(cod=cod)
+            empleado.estado = 'Activo'
+            empleado.usr = self.request.user.username
+            empleado.timeuser = timezone.now()
+            empleado.save(using="default")
+            return JsonResponse({"success": True, "message": "Empleado activado correctamente"})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
@@ -338,7 +416,8 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
                     "cod": cpago.cod,
                     "descr": cpago.descr or "",
                     "glosa": cpago.glosa or "",
-                    "dias": cpago.dias if cpago.dias is not None else ""
+                    "dias": cpago.dias if cpago.dias is not None else "",
+                    "estado": cpago.estado or "Activo"
                 }
             })
         except Cpago.DoesNotExist:
@@ -368,12 +447,25 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
-    def _eliminar_cpago(self, cod: str | None) -> JsonResponse:
+    def _desactivar_cpago(self, cod: str | None) -> JsonResponse:
         if not cod:
             return JsonResponse({"success": False, "message": "Código requerido"})
         try:
-            Cpago.objects.get(cod=cod).delete(using="default")
-            return JsonResponse({"success": True, "message": "Condición de pago eliminada correctamente"})
+            cpago = Cpago.objects.get(cod=cod)
+            cpago.estado = 'Inactivo'
+            cpago.save(using="default")
+            return JsonResponse({"success": True, "message": "Condición de pago desactivada correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _activar_cpago(self, cod: str | None) -> JsonResponse:
+        if not cod:
+            return JsonResponse({"success": False, "message": "Código requerido"})
+        try:
+            cpago = Cpago.objects.get(cod=cod)
+            cpago.estado = 'Activo'
+            cpago.save(using="default")
+            return JsonResponse({"success": True, "message": "Condición de pago activada correctamente"})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
@@ -421,12 +513,29 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
-    def _eliminar_transportista(self, rut: str | None) -> JsonResponse:
+    def _desactivar_transportista(self, rut: str | None) -> JsonResponse:
         if not rut:
             return JsonResponse({"success": False, "message": "RUT requerido"})
         try:
-            Transportistas.objects.get(rut=rut).delete(using="default")
-            return JsonResponse({"success": True, "message": "Transportista eliminado correctamente"})
+            t = Transportistas.objects.get(rut=rut)
+            t.estado = 'Inactivo'
+            t.usr = self.request.user.username
+            t.timeuser = timezone.now()
+            t.save(using="default")
+            return JsonResponse({"success": True, "message": "Transportista desactivado correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _activar_transportista(self, rut: str | None) -> JsonResponse:
+        if not rut:
+            return JsonResponse({"success": False, "message": "RUT requerido"})
+        try:
+            t = Transportistas.objects.get(rut=rut)
+            t.estado = 'Activo'
+            t.usr = self.request.user.username
+            t.timeuser = timezone.now()
+            t.save(using="default")
+            return JsonResponse({"success": True, "message": "Transportista activado correctamente"})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 

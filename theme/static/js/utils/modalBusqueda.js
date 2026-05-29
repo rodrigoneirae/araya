@@ -1,10 +1,12 @@
 (function() {
     let tabulator = null;
     let currentOpts = null;
+    let isClosing = false;
 
     window.abrirModalBusqueda = function(opts) {
         opts = opts || {};
         currentOpts = opts;
+        isClosing = false;
 
         document.getElementById('modalBusquedaTitle').textContent = opts.titulo || 'Lista';
         document.getElementById('modalBusqueda').classList.remove('hidden');
@@ -45,18 +47,54 @@
                 columns: cols,
                 data: opts.data || [],
                 layout: 'fitColumns',
-                selectableRows: 1,
+                selectableRows: opts.multiSelect ? true : 1,
                 pagination: opts.pagination !== false ? 'local' : false,
                 paginationSize: opts.paginationSize || 15,
                 placeholder: 'Sin datos',
             });
 
-            tabulator.on("rowClick", function(e, row) {
-                if (typeof opts.onSelect === 'function') {
-                    opts.onSelect(row.getData());
+            if (opts.multiSelect) {
+                tabulator.on("rowSelected", function(row) {
+                    var rowData = row.getData();
+                    if (typeof opts.onSelect === 'function') {
+                        opts.onSelect(rowData);
+                    }
+                });
+
+                tabulator.on("rowDeselected", function(row) {
+                    if (isClosing) return;
+                    var rowData = row.getData();
+                    if (typeof opts.onDeselect === 'function') {
+                        opts.onDeselect(rowData);
+                    }
+                });
+
+                if (opts.preselected && opts.preselected.length > 0) {
+                    tabulator.on("tableBuilt", function() {
+                        var keyFields = opts.preselectedKeys || ['codigo', 'numero'];
+                        opts.preselected.forEach(function(sel) {
+                            var rows = tabulator.getRows();
+                            for (var i = 0; i < rows.length; i++) {
+                                var rowData = rows[i].getData();
+                                var match = keyFields.every(function(k) {
+                                    return (rowData[k] || '') === (sel[k] || '');
+                                });
+                                if (match) {
+                                    rows[i].select();
+                                    break;
+                                }
+                            }
+                        });
+                    });
                 }
-                cerrarModalBusqueda();
-            });
+            } else {
+                tabulator.on("rowClick", function(e, row) {
+                    if (typeof opts.onSelect === 'function') {
+                        opts.onSelect(row.getData());
+                    }
+                    cerrarModalBusqueda();
+                });
+            }
 
             var filtro = document.getElementById('modalBusquedaFiltro');
             if (filtro && !opts.sinFiltro) {
@@ -82,6 +120,7 @@
     };
 
     window.cerrarModalBusqueda = function() {
+        isClosing = true;
         document.getElementById('modalBusqueda').classList.add('hidden');
         if (tabulator) { tabulator.destroy(); tabulator = null; }
     };

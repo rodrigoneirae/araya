@@ -125,6 +125,52 @@ body {
 }
 
 /* ============================================
+   CHECKBOX ACCENT
+   ============================================ */
+
+input[type="checkbox"].accent-aq-primary {
+  accent-color: rgb(var(--aq-primary));
+}
+
+html.dark input[type="checkbox"].accent-aq-primary {
+  accent-color: rgb(var(--aq-primary));
+}
+
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgb(var(--aq-border));
+  border-radius: 4px;
+  background-color: rgb(var(--aq-surface));
+  cursor: pointer;
+  position: relative;
+}
+
+input[type="checkbox"]:checked {
+  background-color: rgb(var(--aq-primary));
+  border-color: rgb(var(--aq-primary));
+}
+
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+input[type="checkbox"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(var(--aq-primary-soft));
+}
+
+/* ============================================
    PRIMARY
    ============================================ */
 
@@ -403,4 +449,54 @@ input[type="number"] {
   .dropdown:hover > .hidden {
     display: block !important;
   }
+}
+
+/* ============================================
+   SELECT2 OVERRIDES
+   ============================================ */
+
+.select2-container--default .select2-selection--single {
+  background-color: rgb(var(--aq-bg));
+  border: 1px solid rgb(var(--aq-border));
+  border-radius: 0;
+  height: 35px;
+  padding-top: 4px;
+}
+
+.select2-container--default .select2-selection--single:focus {
+  border-color: rgb(var(--aq-primary));
+  box-shadow: 0 0 0 2px rgb(var(--aq-primary-soft));
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+  height: 33px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  color: rgb(var(--aq-text));
+}
+
+.select2-dropdown {
+  background-color: rgb(var(--aq-surface));
+  border: 1px solid rgb(var(--aq-border));
+}
+
+.select2-container--default .select2-results__option {
+  color: rgb(var(--aq-text));
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+  background-color: rgb(var(--aq-primary));
+  color: white;
+}
+
+.select2-container--default .select2-search__field {
+  background-color: rgb(var(--aq-bg));
+  border: 1px solid rgb(var(--aq-border));
+  color: rgb(var(--aq-text));
+}
+
+.select2-container--default.select2-container--focus .select2-selection--single {
+  border-color: rgb(var(--aq-primary));
+  box-shadow: 0 0 0 2px rgb(var(--aq-primary-soft));
 }

@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.cache import cache
 from modulos.maestros.models.procesos import Procesos
 
 class Articulos(models.Model):
@@ -26,12 +27,22 @@ class Articulos(models.Model):
 
     @property
     def proceso(self):
-        if self.proced:
+        if not self.proced:
+            return None
+        try:
+            cod_int = int(self.proced)
+        except ValueError:
+            return None
+
+        cache_key = f"proceso_cod_{cod_int}"
+        proc = cache.get(cache_key)
+        if proc is None:
             try:
-                return Procesos.objects.get(cod=int(self.proced))
-            except (Procesos.DoesNotExist, ValueError):
+                proc = Procesos.objects.get(cod=cod_int)
+                cache.set(cache_key, proc, timeout=3600)  # Caché por 1 hora
+            except Procesos.DoesNotExist:
                 return None
-        return None
+        return proc
 
     @property
     def proceso_nombre(self):

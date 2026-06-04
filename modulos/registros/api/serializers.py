@@ -36,7 +36,8 @@ class RegistroArticuloCabeceraSerializer(serializers.ModelSerializer):
         model = RegistroArticuloCabecera
         fields = [
             'id', 'folio', 'usuario', 'usuario_username', 'fecha_hora',
-            'documento', 'estado', 'detalles',
+            'documento', 'estado', 'tipo_registro', 'ot_numero',
+            'codencargado', 'detalles',
         ]
         read_only_fields = ['usuario', 'fecha_hora', 'folio']
 
@@ -48,6 +49,13 @@ class RegistroArticuloCreateSerializer(serializers.Serializer):
         default=RegistroArticuloCabecera.Estado.INGRESADO,
         required=False,
     )
+    tipo_registro = serializers.ChoiceField(
+        choices=RegistroArticuloCabecera.TipoRegistro.choices,
+        default=RegistroArticuloCabecera.TipoRegistro.PARTE_ENTRADA,
+        required=False,
+    )
+    ot_numero = serializers.FloatField(required=False, allow_null=True)
+    codencargado = serializers.FloatField(required=False, allow_null=True)
     detalles = RegistroArticuloDetalleWriteSerializer(many=True)
 
     def validate_detalles(self, value):

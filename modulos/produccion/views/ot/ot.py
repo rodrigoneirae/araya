@@ -225,7 +225,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                     numero__in=pe_docs_numeros,
                     tipo=6,
                     linea=0
-                ).select_related("codencargado").order_by("-numero")
+                ).order_by("-numero")
                 for m in movs_pe:
                     encargado_pe = ""
                     if m.codencargado:

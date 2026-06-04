@@ -11,6 +11,7 @@ from modulos.produccion.views.ot.costos_ot import IndexCostosOTView
 from modulos.produccion.views.ot.ot import IndexIngresoOTView
 from modulos.produccion.views.pe.pe import IndexIngresoPEView
 from modulos.produccion.views.vc.vc import IndexIngresoVCView
+from modulos.produccion.views.registros.registros_mobile import IndexRegistroMobileView
 
 
 app_name = 'produccion'
@@ -19,6 +20,7 @@ urlpatterns = [
     path('ot/', IndexIngresoOTView.as_view(), name='produccion_ingreso_ot'),
     path('pe/', IndexIngresoPEView.as_view(), name='produccion_ingreso_pe'),
     path('vc/', IndexIngresoVCView.as_view(), name='produccion_ingreso_vc'),
+    path('registros-mobile/', IndexRegistroMobileView.as_view(), name='produccion_registros_mobile'),
 
     path('informe/vc-encargado/', IndexInformeVCEncargadoView.as_view(), name='produccion_informe_vc_encargado'),
     path('informe/pe-encargado/', IndexInformePEEncargadoView.as_view(), name='produccion_informe_pe_encargado'),

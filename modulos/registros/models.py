@@ -9,6 +9,10 @@ class RegistroArticuloCabecera(models.Model):
         PENDIENTE = 'PENDIENTE', 'Pendiente'
         CERRADO = 'CERRADO', 'Cerrado'
 
+    class TipoRegistro(models.TextChoices):
+        PARTE_ENTRADA = 'PE', 'Parte de Entrada'
+        VALE_CONSUMO = 'VC', 'Vale de Consumo'
+
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -22,6 +26,13 @@ class RegistroArticuloCabecera(models.Model):
         default=Estado.INGRESADO,
     )
     folio = models.IntegerField(db_index=True, blank=True, null=True, verbose_name="Folio")
+    tipo_registro = models.CharField(
+        max_length=2,
+        choices=TipoRegistro.choices,
+        default=TipoRegistro.PARTE_ENTRADA,
+    )
+    ot_numero = models.FloatField(blank=True, null=True, verbose_name="Número de OT")
+    codencargado = models.FloatField(blank=True, null=True, verbose_name="Código Encargado")
 
     def save(self, *args, **kwargs):
         if not self.folio:

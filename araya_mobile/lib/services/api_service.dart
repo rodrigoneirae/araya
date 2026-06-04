@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/articulo.dart';
 import '../models/registro_articulo.dart';
+import '../models/orden_trabajo.dart';
 
 class BackendInfo {
   final String status;
@@ -44,7 +45,9 @@ class ApiService {
   String get _healthUrl => '$baseUrl/api/health/';
   String get _loginApiUrl => '$baseUrl/api/auth/login/';
   String get _articulosUrl => '$baseUrl/api/articulos/';
+  String get _empleadosUrl => '$baseUrl/api/empleados/';
   String get _registrosUrl => '$baseUrl/api/registros/';
+  String get _otUrl => '$baseUrl/api/ot/';
 
   Map<String, String> _headers({bool json = false}) {
     final h = <String, String>{};
@@ -178,13 +181,20 @@ class ApiService {
   Future<RegistroArticulo?> createRegistro({
     required String documento,
     required List<RegistroDetalle> detalles,
+    String tipoRegistro = 'PE',
+    double? otNumero,
+    double? codencargado,
   }) async {
     final uri = Uri.parse(_registrosUrl);
 
-    final body = {
+    final body = <String, dynamic>{
       'documento': documento,
+      'tipo_registro': tipoRegistro,
       'detalles': detalles.map((d) => d.toJson()).toList(),
     };
+
+    if (otNumero != null) body['ot_numero'] = otNumero;
+    if (codencargado != null) body['codencargado'] = codencargado;
 
     final response = await _client
         .post(
@@ -199,6 +209,58 @@ class ApiService {
       return RegistroArticulo.fromJson(json);
     }
     return null;
+  }
+
+  Future<List<Empleado>> searchEmpleados(String query) async {
+    final uri = Uri.parse(_empleadosUrl).replace(
+      queryParameters: {'q': query},
+    );
+    final response = await _client
+        .get(uri, headers: _headers())
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body) as List<dynamic>;
+      return data
+          .map((e) => Empleado.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    throw Exception('Error al buscar empleados');
+  }
+
+  Future<List<OrdenTrabajo>> fetchOTs({String? estado}) async {
+    final params = <String, String>{};
+    if (estado != null && estado.isNotEmpty) {
+      params['estado'] = estado;
+    }
+    final uri = Uri.parse(_otUrl).replace(queryParameters: params);
+    final response = await _client
+        .get(uri, headers: _headers())
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body) as List<dynamic>;
+      return data
+          .map((e) => OrdenTrabajo.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    throw Exception('Error al cargar órdenes de trabajo');
+  }
+
+  Future<OrdenTrabajoDetalle?> fetchOTDetalle(double numero) async {
+    final uri = Uri.parse('$_otUrl$numero/');
+    final response = await _client
+        .get(uri, headers: _headers())
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return OrdenTrabajoDetalle.fromJson(json);
+    }
+    if (response.statusCode == 404) {
+      return null;
+    }
+    throw Exception('Error al cargar detalle de OT');
   }
 
   void dispose() {

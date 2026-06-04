@@ -6,7 +6,7 @@
         <div class="p-4 border-b border-aq-border">
             <div class="flex justify-between items-center">
                 <h1 class="text-2xl font-bold text-aq-text">Parte de Entrada (Producción)</h1>
-                {% include 'components/action_buttons.html' with entity='PE' suffix_ids=True round=False show_edit=False %}
+                {% include 'components/action_buttons.html' with entity='PE' suffix_ids=True round=False %}
             </div>
         </div>
 
@@ -30,36 +30,40 @@
                         <div class="w-24 sm:w-28">
                             <label class="block text-xs font-medium text-aq-text mb-1">PE</label>
                             <div class="flex gap-1">
-                                <input type="text" id="peNumero" onchange="buscarPEInput()" class="w-full px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
-                                <button type="button" onclick="abrirBusquedaPE()" class="px-2 py-1.5 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                <input type="text" id="peNumero" onchange="buscarPEInput()" class="w-full px-2 py-1.5 text-sm border border-aq-border bg-aq-bg text-aq-text h-[38px]">
+                                <button type="button" onclick="abrirBusquedaPE()" class="px-2 py-1.5 border border-aq-border bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white h-[38px]" title="Buscar">
                                     <i class='bx bx-search text-sm'></i>
                                 </button>
                             </div>
                         </div>
                         <div class="w-28 sm:w-32">
                             <label class="block text-xs font-medium text-aq-text mb-1">Fecha</label>
-                            <input type="date" id="peFecha" class="w-full px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                            <input type="date" id="peFecha" class="w-full px-2 py-1.5 text-sm border border-aq-border bg-aq-bg text-aq-text h-[38px]">
                         </div>
                         <div class="w-24 sm:w-28">
                             <label class="block text-xs font-medium text-aq-text mb-1">OT</label>
                             <div class="flex gap-1">
-                                <input type="text" id="peOT" onchange="buscarOTInput()" onkeyup="sincronizarPEconOT()" class="w-full px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
-                                <button type="button" onclick="abrirBusquedaOT()" class="px-2 py-1.5 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar OT">
+                                <input type="text" id="peOT" onchange="buscarOTInput()" onkeyup="sincronizarPEconOT()" class="w-full px-2 py-1.5 text-sm border border-aq-border bg-aq-bg text-aq-text h-[38px]">
+                                <button type="button" onclick="abrirBusquedaOT()" class="px-2 py-1.5 border border-aq-border bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white h-[38px]" title="Buscar OT">
                                     <i class='bx bx-search text-sm'></i>
                                 </button>
                             </div>
                         </div>
                         <div class="w-[200px] sm:w-[220px]">
                             <label class="block text-xs font-medium text-aq-text mb-1">Proceso</label>
-                            <select id="peProceso" class="w-full px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                            <select id="peProceso" class="w-full px-2 py-1.5 text-sm border border-aq-border bg-aq-bg text-aq-text">
                                 <option value="">--- Seleccionar ---</option>
                             </select>
                         </div>
                         <div class="w-[220px] sm:w-[250px]">
                             <label class="block text-xs font-medium text-aq-text mb-1">Encargado</label>
-                            <select id="peEncargado" class="w-full px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                            <select id="peEncargado" class="w-full px-2 py-1.5 text-sm border border-aq-border bg-aq-bg text-aq-text">
                                 <option value="">--- Seleccionar ---</option>
                             </select>
+                        </div>
+                        <div class="hidden">
+                            <label class="block text-xs font-medium text-aq-text mb-1">Estado</label>
+                            <input type="text" id="peEstado" class="w-full px-2 py-1.5 text-sm border border-aq-border bg-aq-bg text-aq-text">
                         </div>
                     </div>
                 </form>
@@ -112,7 +116,7 @@
                 </div>
                 <div class="w-full flex-1 overflow-auto min-h-0">
                     <div class="overflow-x-auto min-w-0">
-<table class="w-full border-collapse min-w-[800px]">
+<table class="w-full border-collapse min-w-[900px]">
                                 <thead>
                                     <tr class="bg-aq-surface-2 text-aq-text text-xs">
                                         <th class="px-1 py-2 text-left whitespace-nowrap">Código</th>
@@ -122,6 +126,7 @@
                                         <th class="px-1 py-2 text-left whitespace-nowrap">Descripción</th>
                                         <th class="px-1 py-2 text-right whitespace-nowrap">P.Unit</th>
                                         <th class="px-1 py-2 text-left whitespace-nowrap">Fecha</th>
+                                        <th class="px-1 py-2 text-left whitespace-nowrap">Encargado</th>
                                         <th class="px-1 py-2 text-left whitespace-nowrap">Estado</th>
                                         <th class="px-1 py-2 text-center whitespace-nowrap">Acción</th>
                                     </tr>
@@ -129,12 +134,14 @@
                             <tbody id="peDetalle">
                             </tbody>
                         </table>
+                        <select id="peEncargadoHidden" class="hidden" data-no-select2="true"></select>
                     </div>
                 </div>
                 <div id="resumenPE" class="flex flex-wrap gap-2 sm:gap-4 mt-2 px-2 py-1.5 bg-aq-surface-2 rounded-lg text-xs">
                     <div><span class="text-aq-text font-medium">OT:</span> <span id="resumenOT" class="text-aq-primary">-</span></div>
                     <div><span class="text-aq-text font-medium">Proceso:</span> <span id="resumenProceso" class="text-aq-primary">-</span></div>
                     <div><span class="text-aq-text font-medium">Total Artículos:</span> <span id="resumenTotalArt">0</span></div>
+                    <div><span class="text-aq-text font-medium">Total Cantidad:</span> <span id="resumenTotalCant">0</span></div>
                 </div>
             </div>
         </div>

@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import '../constants/araya_theme.dart';
 import '../services/api_service.dart';
 import '../services/config_service.dart';
+import '../services/sync_service.dart';
 import '../services/theme_service.dart';
 import 'login_screen.dart';
+import 'ot_list_screen.dart';
 import 'registro_form_screen.dart';
 import 'registros_list_screen.dart';
 
@@ -23,11 +25,37 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final bool _loading = false;
+  bool _loading = false;
+  SyncState _syncState = SyncState.idle;
+  int _pendingCount = 0;
+  DateTime? _lastSync;
 
   @override
   void initState() {
     super.initState();
+    _initSync();
+  }
+
+  Future<void> _initSync() async {
+    final syncService = SyncService();
+    await syncService.initialize(widget.apiService);
+
+    syncService.syncStateStream.listen((state) {
+      if (mounted) setState(() => _syncState = state);
+    });
+
+    syncService.pendingCountStream.listen((count) {
+      if (mounted) setState(() => _pendingCount = count);
+    });
+
+    syncService.lastSyncStream.listen((dt) {
+      if (mounted) setState(() => _lastSync = dt);
+    });
+  }
+
+  Future<void> _sync() async {
+    final syncService = SyncService();
+    await syncService.forceSync();
   }
 
   Future<void> _logout() async {
@@ -42,6 +70,54 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       (route) => false,
     );
+  }
+
+  Color _syncColor(bool isDark) {
+    switch (_syncState) {
+      case SyncState.syncing:
+        return Colors.blue;
+      case SyncState.error:
+        return Colors.red;
+      case SyncState.offline:
+        return isDark ? ArayaColors.darkAccent : ArayaColors.lightAccent;
+      default:
+        return Colors.green;
+    }
+  }
+
+  IconData _syncIcon() {
+    switch (_syncState) {
+      case SyncState.syncing:
+        return Icons.sync;
+      case SyncState.error:
+        return Icons.sync_problem;
+      case SyncState.offline:
+        return Icons.cloud_off;
+      default:
+        return Icons.cloud_done;
+    }
+  }
+
+  String _syncLabel() {
+    switch (_syncState) {
+      case SyncState.syncing:
+        return 'Sincronizando...';
+      case SyncState.error:
+        return 'Error de sync';
+      case SyncState.offline:
+        return 'Offline';
+      default:
+        if (_pendingCount > 0) {
+          return '$_pendingCount pendientes';
+        }
+        if (_lastSync != null) {
+          final diff = DateTime.now().difference(_lastSync!);
+          if (diff.inMinutes < 1) return 'Sincronizado';
+          if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes}m';
+          return 'Hace ${diff.inHours}h';
+        }
+        return 'Sincronizado';
+    }
   }
 
   @override
@@ -81,9 +157,44 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => ThemeService.instance.toggle(),
             tooltip: isDark ? 'Modo claro' : 'Modo oscuro',
           ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: Icon(_syncIcon(), color: _syncColor(isDark)),
+                onPressed: _sync,
+                tooltip: 'Sincronizar',
+              ),
+              if (_pendingCount > 0)
+                Positioned(
+                  right: 4,
+                  top: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.orange,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    child: Text(
+                      '$_pendingCount',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {},
+            onPressed: _sync,
             tooltip: 'Refrescar',
           ),
           IconButton(
@@ -126,10 +237,48 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
               ),
             ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: _syncColor(isDark).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(_syncIcon(), size: 16, color: _syncColor(isDark)),
+                const SizedBox(width: 6),
+                Text(
+                  _syncLabel(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _syncColor(isDark),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
           Card(
             child: Column(
               children: [
+                _menuItem(
+                  icon: Icons.assignment,
+                  title: 'Órdenes de Trabajo',
+                  subtitle: 'Ver mis OT asignadas',
+                  color: cs.primary,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => OTListScreen(
+                        apiService: widget.apiService,
+                      ),
+                    ),
+                  ),
+                ),
+                Divider(height: 1, indent: 16, endIndent: 16,
+                    color: isDark ? ArayaColors.darkBorder : ArayaColors.lightBorder),
                 _menuItem(
                   icon: Icons.add_circle_outline,
                   title: 'Nuevo Registro',
@@ -148,7 +297,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 _menuItem(
                   icon: Icons.list_alt,
                   title: 'Mis Registros',
-                  subtitle: 'Ver registros ingresados',
+                  subtitle: _pendingCount > 0
+                      ? '$_pendingCount pendientes de sync'
+                      : 'Ver registros ingresados',
                   color: cs.primary,
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
@@ -161,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const Spacer(),
           Text(
             'v1.0.0',
             style: TextStyle(
@@ -197,6 +348,4 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: onTap,
     );
   }
-
-
 }

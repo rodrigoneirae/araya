@@ -1,0 +1,1 @@
+default_app_config = 'modulos.produccion.api.apps.ProduccionApiConfig'

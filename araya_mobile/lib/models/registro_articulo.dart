@@ -39,6 +39,15 @@ class RegistroDetalle {
       'RegistroDetalle($articuloCodigo - $articuloDescr, x$cantidad)';
 }
 
+enum TipoRegistro {
+  parteEntrada('PE', 'Parte de Entrada'),
+  valeConsumo('VC', 'Vale de Consumo');
+
+  final String codigo;
+  final String label;
+  const TipoRegistro(this.codigo, this.label);
+}
+
 class RegistroArticulo {
   final int id;
   final int? folio;
@@ -46,6 +55,9 @@ class RegistroArticulo {
   final String fechaHora;
   final String documento;
   final String estado;
+  final String? tipoRegistro;
+  final double? otNumero;
+  final double? codencargado;
   final List<RegistroDetalle> detalles;
 
   RegistroArticulo({
@@ -55,6 +67,9 @@ class RegistroArticulo {
     required this.fechaHora,
     this.documento = '',
     required this.estado,
+    this.tipoRegistro,
+    this.otNumero,
+    this.codencargado,
     required this.detalles,
   });
 
@@ -66,6 +81,9 @@ class RegistroArticulo {
       fechaHora: json['fecha_hora'] as String? ?? '',
       documento: json['documento'] as String? ?? '',
       estado: json['estado'] as String? ?? 'INGRESADO',
+      tipoRegistro: json['tipo_registro'] as String?,
+      otNumero: (json['ot_numero'] as num?)?.toDouble(),
+      codencargado: (json['codencargado'] as num?)?.toDouble(),
       detalles: (json['detalles'] as List<dynamic>?)
               ?.map((e) => RegistroDetalle.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -73,6 +91,29 @@ class RegistroArticulo {
     );
   }
 
+  String get tipoRegistroLabel {
+    if (tipoRegistro == 'PE') return 'Parte de Entrada';
+    if (tipoRegistro == 'VC') return 'Vale de Consumo';
+    return tipoRegistro ?? '';
+  }
+
   @override
   String toString() => 'RegistroArticulo(#$id, $estado, ${detalles.length} items)';
+}
+
+class Empleado {
+  final int cod;
+  final String nombre;
+
+  Empleado({required this.cod, required this.nombre});
+
+  factory Empleado.fromJson(Map<String, dynamic> json) {
+    return Empleado(
+      cod: json['cod'] as int,
+      nombre: json['nombre'] as String? ?? '',
+    );
+  }
+
+  @override
+  String toString() => 'Empleado($cod - $nombre)';
 }

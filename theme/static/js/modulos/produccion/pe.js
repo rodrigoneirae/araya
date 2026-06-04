@@ -5,6 +5,13 @@ let modoEdicionPE = false;
 let tabulatorSubOTRef = null;
 let tabulatorSubVCRef = null;
 
+function formatNumberCL(num) {
+    if (num === null || num === undefined || num === '') return '-';
+    const n = parseFloat(num);
+    if (isNaN(n)) return '-';
+    return n.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -160,6 +167,7 @@ function nuevoPE() {
     buscarXHRPE('proximo_numero', {}, function(data) {
         const nuevoNumero = data.proximo_numero || '';
         document.getElementById('peNumero').value = nuevoNumero;
+        document.getElementById('peOT').value = '';
         document.getElementById('peProceso').value = '';
         document.getElementById('peEncargado').value = '';
 
@@ -179,31 +187,7 @@ function nuevoPE() {
 
         setCamposPEEditable(true);
         cambiarTabPE('encabezado');
-
-        if (nuevoNumero) {
-            buscarXHRPE('buscar_ot', {numero: nuevoNumero}, function(dataOT) {
-                if (dataOT.success) {
-                    document.getElementById('peOT').value = nuevoNumero;
-
-                    const procesoValue = dataOT.data.proceso ? String(dataOT.data.proceso).split('.')[0] : '';
-                    const encargadoValue = dataOT.data.encargado ? String(dataOT.data.encargado).split('.')[0] : '';
-                    document.getElementById('peProceso').value = procesoValue;
-                    document.getElementById('peEncargado').value = encargadoValue;
-
-                    cargarSubOTRef(nuevoNumero);
-                    cargarSubVCRef(nuevoNumero);
-
-                    if (dataOT.data.estado === 'Cerrado') {
-                        Toastify({text: 'La OT está cerrada. No se pueden realizar cambios.', style: {background: '#f44336'}}).showToast();
-                        document.getElementById('tab-detalle').classList.add('pointer-events-none', 'opacity-50');
-                    } else {
-                        document.getElementById('tab-detalle').classList.remove('pointer-events-none', 'opacity-50');
-                    }
-                } else {
-                    document.getElementById('tab-detalle').classList.add('pointer-events-none', 'opacity-50');
-                }
-            });
-        }
+        document.getElementById('tab-detalle').classList.remove('pointer-events-none', 'opacity-50');
     });
 }
 
@@ -244,6 +228,11 @@ function guardarPE() {
             modoEdicionPE = true;
             document.getElementById('btnEliminarPE').classList.remove('hidden');
             document.getElementById('btnGuardarPE').classList.add('hidden');
+
+            const btnEditar = document.getElementById('btnEditarPE');
+            if (btnEditar) {
+                btnEditar.classList.remove('hidden');
+            }
         } else {
             Toastify({text: data.message || 'Error al guardar', style: {background: '#f44336'}}).showToast();
         }
@@ -251,9 +240,17 @@ function guardarPE() {
 }
 
 function editarPE() {
+    const estado = document.getElementById('peEstado') ? document.getElementById('peEstado').value : '';
+    if (estado === 'Cerrado') {
+        Toastify({text: 'Documento cerrado. Imposible realizar cambios.', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+    modoEdicionPE = true;
     setCamposPEEditable(true);
     document.getElementById('btnGuardarPE').classList.remove('hidden');
-    modoEdicionPE = false;
+    document.getElementById('btnEliminarPE').classList.add('hidden');
+    document.getElementById('btnEditarPE').classList.add('hidden');
+    renderizarDetallesPE();
 }
 
 function eliminarPE() {
@@ -296,8 +293,22 @@ function cargarPE(data) {
     document.getElementById('peNumero').value = data.numero || '';
     document.getElementById('peFecha').value = data.fecha || '';
     document.getElementById('peOT').value = data.ot || '';
-    document.getElementById('peProceso').value = data.proceso || '';
-    document.getElementById('peEncargado').value = data.codencargado || '';
+    document.getElementById('peEstado').value = data.estado || '';
+
+    const procesoStr = data.proceso ? String(data.proceso).split('.')[0] : '';
+    const encargadoStr = data.codencargado ? String(data.codencargado).split('.')[0] : '';
+
+    const procesoSelect = document.getElementById('peProceso');
+    procesoSelect.value = procesoStr;
+    if (jQuery && jQuery(procesoSelect).data('select2')) {
+        jQuery(procesoSelect).trigger('change');
+    }
+
+    const encargadoSelect = document.getElementById('peEncargado');
+    encargadoSelect.value = encargadoStr;
+    if (jQuery && jQuery(encargadoSelect).data('select2')) {
+        jQuery(encargadoSelect).trigger('change');
+    }
 
     detallesPE = [];
     if (data.detalles) {
@@ -309,7 +320,8 @@ function cargarPE(data) {
                 cantidad: d.cantidad || 0,
                 bodega: d.bodega || '',
                 punit: d.punit || 0,
-                estado: d.estado || 'Abierto'
+                estado: d.estado || 'Abierto',
+                codencargado: d.codencargado || ''
             });
         });
     }
@@ -319,6 +331,16 @@ function cargarPE(data) {
 
     modoEdicionPE = false;
     document.getElementById('btnGuardarPE').classList.add('hidden');
+
+    const btnEditar = document.getElementById('btnEditarPE');
+    if (btnEditar) {
+        if (data.estado === 'Cerrado') {
+            btnEditar.classList.add('hidden');
+        } else {
+            btnEditar.classList.remove('hidden');
+        }
+    }
+
     document.getElementById('btnEliminarPE').classList.remove('hidden');
 
     setCamposPEEditable(false);
@@ -336,6 +358,9 @@ function cargarPE(data) {
                 document.getElementById('tab-detalle').classList.add('pointer-events-none', 'opacity-50');
             }
         });
+    } else {
+        renderizarSubOTRef([]);
+        renderizarSubVCRef([]);
     }
 }
 
@@ -440,7 +465,8 @@ function agregarDetallePE() {
         bodega: bodega,
         um: um,
         punit: punit,
-        estado: estado
+        estado: estado,
+        codencargado: document.getElementById('peEncargado').value || ''
     });
 
     document.getElementById('peArtCod').value = '';
@@ -465,30 +491,141 @@ function renderizarDetallesPE() {
     const tbody = document.getElementById('peDetalle');
     tbody.innerHTML = '';
 
+    if (detallesPE.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="px-3 py-4 text-center text-aq-text text-xs">Sin artículos agregados</td></tr>';
+        return;
+    }
+
     detallesPE.forEach((det, index) => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-aq-surface-2';
-        tr.innerHTML = `
-            <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.codigo || ''}</td>
-            <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.bodega || ''}</td>
-            <td class="px-1 py-1.5 text-aq-text text-right whitespace-nowrap text-xs">${det.cantidad || 0}</td>
-            <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.um || ''}</td>
-            <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.nombre || ''}</td>
-            <td class="px-1 py-1.5 text-aq-text text-right whitespace-nowrap text-xs">${det.punit || 0}</td>
-            <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.fecha || ''}</td>
-            <td class="px-1 py-1.5 text-aq-text whitespace-nowrap">
-                <span class="px-1.5 py-0.5 rounded text-xs ${det.estado === 'Cerrado' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
-                    ${det.estado || 'Abierto'}
-                </span>
-            </td>
-            <td class="px-1 py-1.5 text-center whitespace-nowrap">
-                <button type="button" onclick="eliminarDetallePE(${index})" class="text-red-500 hover:text-red-700 text-xs">
-                    <i class='bx bx-trash'></i>
-                </button>
-            </td>
-        `;
+        tr.dataset.index = index;
+
+        const isEditing = det._editing === true;
+
+        if (isEditing) {
+            const optionsEncargado = document.getElementById('peEncargado').options;
+            let optionsHtml = '';
+            for (let i = 0; i < optionsEncargado.length; i++) {
+                const opt = optionsEncargado[i];
+                const selected = det.codencargado && String(det.codencargado) === String(opt.value) ? 'selected' : '';
+                optionsHtml += `<option value="${opt.value}" ${selected}>${opt.text}</option>`;
+            }
+
+            tr.innerHTML = `
+                <td class="px-1 py-1 text-xs">
+                    <input type="text" id="edit-codigo-${index}" value="${det.codigo || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs" readonly>
+                </td>
+                <td class="px-1 py-1 text-xs">
+                    <select id="edit-bodega-${index}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">
+                        ${document.getElementById('peArtBodega').innerHTML}
+                    </select>
+                </td>
+                <td class="px-1 py-1 text-xs">
+                    <input type="number" id="edit-cantidad-${index}" value="${det.cantidad || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs text-right" step="any">
+                </td>
+                <td class="px-1 py-1 text-xs">
+                    <input type="text" id="edit-um-${index}" value="${det.um || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs" readonly>
+                </td>
+                <td class="px-1 py-1 text-xs">${det.nombre || ''}</td>
+                <td class="px-1 py-1 text-xs">
+                    <input type="number" id="edit-punit-${index}" value="${det.punit || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs text-right" step="any">
+                </td>
+                <td class="px-1 py-1 text-xs">
+                    <input type="date" id="edit-fecha-${index}" value="${det.fecha || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">
+                </td>
+                <td class="px-1 py-1 text-xs">
+                    <select id="edit-encargado-${index}" class="edit-encargado-select w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">
+                        ${optionsHtml}
+                    </select>
+                </td>
+                <td class="px-1 py-1 text-xs">
+                    <span class="px-1.5 py-0.5 rounded text-xs ${det.estado === 'Cerrado' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                        ${det.estado || 'Abierto'}
+                    </span>
+                </td>
+                <td class="px-1 py-1 text-center whitespace-nowrap">
+                    <button type="button" onclick="guardarEditDetallePE(${index})" class="text-green-500 hover:text-green-700 text-xs mr-1" title="Guardar">
+                        <i class='bx bx-check'></i>
+                    </button>
+                    <button type="button" onclick="cancelarEditDetallePE(${index})" class="text-gray-500 hover:text-gray-700 text-xs" title="Cancelar">
+                        <i class='bx bx-x'></i>
+                    </button>
+                </td>
+            `;
+            const bodegaSelect = tr.querySelector(`#edit-bodega-${index}`);
+            if (bodegaSelect && det.bodega) {
+                bodegaSelect.value = det.bodega;
+            }
+            const encargadoSelect = tr.querySelector(`#edit-encargado-${index}`);
+            if (encargadoSelect && typeof jQuery !== 'undefined') {
+                jQuery(encargadoSelect).select2({ width: '100%', language: 'es' });
+                if (det.codencargado) {
+                    jQuery(encargadoSelect).val(String(det.codencargado)).trigger('change');
+                }
+            }
+        } else {
+            let nombreEncargado = '';
+            const selectEncargado = document.getElementById('peEncargado');
+            if (selectEncargado && selectEncargado.options.length > 0 && det.codencargado) {
+                for (let i = 0; i < selectEncargado.options.length; i++) {
+                    const optVal = selectEncargado.options[i].value;
+                    const detVal = String(det.codencargado);
+                    if (optVal === detVal) {
+                        nombreEncargado = selectEncargado.options[i].text;
+                        break;
+                    }
+                }
+            }
+            if (!nombreEncargado && det.codencargado) {
+                nombreEncargado = '(Encargado ' + det.codencargado + ')';
+            }
+            tr.innerHTML = `
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.codigo || ''}</td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.bodega || ''}</td>
+                <td class="px-1 py-1.5 text-aq-text text-right whitespace-nowrap text-xs">${formatNumberCL(det.cantidad)}</td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.um || ''}</td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.nombre || ''}</td>
+                <td class="px-1 py-1.5 text-aq-text text-right whitespace-nowrap text-xs">${formatNumberCL(det.punit)}</td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.fecha || ''}</td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${nombreEncargado || '-'}</td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap">
+                    <span class="px-1.5 py-0.5 rounded text-xs ${det.estado === 'Cerrado' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                        ${det.estado || 'Abierto'}
+                    </span>
+                </td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap">
+                    ${isEditing ? '<button type="button" onclick="guardarEditDetallePE(' + index + ')" class="text-green-500 hover:text-green-700 text-xs mr-1" title="Guardar"><i class="bx bx-check"></i></button><button type="button" onclick="cancelarEditDetallePE(' + index + ')" class="text-gray-500 hover:text-gray-700 text-xs" title="Cancelar"><i class="bx bx-x"></i></button>' : (modoEdicionPE ? '<button type="button" onclick="editarDetallePE(' + index + ')" class="text-blue-500 hover:text-blue-700 text-xs mr-1" title="Editar"><i class="bx bx-edit"></i></button><button type="button" onclick="eliminarDetallePE(' + index + ')" class="text-red-500 hover:text-red-700 text-xs" title="Eliminar"><i class="bx bx-trash"></i></button>' : '<span class="text-aq-muted text-xs">-</span>')}
+                </td>
+            `;
+        }
         tbody.appendChild(tr);
     });
+}
+
+function editarDetallePE(index) {
+    detallesPE[index]._editing = true;
+    renderizarDetallesPE();
+}
+
+function guardarEditDetallePE(index) {
+    const det = detallesPE[index];
+    det.bodega = document.getElementById(`edit-bodega-${index}`).value;
+    det.cantidad = parseFloat(document.getElementById(`edit-cantidad-${index}`).value) || 0;
+    det.punit = parseFloat(document.getElementById(`edit-punit-${index}`).value) || 0;
+    det.fecha = document.getElementById(`edit-fecha-${index}`).value;
+    const encargadoSelect = document.getElementById(`edit-encargado-${index}`);
+    if (encargadoSelect) {
+        det.codencargado = encargadoSelect.value;
+    }
+    delete det._editing;
+    renderizarDetallesPE();
+    actualizarResumenPE();
+}
+
+function cancelarEditDetallePE(index) {
+    delete detallesPE[index]._editing;
+    renderizarDetallesPE();
 }
 
 function actualizarResumenPE() {
@@ -496,6 +633,13 @@ function actualizarResumenPE() {
     const procesoSelect = document.getElementById('peProceso');
     document.getElementById('resumenProceso').textContent = procesoSelect.options[procesoSelect.selectedIndex]?.text || '-';
     document.getElementById('resumenTotalArt').textContent = detallesPE.length;
+
+    let totalCantidad = 0;
+    detallesPE.forEach(d => {
+        totalCantidad += d.cantidad || 0;
+    });
+    document.getElementById('resumenTotalCant').textContent = formatNumberCL(totalCantidad);
+
     document.getElementById('resumenOT').parentElement.classList.add('flex', 'items-center', 'gap-1');
     document.getElementById('resumenProceso').parentElement.classList.add('flex', 'items-center', 'gap-1');
 }
@@ -518,6 +662,7 @@ function abrirBusquedaPE() {
                 { title: 'PE', field: 'numero', width: 100 },
                 { title: 'Fecha', field: 'fecha', width: 100 },
                 { title: 'OT', field: 'ot', width: 100 },
+                { title: 'Encargado', field: 'encargado_nombre', width: 150 },
                 { title: 'Proceso', field: 'proceso_nombre', width: 150 },
                 { title: 'Estado', field: 'estado', width: 80 }
             ],

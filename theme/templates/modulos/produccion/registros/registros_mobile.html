@@ -1,0 +1,289 @@
+{% extends 'plantilla/base/base.html' %}
+{% load static %}
+
+{% block title %}Registros Móvil - Araya{% endblock %}
+
+{% block content %}
+<main class="container mx-auto px-4 py-6 max-w-6xl">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-aq-text">Registros Móvil</h1>
+        <div class="flex gap-2">
+            <button onclick="listarRegistros()" class="px-3 py-2 rounded-lg border border-aq-border text-sm hover:bg-aq-surface-2">
+                <i class='bx bx-refresh'></i> Refrescar
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-aq-surface border border-aq-border rounded-xl p-4 mb-6">
+        <div class="flex flex-wrap gap-4">
+            <div>
+                <label class="block text-xs text-aq-muted mb-1">Tipo</label>
+                <select id="filtro-tipo" class="px-3 py-2 rounded-lg border border-aq-border text-sm" onchange="listarRegistros()">
+                    <option value="">Todos</option>
+                    <option value="PE">Parte de Entrada</option>
+                    <option value="VC">Vale de Consumo</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-aq-muted mb-1">Estado</label>
+                <select id="filtro-estado" class="px-3 py-2 rounded-lg border border-aq-border text-sm" onchange="listarRegistros()">
+                    <option value="">Todos</option>
+                    <option value="INGRESADO">Ingresado</option>
+                    <option value="PENDIENTE">Pendiente</option>
+                    <option value="CERRADO">Cerrado</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Registros -->
+    <div id="lista-registros" class="space-y-4">
+        <div class="text-center py-8 text-aq-muted">
+            <i class='bx bx-loader-alt bx-spin text-4xl'></i>
+            <p class="mt-2">Cargando registros...</p>
+        </div>
+    </div>
+</main>
+
+<!-- Modal Detalle -->
+<div id="modal-detalle" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-aq-surface border border-aq-border rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+        <div class="p-4 border-b border-aq-border flex items-center justify-between">
+            <h3 id="modal-titulo" class="font-bold text-lg">Detalle de Registro</h3>
+            <button onclick="cerrarModal()" class="p-2 hover:bg-aq-surface-2 rounded-lg">
+                <i class='bx bx-x'></i>
+            </button>
+        </div>
+        <div id="modal-contenido" class="p-4 overflow-y-auto max-h-[70vh]">
+        </div>
+        <div class="p-4 border-t border-aq-border flex gap-3">
+            <button id="btn-crear-doc" onclick="crearDocumento()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <i class='bx bx-file-plus'></i> Crear Documento
+            </button>
+            <button onclick="cerrarModal()" class="px-4 py-2 border border-aq-border rounded-lg hover:bg-aq-surface-2">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let registroActual = null;
+
+    document.addEventListener('DOMContentLoaded', listarRegistros);
+
+    function listarRegistros() {
+        const tipo = document.getElementById('filtro-tipo').value;
+        const estado = document.getElementById('filtro-estado').value;
+
+        const container = document.getElementById('lista-registros');
+        container.innerHTML = `
+            <div class="text-center py-8 text-aq-muted">
+                <i class='bx bx-loader-alt bx-spin text-4xl'></i>
+                <p class="mt-2">Cargando...</p>
+            </div>
+        `;
+
+        fetch('?action=listar_registros', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `tipo=${tipo}&estado=${estado}`
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                renderRegistros(data.registros);
+            } else {
+                container.innerHTML = `<p class="text-red-500 text-center">${data.message}</p>`;
+            }
+        })
+        .catch(err => {
+            container.innerHTML = `<p class="text-red-500 text-center">Error: ${err}</p>`;
+        });
+    }
+
+    function renderRegistros(registros) {
+        const container = document.getElementById('lista-registros');
+
+        if (registros.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-12 text-aq-muted">
+                    <i class='bx bx-file-not-found text-5xl'></i>
+                    <p class="mt-2">No hay registros</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = registros.map(r => `
+            <div class="bg-aq-surface border border-aq-border rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow" onclick="verDetalle(${r.id})">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="px-2 py-1 rounded text-xs font-semibold ${r.tipo_registro === 'PE' ? 'bg-blue-500 text-white' : 'bg-purple-500 text-white'}">
+                                ${r.tipo_label}
+                            </span>
+                            <span class="px-2 py-1 rounded text-xs font-semibold ${
+                                r.estado === 'CERRADO' ? 'bg-green-100 text-green-700' :
+                                r.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-blue-100 text-blue-700'
+                            }">
+                                ${r.estado}
+                            </span>
+                        </div>
+                        <h3 class="font-semibold">${r.documento || 'Sin documento'}</h3>
+                        <p class="text-sm text-aq-muted">Folio: ${r.folio || '-'}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-aq-muted">${r.fecha}</p>
+                        <p class="text-xs text-aq-muted">${r.usuario}</p>
+                    </div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-aq-border flex justify-between text-sm text-aq-muted">
+                    <span><i class='bx bx-user'></i> ${r.encargado_nombre || '-'}</span>
+                    <span><i class='bx bx-package'></i> ${r.total_detalles} items</span>
+                    ${r.ot_numero ? `<span>OT: ${r.ot_numero}</span>` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function verDetalle(id) {
+        fetch('?action=ver_detalle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `id=${id}`
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                registroActual = data.data;
+                abrirModal(data.data);
+            } else {
+                Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+            }
+        });
+    }
+
+    function abrirModal(data) {
+        document.getElementById('modal-titulo').textContent = `${data.tipo_label} ${data.folio || ''}`;
+
+        const btnCrear = document.getElementById('btn-crear-doc');
+        btnCrear.style.display = data.estado === 'CERRADO' ? 'none' : 'block';
+        btnCrear.innerHTML = `<i class='bx bx-file-plus'></i> Crear ${data.tipo_registro === 'PE' ? 'PE' : 'VC'}`;
+
+        const contenido = document.getElementById('modal-contenido');
+        contenido.innerHTML = `
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-xs text-aq-muted">Documento</p>
+                        <p class="font-medium">${data.documento || '-'}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-aq-muted">Estado</p>
+                        <p class="font-medium">${data.estado}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-aq-muted">Fecha</p>
+                        <p class="font-medium">${data.fecha}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-aq-muted">Usuario</p>
+                        <p class="font-medium">${data.usuario}</p>
+                    </div>
+                    ${data.ot_numero ? `
+                    <div>
+                        <p class="text-xs text-aq-muted">Orden de Trabajo</p>
+                        <p class="font-medium">${data.ot_numero}</p>
+                    </div>
+                    ` : ''}
+                    ${data.encargado_nombre ? `
+                    <div>
+                        <p class="text-xs text-aq-muted">Encargado</p>
+                        <p class="font-medium">${data.encargado_nombre}</p>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <div>
+                    <h4 class="font-semibold mb-2">Detalles (${data.detalles.length})</h4>
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-aq-surface-2">
+                                <th class="px-3 py-2 text-left">Artículo</th>
+                                <th class="px-3 py-2 text-left">Descripción</th>
+                                <th class="px-3 py-2 text-right">Cantidad</th>
+                                <th class="px-3 py-2 text-left">Obs.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.detalles.map(d => `
+                            <tr class="border-b border-aq-border">
+                                <td class="px-3 py-2">${d.articulo}</td>
+                                <td class="px-3 py-2">${d.descripcion}</td>
+                                <td class="px-3 py-2 text-right font-medium">${d.cantidad}</td>
+                                <td class="px-3 py-2 text-aq-muted">${d.observacion || '-'}</td>
+                            </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('modal-detalle').classList.remove('hidden');
+    }
+
+function cerrarModal() {
+        document.getElementById('modal-detalle').classList.add('hidden');
+        registroActual = null;
+    }
+
+    function crearDocumento() {
+        if (!registroActual) return;
+
+        mostrarModalConfirm({
+            tipo: 'confirm',
+            titulo: 'Crear Documento',
+            mensaje: `¿Crear documento ${registroActual.tipo_registro} desde este registro?`,
+            textoBoton: 'Crear',
+            colorBoton: 'bg-blue-600 text-white hover:bg-blue-700',
+            onConfirm: () => {
+                fetch('?action=crear_documento', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: `id=${registroActual.id}`
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                        cerrarModal();
+                        listarRegistros();
+                    } else {
+                        Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                    }
+                })
+                .catch(err => {
+                    Toastify({text: 'Error: ' + err, style: {background: '#f44336'}}).showToast();
+                });
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') cerrarModal();
+    });
+</script>
+{% endblock %}

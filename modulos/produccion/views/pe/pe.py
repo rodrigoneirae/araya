@@ -194,7 +194,7 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
 
     def _listar_pe(self) -> JsonResponse:
         movs = Movs.objects.filter(linea=0, tipo=6).values(
-            "numero", "fecha", "docref", "tipodocref", "proceso", "estado"
+            "numero", "fecha", "docref", "tipodocref", "proceso", "estado", "codencargado"
         ).order_by("-numero")[:50]
         resultado = []
         for m in movs:
@@ -206,6 +206,11 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
                 proc = Procesos.objects.filter(cod=m["proceso"]).first()
                 if proc:
                     proceso_nombre = proc.nombre
+            encargado_nombre = ""
+            if m["codencargado"]:
+                emp = Empleados.objects.filter(cod=m["codencargado"]).first()
+                if emp:
+                    encargado_nombre = emp.nombre
             resultado.append({
                 "numero": m["numero"],
                 "fecha": fecha,
@@ -213,6 +218,8 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
                 "proceso": m["proceso"] or "",
                 "proceso_nombre": proceso_nombre,
                 "estado": m["estado"] or "",
+                "encargado": m["codencargado"] or "",
+                "encargado_nombre": encargado_nombre,
             })
         return JsonResponse({"lista": resultado})
 
@@ -299,7 +306,7 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
 
             detalles = list(movs.exclude(linea=0).values(
                 "codigo", "cantidad", "punit", "bodega", "linea",
-                "fecha", "estado"
+                "fecha", "estado", "codencargado"
             ))
 
             for d in detalles:
@@ -310,6 +317,11 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
                 else:
                     d["nombre"] = ""
                     d["um"] = ""
+                if d.get("codencargado"):
+                    try:
+                        d["codencargado"] = int(float(d["codencargado"]))
+                    except:
+                        pass
 
             proceso_val = ""
             proceso_nombre = ""
@@ -318,10 +330,6 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
                     proceso_val = int(float(encabezado.proceso))
                 except:
                     proceso_val = str(encabezado.proceso)
-                if proceso_val:
-                    proc = Procesos.objects.filter(cod=proceso_val).first()
-                    if proc:
-                        proceso_nombre = proc.nombre
 
             encargado_val = ""
             encargado_nombre = ""
@@ -330,35 +338,31 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
                     encargado_val = int(float(encabezado.codencargado))
                 except:
                     encargado_val = str(encabezado.codencargado)
-                if encargado_val:
-                    emp = Empleados.objects.filter(cod=encargado_val).first()
-                    if emp:
-                        encargado_nombre = emp.nombre
 
             ot_numero = int(encabezado.docref) if encabezado.docref else None
-            if not proceso_val and ot_numero:
+            if ot_numero:
                 ot_enc = Movs.objects.filter(numero=float(ot_numero), tipo=8, linea=0).first()
-                if ot_enc and ot_enc.proceso:
-                    try:
-                        proceso_val = int(float(ot_enc.proceso))
-                    except:
-                        proceso_val = str(ot_enc.proceso)
-                    if proceso_val:
-                        proc = Procesos.objects.filter(cod=proceso_val).first()
-                        if proc:
-                            proceso_nombre = proc.nombre
+                if ot_enc:
+                    if ot_enc.proceso:
+                        try:
+                            proceso_val = int(float(ot_enc.proceso))
+                        except:
+                            proceso_val = str(ot_enc.proceso)
+                    if ot_enc.codencargado:
+                        try:
+                            encargado_val = int(float(ot_enc.codencargado))
+                        except:
+                            encargado_val = str(ot_enc.codencargado)
 
-            if not encargado_val and ot_numero:
-                ot_enc = Movs.objects.filter(numero=float(ot_numero), tipo=8, linea=0).first()
-                if ot_enc and ot_enc.codencargado:
-                    try:
-                        encargado_val = int(float(ot_enc.codencargado))
-                    except:
-                        encargado_val = str(ot_enc.codencargado)
-                    if encargado_val:
-                        emp = Empleados.objects.filter(cod=encargado_val).first()
-                        if emp:
-                            encargado_nombre = emp.nombre
+            if proceso_val:
+                proc = Procesos.objects.filter(cod=proceso_val).first()
+                if proc:
+                    proceso_nombre = proc.nombre
+
+            if encargado_val:
+                emp = Empleados.objects.filter(cod=encargado_val).first()
+                if emp:
+                    encargado_nombre = emp.nombre
 
             return JsonResponse({
                 "success": True,
@@ -434,12 +438,15 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
                 else:
                     estado_detalle = "Abierto"
 
+                det_codencargado = det.get("codencargado")
+                detalle_encargado = float(det_codencargado) if det_codencargado else codencargado
+
                 Movs.objects.create(
                     numero=numero,
                     tipo=tipo,
                     linea=i,
                     fecha=det.get("fecha", fecha),
-                    codencargado=codencargado,
+                    codencargado=detalle_encargado,
                     proceso=proceso,
                     codigo=codigo_art,
                     cantidad=float(det.get("cantidad", 0)),

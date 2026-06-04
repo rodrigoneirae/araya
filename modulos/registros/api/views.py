@@ -3,6 +3,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from modulos.maestros.models.articulos import Articulos
+from modulos.maestros.models.empleados import Empleados
 from modulos.registros.models import RegistroArticuloCabecera
 from .serializers import (
     ArticuloSerializer,
@@ -23,6 +24,20 @@ class ArticuloSearchAPIView(APIView):
         ).distinct()[:20]
         serializer = ArticuloSerializer(articulos, many=True)
         return Response(serializer.data)
+
+
+class EmpleadoSearchAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        query = request.query_params.get('q', '').strip()
+        if len(query) < 2:
+            return Response([])
+        empleados = Empleados.objects.filter(
+            Q(nombre__icontains=query) | Q(cod__icontains=query)
+        ).filter(estado='Activo').distinct()[:20]
+        data = [{'cod': e.cod, 'nombre': e.nombre} for e in empleados]
+        return Response(data)
 
 
 class RegistroArticuloListCreateAPIView(generics.ListCreateAPIView):

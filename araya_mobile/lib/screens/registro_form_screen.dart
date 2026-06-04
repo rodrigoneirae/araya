@@ -3,14 +3,22 @@ import 'package:flutter/material.dart';
 import '../constants/araya_theme.dart';
 import '../models/articulo.dart';
 import '../models/registro_articulo.dart';
+import '../models/orden_trabajo.dart';
 import '../services/api_service.dart';
-import '../services/config_service.dart';
+import '../services/sync_service.dart';
 import '../services/theme_service.dart';
 
 class RegistroFormScreen extends StatefulWidget {
   final ApiService apiService;
+  final OrdenTrabajo? ordenTrabajo;
+  final OrdenTrabajoDetalle? ordenTrabajoDetalle;
 
-  const RegistroFormScreen({super.key, required this.apiService});
+  const RegistroFormScreen({
+    super.key,
+    required this.apiService,
+    this.ordenTrabajo,
+    this.ordenTrabajoDetalle,
+  });
 
   @override
   State<RegistroFormScreen> createState() => _RegistroFormScreenState();
@@ -18,15 +26,38 @@ class RegistroFormScreen extends StatefulWidget {
 
 class _RegistroFormScreenState extends State<RegistroFormScreen> {
   final _documentoController = TextEditingController();
-  final _searchController = TextEditingController();
-  final _searchFocus = FocusNode();
+  final _searchArticuloController = TextEditingController();
+  final _searchArticuloFocus = FocusNode();
+  final _searchEncargadoController = TextEditingController();
 
   bool _loading = false;
-  bool _searching = false;
+  bool _searchingArticulo = false;
+  bool _searchingEncargado = false;
   bool _offline = false;
   String? _error;
-  List<Articulo> _searchResults = [];
+  List<Articulo> _articulosResults = [];
+  List<Empleado> _empleadosResults = [];
   final List<_LineaItem> _items = [];
+
+  TipoRegistro _tipoSeleccionado = TipoRegistro.parteEntrada;
+  Empleado? _encargadoSeleccionado;
+  double? _otNumero;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.ordenTrabajo != null) {
+      _otNumero = widget.ordenTrabajo!.numero;
+      _documentoController.text = 'OT ${_otNumero!.toInt()}';
+    } else if (widget.ordenTrabajoDetalle != null) {
+      _otNumero = widget.ordenTrabajoDetalle!.numero;
+      _documentoController.text = 'OT ${_otNumero!.toInt()}';
+      if (widget.ordenTrabajoDetalle!.encargado != null) {
+        _encargadoSeleccionado = widget.ordenTrabajoDetalle!.encargado;
+        _searchEncargadoController.text = _encargadoSeleccionado!.nombre;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -35,55 +66,86 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
       i.observacionController.dispose();
     }
     _documentoController.dispose();
-    _searchController.dispose();
-    _searchFocus.dispose();
+    _searchArticuloController.dispose();
+    _searchArticuloFocus.dispose();
+    _searchEncargadoController.dispose();
     super.dispose();
   }
 
   Future<void> _searchArticulos(String query) async {
     if (query.length < 2) {
       setState(() {
-        _searchResults = [];
-        _searching = false;
+        _articulosResults = [];
+        _searchingArticulo = false;
       });
       return;
     }
 
     setState(() {
-      _searching = true;
+      _searchingArticulo = true;
       _offline = false;
     });
 
     try {
       final results = await widget.apiService.searchArticulos(query);
       if (!mounted) return;
-      final config = ConfigService();
-      await config.cacheArticulos(results);
       setState(() {
-        _searchResults = results;
-        _searching = false;
+        _articulosResults = results;
+        _searchingArticulo = false;
       });
     } catch (_) {
       if (!mounted) return;
-      final config = ConfigService();
-      final cached = await config.searchCachedArticulos(query);
-      if (!mounted) return;
       setState(() {
-        _searchResults = cached;
-        _searching = false;
+        _searchingArticulo = false;
         _offline = true;
       });
     }
   }
 
-  void _addItem(Articulo a) {
-    _searchController.clear();
-    _searchResults = [];
+  Future<void> _searchEncargados(String query) async {
+    if (query.length < 2) {
+      setState(() {
+        _empleadosResults = [];
+        _searchingEncargado = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _searchingEncargado = true;
+    });
+
+    try {
+      final results = await widget.apiService.searchEmpleados(query);
+      if (!mounted) return;
+      setState(() {
+        _empleadosResults = results;
+        _searchingEncargado = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _searchingEncargado = false;
+      });
+    }
+  }
+
+  void _selectEncargado(Empleado emp) {
+    setState(() {
+      _encargadoSeleccionado = emp;
+      _empleadosResults = [];
+      _searchEncargadoController.text = emp.nombre;
+    });
+  }
+
+  void _addArticulo(Articulo a) {
+    _searchArticuloController.clear();
+    _articulosResults = [];
     _offline = false;
     setState(() {
       _items.add(_LineaItem(articulo: a));
     });
-    _searchFocus.requestFocus();
+    _searchArticuloFocus.requestFocus();
   }
 
   void _removeItem(int index) {
@@ -108,6 +170,11 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
       return;
     }
 
+    if (_encargadoSeleccionado == null) {
+      setState(() => _error = 'Debe seleccionar un encargado');
+      return;
+    }
+
     setState(() {
       _loading = true;
       _error = null;
@@ -124,22 +191,37 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
       ));
     }
 
-    final result = await widget.apiService.createRegistro(
-      documento: _documentoController.text.trim(),
-      detalles: detalles,
-    );
+    final syncService = SyncService();
+    try {
+      print('Starting save...');
+      final saved = await syncService.saveRegistroOfflineFromApi(
+        documento: _documentoController.text.trim(),
+        detalles: detalles,
+        tipoRegistro: _tipoSeleccionado.codigo,
+        otNumero: _otNumero,
+        codencargado: _encargadoSeleccionado!.cod.toDouble(),
+        apiService: widget.apiService,
+      );
 
-    if (!mounted) return;
+      print('Save completed: $saved');
 
-    if (result != null) {
+      if (!mounted) return;
+
+      setState(() => _loading = false);
+
+      final message = 'Registro ${saved.folio != null ? 'N° ${saved.folio}' : 'local'} creado exitosamente';
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registro N° ${result.id} creado exitosamente')),
+        SnackBar(content: Text(message)),
       );
       Navigator.of(context).pop(true);
-    } else {
+    } catch (e, stack) {
+      print('Error saving: $e');
+      print('Stack: $stack');
+      if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Error al crear el registro';
+        _error = 'Error al guardar: ${e.toString()}';
       });
     }
   }
@@ -152,7 +234,7 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nuevo Registro'),
+        title: Text(widget.ordenTrabajo != null ? 'Registro desde OT' : 'Nuevo Registro'),
       ),
       body: SafeArea(
         child: Column(
@@ -163,6 +245,37 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Tipo de Registro', style: theme.textTheme.titleSmall),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: TipoRegistro.values.map((tipo) {
+                                final selected = _tipoSeleccionado == tipo;
+                                return Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: ChoiceChip(
+                                      label: Text(tipo.label),
+                                      selected: selected,
+                                      onSelected: (val) {
+                                        setState(() => _tipoSeleccionado = tipo);
+                                      },
+                                      selectedColor: cs.primary.withValues(alpha: 0.2),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     TextField(
                       controller: _documentoController,
                       decoration: const InputDecoration(
@@ -171,29 +284,92 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                         prefixIcon: Icon(Icons.description_outlined),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Encargado *',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        TextField(
+                          controller: _searchEncargadoController,
+                          decoration: InputDecoration(
+                            hintText: 'Buscar encargado...',
+                            prefixIcon: const Icon(Icons.person_search),
+                            suffixIcon: _searchingEncargado
+                                ? const Padding(
+                                    padding: EdgeInsets.all(12),
+                                    child: SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          onChanged: _searchEncargados,
+                        ),
+                        if (_empleadosResults.isNotEmpty)
+                          Card(
+                            margin: const EdgeInsets.only(top: 4),
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: _empleadosResults.length,
+                              separatorBuilder: (_, __) => Divider(
+                                  height: 1, color: isDark ? ArayaColors.darkBorder : ArayaColors.lightBorder),
+                              itemBuilder: (context, i) {
+                                final emp = _empleadosResults[i];
+                                return ListTile(
+                                  dense: true,
+                                  title: Text(emp.nombre, style: const TextStyle(fontSize: 14)),
+                                  subtitle: Text('Cod: ${emp.cod}', style: TextStyle(fontSize: 12, color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted)),
+                                  trailing: const Icon(Icons.add_circle_outline),
+                                  onTap: () => _selectEncargado(emp),
+                                );
+                              },
+                            ),
+                          ),
+                        if (_encargadoSeleccionado != null && _empleadosResults.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Row(
+                              children: [
+                                Icon(Icons.check_circle, size: 14, color: Colors.green),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Seleccionado: ${_encargadoSeleccionado!.nombre}',
+                                  style: TextStyle(fontSize: 12, color: Colors.green),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                     Text(
                       'Agregar Artículos',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 12),
                     TextField(
-                      controller: _searchController,
-                      focusNode: _searchFocus,
+                      controller: _searchArticuloController,
+                      focusNode: _searchArticuloFocus,
                       decoration: InputDecoration(
                         labelText: 'Buscar artículo',
                         prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _searching
+                        suffixIcon: _searchingArticulo
                             ? const Padding(
                                 padding: EdgeInsets.all(12),
                                 child: SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
+                                  child: CircularProgressIndicator(strokeWidth: 2),
                                 ),
                               )
                             : null,
@@ -205,54 +381,30 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                         padding: const EdgeInsets.only(top: 4),
                         child: Row(
                           children: [
-                            Icon(Icons.cloud_off,
-                                size: 14,
-                                color: isDark
-                                    ? ArayaColors.darkAccent
-                                    : ArayaColors.lightAccent),
+                            Icon(Icons.cloud_off, size: 14, color: isDark ? ArayaColors.darkAccent : ArayaColors.lightAccent),
                             const SizedBox(width: 4),
-                            Text(
-                              'Resultados locales (sin conexión)',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: isDark
-                                    ? ArayaColors.darkAccent
-                                    : ArayaColors.lightAccent,
-                              ),
-                            ),
+                            Text('Resultados locales (sin conexión)', style: TextStyle(fontSize: 11, color: isDark ? ArayaColors.darkAccent : ArayaColors.lightAccent)),
                           ],
                         ),
                       ),
-                    if (_searchResults.isNotEmpty)
+                    if (_articulosResults.isNotEmpty)
                       Card(
                         margin: const EdgeInsets.only(top: 4),
                         child: ListView.separated(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _searchResults.length,
-                          separatorBuilder: (_, _) =>
-                              Divider(height: 1, color: isDark
-                                  ? ArayaColors.darkBorder
-                                  : ArayaColors.lightBorder),
+                          itemCount: _articulosResults.length,
+                          separatorBuilder: (_, __) => Divider(height: 1, color: isDark ? ArayaColors.darkBorder : ArayaColors.lightBorder),
                           itemBuilder: (context, i) {
-                            final a = _searchResults[i];
+                            final a = _articulosResults[i];
                             return ListTile(
                               dense: true,
-                              title: Text(a.descr,
-                                  style: const TextStyle(fontSize: 14)),
-                              subtitle: Text(
-                                '${a.codigo} · ${a.um}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isDark
-                                      ? ArayaColors.darkMuted
-                                      : ArayaColors.lightMuted,
-                                ),
-                              ),
+                              title: Text(a.descr, style: const TextStyle(fontSize: 14)),
+                              subtitle: Text('${a.codigo} · ${a.um}', style: TextStyle(fontSize: 12, color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted)),
                               trailing: IconButton(
                                 icon: const Icon(Icons.add_circle_outline),
                                 color: cs.primary,
-                                onPressed: () => _addItem(a),
+                                onPressed: () => _addArticulo(a),
                               ),
                             );
                           },
@@ -265,14 +417,11 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                  16, 12, 16, 4),
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                               child: Text(
                                 'Artículos seleccionados (${_items.length})',
                                 style: theme.textTheme.titleSmall?.copyWith(
-                                  color: isDark
-                                      ? ArayaColors.darkMuted
-                                      : ArayaColors.lightMuted,
+                                  color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
                                 ),
                               ),
                             ),
@@ -281,45 +430,32 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                               final idx = entry.key;
                               final item = entry.value;
                               return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
                                       children: [
                                         Expanded(
                                           child: Text(
                                             '${idx + 1}. ${item.articulo.descr}',
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                            ),
+                                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                                           ),
                                         ),
                                         IconButton(
-                                          icon: const Icon(
-                                              Icons.remove_circle_outline),
+                                          icon: const Icon(Icons.remove_circle_outline),
                                           iconSize: 20,
                                           color: Colors.red,
-                                          onPressed: () =>
-                                              _removeItem(idx),
+                                          onPressed: () => _removeItem(idx),
                                           padding: EdgeInsets.zero,
-                                          constraints:
-                                              const BoxConstraints(),
+                                          constraints: const BoxConstraints(),
                                         ),
                                       ],
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       '${item.articulo.codigo} · ${item.articulo.um}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: isDark
-                                            ? ArayaColors.darkMuted
-                                            : ArayaColors.lightMuted,
-                                      ),
+                                      style: TextStyle(fontSize: 12, color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted),
                                     ),
                                     const SizedBox(height: 8),
                                     Row(
@@ -327,21 +463,12 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                         Expanded(
                                           flex: 2,
                                           child: TextField(
-                                            controller:
-                                                item.cantidadController,
-                                            keyboardType:
-                                                const TextInputType
-                                                    .numberWithOptions(
-                                                    decimal: true),
-                                            decoration:
-                                                const InputDecoration(
+                                            controller: item.cantidadController,
+                                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                            decoration: const InputDecoration(
                                               labelText: 'Cantidad *',
                                               isDense: true,
-                                              contentPadding:
-                                                  EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 10,
-                                              ),
+                                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                             ),
                                           ),
                                         ),
@@ -349,17 +476,11 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                         Expanded(
                                           flex: 3,
                                           child: TextField(
-                                            controller:
-                                                item.observacionController,
-                                            decoration:
-                                                const InputDecoration(
+                                            controller: item.observacionController,
+                                            decoration: const InputDecoration(
                                               labelText: 'Observación',
                                               isDense: true,
-                                              contentPadding:
-                                                  EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 10,
-                                              ),
+                                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                             ),
                                           ),
                                         ),
@@ -378,12 +499,7 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                         child: Text(
                           'Busque más artículos arriba o presione Guardar',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark
-                                ? ArayaColors.darkMuted
-                                : ArayaColors.lightMuted,
-                          ),
+                          style: TextStyle(fontSize: 12, color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted),
                         ),
                       ),
                     if (_error != null) ...[
@@ -391,29 +507,15 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.red.shade900
-                              : Colors.red.shade50,
+                          color: isDark ? Colors.red.shade900 : Colors.red.shade50,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.error_outline,
-                                size: 18,
-                                color: isDark
-                                    ? Colors.red.shade300
-                                    : Colors.red.shade700),
+                            Icon(Icons.error_outline, size: 18, color: isDark ? Colors.red.shade300 : Colors.red.shade700),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(
-                                _error!,
-                                style: TextStyle(
-                                  color: isDark
-                                      ? Colors.red.shade300
-                                      : Colors.red.shade700,
-                                  fontSize: 13,
-                                ),
-                              ),
+                              child: Text(_error!, style: TextStyle(color: isDark ? Colors.red.shade300 : Colors.red.shade700, fontSize: 13)),
                             ),
                           ],
                         ),
@@ -429,25 +531,19 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                 width: double.infinity,
                 height: 48,
                 child: FilledButton.icon(
-                  onPressed: (_loading || _items.isEmpty) ? null : _submit,
+                  onPressed: (_loading || _items.isEmpty || _encargadoSeleccionado == null) ? null : _submit,
                   icon: _loading
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : const Icon(Icons.save),
                   label: Text(
                     _items.isEmpty
                         ? 'Agregue al menos un artículo'
-                        : (_loading ? 'Guardando...' : 'Guardar Registro'),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                        : (_encargadoSeleccionado == null ? 'Seleccione un encargado' : (_loading ? 'Guardando...' : 'Guardar Registro')),
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),

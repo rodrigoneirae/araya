@@ -30,6 +30,7 @@ urlpatterns = [
     path("produccion/", include("modulos.produccion.urls.produccion", namespace="produccion")),
     path("softland/", include("modulos.softland.urls.softland", namespace="softland")),
     path("api/", include("modulos.registros.api.urls")),
+    path("api/", include("modulos.produccion.api.urls")),
 ]
 if settings.DEBUG:
     print('DEBUG:', settings.DEBUG)

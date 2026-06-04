@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../constants/araya_theme.dart';
-import '../models/registro_articulo.dart';
+import '../models/sync_models.dart';
 import '../services/api_service.dart';
+import '../services/sync_service.dart';
 import '../services/theme_service.dart';
 
 class RegistrosListScreen extends StatefulWidget {
@@ -17,8 +18,10 @@ class RegistrosListScreen extends StatefulWidget {
 class _RegistrosListScreenState extends State<RegistrosListScreen> {
   bool _loading = true;
   String? _error;
-  List<RegistroArticulo> _registros = [];
+  List<SyncRegistro> _registros = [];
   String _estadoFiltro = '';
+  SyncState _syncState = SyncState.idle;
+  int _pendingCount = 0;
 
   static const _estados = [
     '',
@@ -43,7 +46,21 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
   @override
   void initState() {
     super.initState();
+    _initSync();
     _fetch();
+  }
+
+  Future<void> _initSync() async {
+    final syncService = SyncService();
+    await syncService.initialize(widget.apiService);
+
+    syncService.syncStateStream.listen((state) {
+      if (mounted) setState(() => _syncState = state);
+    });
+
+    syncService.pendingCountStream.listen((count) {
+      if (mounted) setState(() => _pendingCount = count);
+    });
   }
 
   Future<void> _fetch() async {
@@ -53,8 +70,8 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
     });
 
     try {
-      final registros =
-          await widget.apiService.fetchRegistros(estado: _estadoFiltro);
+      final syncService = SyncService();
+      final registros = await syncService.getLocalRegistros(estado: _estadoFiltro);
       if (!mounted) return;
       setState(() {
         _registros = registros;
@@ -67,6 +84,12 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
         _error = 'Error al cargar registros';
       });
     }
+  }
+
+  Future<void> _sync() async {
+    final syncService = SyncService();
+    await syncService.forceSync();
+    await _fetch();
   }
 
   String _formatFecha(String iso) {
@@ -86,6 +109,32 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
     return _estadoColors[estado] ?? ArayaColors.lightMuted;
   }
 
+  IconData _syncStateIcon() {
+    switch (_syncState) {
+      case SyncState.syncing:
+        return Icons.sync;
+      case SyncState.error:
+        return Icons.sync_problem;
+      case SyncState.offline:
+        return Icons.cloud_off;
+      default:
+        return Icons.check_circle;
+    }
+  }
+
+  Color _syncStateColor(bool isDark) {
+    switch (_syncState) {
+      case SyncState.syncing:
+        return Colors.blue;
+      case SyncState.error:
+        return Colors.red;
+      case SyncState.offline:
+        return isDark ? ArayaColors.darkAccent : ArayaColors.lightAccent;
+      default:
+        return Colors.green;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -96,6 +145,42 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
       appBar: AppBar(
         title: const Text('Mis Registros'),
         actions: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: Icon(_syncStateIcon(),
+                    color: _syncStateColor(isDark)),
+                onPressed: _sync,
+                tooltip: 'Sincronizar',
+              ),
+              if (_pendingCount > 0)
+                Positioned(
+                  right: 4,
+                  top: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.orange,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    child: Text(
+                      '$_pendingCount',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _fetch,
@@ -152,6 +237,28 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
                 }).toList(),
               ),
             ),
+            if (_syncState == SyncState.offline)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                color: (isDark ? ArayaColors.darkAccent : ArayaColors.lightAccent)
+                    .withValues(alpha: 0.2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.cloud_off, size: 16,
+                        color: isDark ? ArayaColors.darkAccent : ArayaColors.lightAccent),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Modo offline',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? ArayaColors.darkAccent : ArayaColors.lightAccent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Expanded(
               child: _loading
                   ? Center(child: CircularProgressIndicator(color: cs.primary))
@@ -200,11 +307,12 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
                                 padding: const EdgeInsets.all(16),
                                 itemCount: _registros.length,
                                 separatorBuilder: (_, _) =>
-    const SizedBox(height: 12),
+                                    const SizedBox(height: 12),
                                 itemBuilder: (context, i) {
                                   final r = _registros[i];
                                   final color = _estadoColor(r.estado);
                                   final totalItems = r.detalles.length;
+                                  final isSynced = r.syncStatus == SyncStatus.synced;
                                   return Card(
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(16),
@@ -240,9 +348,19 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
                                                     ),
                                                   ),
                                                 ),
+                                                const SizedBox(width: 8),
+                                                Icon(
+                                                  isSynced
+                                                      ? Icons.cloud_done
+                                                      : Icons.cloud_upload,
+                                                  size: 16,
+                                                  color: isSynced
+                                                      ? Colors.green
+                                                      : Colors.orange,
+                                                ),
                                                 const Spacer(),
                                                 Text(
-                                                  'N° ${r.id}',
+                                                  'N° ${r.serverId ?? r.localId ?? '---'}',
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.w600,
@@ -284,6 +402,24 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
                                                 ),
                                               ),
                                             ],
+                                            if (r.syncStatus == SyncStatus.pending) ...[
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.schedule,
+                                                      size: 12,
+                                                      color: Colors.orange),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    'Pendiente de sincronizar',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: Colors.orange,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                           ],
                                         ),
                                       ),
@@ -299,7 +435,7 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
     );
   }
 
-  void _showDetalle(RegistroArticulo r) {
+  void _showDetalle(SyncRegistro r) {
     final isDark = ThemeService.instance.isDark;
     final color = _estadoColor(r.estado);
 
@@ -354,8 +490,18 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
                         ),
                       ),
                       const Spacer(),
+                      Icon(
+                        r.syncStatus == SyncStatus.synced
+                            ? Icons.cloud_done
+                            : Icons.cloud_upload,
+                        size: 18,
+                        color: r.syncStatus == SyncStatus.synced
+                            ? Colors.green
+                            : Colors.orange,
+                      ),
+                      const SizedBox(width: 8),
                       Text(
-                        'N° ${r.id}',
+                        'N° ${r.serverId ?? r.localId ?? '---'}',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,

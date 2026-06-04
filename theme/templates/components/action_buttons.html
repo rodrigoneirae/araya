@@ -16,7 +16,7 @@ Parámetros:
 {% with gender|default:'o' as g %}
 {% with entity|default:'' as e %}
 <div class="flex gap-2">
-    <button type="button" onclick="{{ 'nuev'|add:g|add:e|add:'()' }}" id="btnNuevo{% if suffix_ids %}{{ e }}{% endif %}" class="w-10 h-10 flex items-center justify-center rounded-{% if round %}full{% else %}lg{% endif %} bg-aq-primary text-white hover:opacity-85" title="Nuevo">
+    <button type="button" onclick="window.location.reload()" id="btnNuevo{% if suffix_ids %}{{ e }}{% endif %}" class="w-10 h-10 flex items-center justify-center rounded-{% if round %}full{% else %}lg{% endif %} bg-aq-primary text-white hover:opacity-85" title="Nuevo">
         <i class='bx bx-plus text-xl'></i>
     </button>
     <button type="button" onclick="{{ 'guardar'|add:e|add:'()' }}" id="btnGuardar{% if suffix_ids %}{{ e }}{% endif %}" class="w-10 h-10 flex items-center justify-center rounded-{% if round %}full{% else %}lg{% endif %} bg-aq-primary text-white hover:opacity-85 hidden" title="Guardar">

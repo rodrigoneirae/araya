@@ -3,7 +3,15 @@ const urlVC = (document.currentScript?.dataset.url) || '/';
 let detallesVC = [];
 let modoEdicionVC = false;
 let tabulatorSubOTRef = null;
-let tabulatorSubVCRef = null;
+let tabulatorSubPERef = null;
+let tabulatorMovArticulo = null;
+
+function formatNumberCL(num) {
+    if (num === null || num === undefined || num === '') return '-';
+    const n = parseFloat(num);
+    if (isNaN(n)) return '-';
+    return n.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
 
 function getCookie(name) {
     let cookieValue = null;
@@ -81,7 +89,7 @@ function inicializarTabulatorVC() {
         }
     });
 
-    tabulatorSubVCRef = new Tabulator("#tabulatorSubVCRef", {
+    tabulatorSubPERef = new Tabulator("#tabulatorSubPERef", {
         layout: "fitColumns",
         headerSort: false,
         minHeight: "100px",
@@ -93,7 +101,30 @@ function inicializarTabulatorVC() {
             { title: "UM", field: "um", minWidth: 50 },
             { title: "Tipo", field: "tipo", minWidth: 60 },
             { title: "Proceso", field: "proceso", minWidth: 100 },
-            { title: "CUP", field: "cup", minWidth: 70, hozAlign: "right" },
+        ],
+        data: [],
+        locale: "es",
+        langs: {
+            es: {
+                "pagination": {
+                    "page_size": "",
+                }
+            }
+        }
+    });
+
+    tabulatorMovArticulo = new Tabulator("#tabulatorMovArticulo", {
+        layout: "fitColumns",
+        headerSort: false,
+        minHeight: "120px",
+        columns: [
+            { title: "Fecha", field: "fecha", minWidth: 80 },
+            { title: "Número", field: "numero", minWidth: 60 },
+            { title: "Tipo", field: "tipo", minWidth: 100 },
+            { title: "Cant", field: "cantidad", minWidth: 60, hozAlign: "right" },
+            { title: "Bodega", field: "bodega", minWidth: 60 },
+            { title: "Encargado", field: "encargado", minWidth: 120 },
+            { title: "Saldo", field: "saldo", minWidth: 70, hozAlign: "right" },
         ],
         data: [],
         locale: "es",
@@ -161,6 +192,7 @@ function nuevoVC() {
     buscarXHRVC('proximo_numero_vc', {}, function(data) {
         const nuevoNumero = data.proximo_numero || '';
         document.getElementById('vcNumero').value = nuevoNumero;
+        document.getElementById('vcOT').value = '';
         document.getElementById('vcProceso').value = '';
         document.getElementById('vcEncargado').value = '';
 
@@ -172,7 +204,11 @@ function nuevoVC() {
         actualizarResumenVC();
 
         renderizarSubOTRef([]);
-        renderizarSubVCRef([]);
+        renderizarSubPERef([]);
+        if (tabulatorMovArticulo) {
+            tabulatorMovArticulo.setData([]);
+        }
+        document.getElementById('saldoFinalMov').textContent = '-';
 
         modoEdicionVC = false;
         document.getElementById('btnGuardarVC').classList.remove('hidden');
@@ -181,31 +217,7 @@ function nuevoVC() {
 
         setCamposVCEditable(true);
         cambiarTabVC('encabezado');
-
-        if (nuevoNumero) {
-            buscarXHRVC('buscar_ot', {numero: nuevoNumero}, function(dataOT) {
-                if (dataOT.success) {
-                    document.getElementById('vcOT').value = nuevoNumero;
-
-                    const procesoValue = dataOT.data.proceso ? String(dataOT.data.proceso).split('.')[0] : '';
-                    const encargadoValue = dataOT.data.encargado ? String(dataOT.data.encargado).split('.')[0] : '';
-                    document.getElementById('vcProceso').value = procesoValue;
-                    document.getElementById('vcEncargado').value = encargadoValue;
-
-                    cargarSubOTRef(nuevoNumero);
-                    cargarSubVCRef(nuevoNumero);
-
-                    if (dataOT.data.estado === 'Cerrado') {
-                        Toastify({text: 'La OT está cerrada. No se pueden realizar cambios.', style: {background: '#f44336'}}).showToast();
-                        document.getElementById('tab-detalle').classList.add('pointer-events-none', 'opacity-50');
-                    } else {
-                        document.getElementById('tab-detalle').classList.remove('pointer-events-none', 'opacity-50');
-                    }
-                } else {
-                    document.getElementById('tab-detalle').classList.add('pointer-events-none', 'opacity-50');
-                }
-            });
-        }
+        document.getElementById('tab-detalle').classList.add('pointer-events-none', 'opacity-50');
     });
 }
 
@@ -254,10 +266,17 @@ function guardarVC() {
 }
 
 function editarVC() {
+    const estado = document.getElementById('vcEstado') ? document.getElementById('vcEstado').value : '';
+    if (estado === 'Cerrado') {
+        Toastify({text: 'Documento cerrado. Imposible realizar cambios.', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+    modoEdicionVC = true;
     setCamposVCEditable(true);
     document.getElementById('btnGuardarVC').classList.remove('hidden');
+    document.getElementById('btnEliminarVC').classList.add('hidden');
     document.getElementById('btnEditarVC').classList.add('hidden');
-    modoEdicionVC = false;
+    renderizarDetallesVC();
 }
 
 function eliminarVC() {
@@ -300,8 +319,22 @@ function cargarVC(data) {
     document.getElementById('vcNumero').value = data.numero || '';
     document.getElementById('vcFecha').value = data.fecha || '';
     document.getElementById('vcOT').value = data.ot || '';
-    document.getElementById('vcProceso').value = data.proceso || '';
-    document.getElementById('vcEncargado').value = data.codencargado || '';
+    document.getElementById('vcEstado').value = data.estado || '';
+
+    const procesoStr = data.proceso ? String(data.proceso).split('.')[0] : '';
+    const encargadoStr = data.codencargado ? String(data.codencargado).split('.')[0] : '';
+
+    const procesoSelect = document.getElementById('vcProceso');
+    procesoSelect.value = procesoStr;
+    if (jQuery && jQuery(procesoSelect).data('select2')) {
+        jQuery(procesoSelect).trigger('change');
+    }
+
+    const encargadoSelect = document.getElementById('vcEncargado');
+    encargadoSelect.value = encargadoStr;
+    if (jQuery && jQuery(encargadoSelect).data('select2')) {
+        jQuery(encargadoSelect).trigger('change');
+    }
 
     detallesVC = [];
     if (data.detalles) {
@@ -313,7 +346,8 @@ function cargarVC(data) {
                 cantidad: d.cantidad || 0,
                 bodega: d.bodega || '',
                 punit: d.punit || 0,
-                estado: d.estado || 'Abierto'
+                estado: d.estado || 'Abierto',
+                codencargado: d.codencargado || ''
             });
         });
     }
@@ -321,17 +355,51 @@ function cargarVC(data) {
     renderizarDetallesVC();
     actualizarResumenVC();
 
-    modoEdicionVC = true;
+    modoEdicionVC = false;
     document.getElementById('btnGuardarVC').classList.add('hidden');
-    document.getElementById('btnEditarVC').classList.remove('hidden');
+
+    const btnEditar = document.getElementById('btnEditarVC');
+    if (btnEditar) {
+        if (data.estado === 'Cerrado') {
+            btnEditar.classList.add('hidden');
+        } else {
+            btnEditar.classList.remove('hidden');
+        }
+    }
+
     document.getElementById('btnEliminarVC').classList.remove('hidden');
 
-    setCamposVCEditable(true);
+    setCamposVCEditable(false);
+
+    document.getElementById('tab-detalle').classList.remove('hidden');
+    document.getElementById('tab-detalle').classList.remove('pointer-events-none', 'opacity-50');
+    cambiarTabVC('encabezado');
 
     if (data.ot) {
         buscarXHRVC('buscar_ot', {numero: data.ot}, function(dataOT) {
+            if (dataOT.success) {
+                if (!data.proceso || data.proceso === '') {
+                    const procesoValue = dataOT.data.proceso ? String(dataOT.data.proceso).split('.')[0] : '';
+                    const procesoSelect = document.getElementById('vcProceso');
+                    if (jQuery && jQuery(procesoSelect).data('select2')) {
+                        jQuery(procesoSelect).val(procesoValue).trigger('change');
+                    } else {
+                        procesoSelect.value = procesoValue;
+                    }
+                }
+                if (!data.codencargado || data.codencargado === '') {
+                    const encargadoValue = dataOT.data.codencargado ? String(dataOT.data.codencargado).split('.')[0] : '';
+                    const encargadoSelect = document.getElementById('vcEncargado');
+                    if (jQuery && jQuery(encargadoSelect).data('select2')) {
+                        jQuery(encargadoSelect).val(encargadoValue).trigger('change');
+                    } else {
+                        encargadoSelect.value = encargadoValue;
+                    }
+                }
+            }
+
             cargarSubOTRef(data.ot);
-            cargarSubVCRef(data.ot);
+            cargarSubPERef(data.ot);
 
             if (dataOT.success && dataOT.data.estado === 'Cerrado') {
                 document.getElementById('tab-detalle').classList.add('pointer-events-none', 'opacity-50');
@@ -339,9 +407,14 @@ function cargarVC(data) {
                 document.getElementById('tab-detalle').classList.remove('pointer-events-none', 'opacity-50');
             }
         });
+    } else {
+        renderizarSubOTRef([]);
+        renderizarSubPERef([]);
+        if (tabulatorMovArticulo) {
+            tabulatorMovArticulo.setData([]);
+        }
+        document.getElementById('saldoFinalMov').textContent = '-';
     }
-
-    cambiarTabVC('encabezado');
 }
 
 function sincronizarVCconOT() {
@@ -363,17 +436,27 @@ function buscarOTInput() {
         if (dataVC.success) {
             cargarVC(dataVC.data);
             cargarSubOTRef(ot);
-            cargarSubVCRef(ot);
+            cargarSubPERef(ot);
         } else {
             buscarXHRVC('buscar_ot', {numero: ot}, function(data) {
                 if (data.success) {
                     const procesoValue = data.data.proceso ? String(data.data.proceso).split('.')[0] : '';
-                    const encargadoValue = data.data.encargado ? String(data.data.encargado).split('.')[0] : '';
-                    document.getElementById('vcProceso').value = procesoValue;
-                    document.getElementById('vcEncargado').value = encargadoValue;
+                    const encargadoValue = data.data.codencargado ? String(data.data.codencargado).split('.')[0] : '';
+
+                    const procesoSelect = document.getElementById('vcProceso');
+                    procesoSelect.value = procesoValue;
+                    if (jQuery && jQuery(procesoSelect).data('select2')) {
+                        jQuery(procesoSelect).trigger('change');
+                    }
+
+                    const encargadoSelect = document.getElementById('vcEncargado');
+                    encargadoSelect.value = encargadoValue;
+                    if (jQuery && jQuery(encargadoSelect).data('select2')) {
+                        jQuery(encargadoSelect).trigger('change');
+                    }
 
                     cargarSubOTRef(ot);
-                    cargarSubVCRef(ot);
+                    cargarSubPERef(ot);
 
                     if (data.data.estado === 'Cerrado') {
                         Toastify({text: 'La OT está cerrada. No se pueden realizar cambios.', style: {background: '#f44336'}}).showToast();
@@ -395,10 +478,16 @@ function cargarSubOTRef(ot) {
     });
 }
 
-function cargarSubVCRef(ot) {
-    buscarXHRVC('listar_subvc_ref', {ot: ot}, function(data) {
-        renderizarSubVCRef(data.subvc || []);
+function cargarSubPERef(ot) {
+    buscarXHRVC('listar_subpe_ref', {ot: ot}, function(data) {
+        renderizarSubPERef(data.subpe || []);
     });
+}
+
+function renderizarSubPERef(lista) {
+    if (tabulatorSubPERef) {
+        tabulatorSubPERef.setData(lista || []);
+    }
 }
 
 function renderizarSubOTRef(lista) {
@@ -445,7 +534,8 @@ function agregarDetalleVC() {
         bodega: bodega,
         um: um,
         punit: punit,
-        estado: estado
+        estado: estado,
+        codencargado: document.getElementById('vcEncargado').value || ''
     });
 
     document.getElementById('vcArtCod').value = '';
@@ -466,32 +556,143 @@ function eliminarDetalleVC(index) {
     actualizarResumenVC();
 }
 
+function editarDetalleVC(index) {
+    detallesVC[index]._editing = true;
+    renderizarDetallesVC();
+}
+
+function guardarEditDetalleVC(index) {
+    const det = detallesVC[index];
+    det.bodega = document.getElementById(`edit-bodega-${index}`).value;
+    det.cantidad = parseFloat(document.getElementById(`edit-cantidad-${index}`).value) || 0;
+    det.punit = parseFloat(document.getElementById(`edit-punit-${index}`).value) || 0;
+    det.fecha = document.getElementById(`edit-fecha-${index}`).value;
+    const encargadoSelect = document.getElementById(`edit-encargado-${index}`);
+    if (encargadoSelect) {
+        det.codencargado = encargadoSelect.value;
+    }
+    delete det._editing;
+    renderizarDetallesVC();
+    actualizarResumenVC();
+}
+
+function cancelarEditDetalleVC(index) {
+    delete detallesVC[index]._editing;
+    renderizarDetallesVC();
+}
+
 function renderizarDetallesVC() {
     const tbody = document.getElementById('vcDetalle');
     tbody.innerHTML = '';
 
+    if (detallesVC.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="px-3 py-4 text-center text-aq-text text-xs">Sin artículos agregados</td></tr>';
+        return;
+    }
+
     detallesVC.forEach((det, index) => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-aq-surface-2';
-        tr.innerHTML = `
-            <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.codigo || ''}</td>
-            <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.bodega || ''}</td>
-            <td class="px-1 py-1.5 text-aq-text text-right whitespace-nowrap text-xs">${det.cantidad || 0}</td>
-            <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.um || ''}</td>
-            <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.nombre || ''}</td>
-            <td class="px-1 py-1.5 text-aq-text text-right whitespace-nowrap text-xs">${det.punit || 0}</td>
-            <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.fecha || ''}</td>
-            <td class="px-1 py-1.5 text-aq-text whitespace-nowrap">
-                <span class="px-1.5 py-0.5 rounded text-xs ${det.estado === 'Cerrado' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
-                    ${det.estado || 'Abierto'}
-                </span>
-            </td>
-            <td class="px-1 py-1.5 text-center whitespace-nowrap">
-                <button type="button" onclick="eliminarDetalleVC(${index})" class="text-red-500 hover:text-red-700 text-xs">
-                    <i class='bx bx-trash'></i>
-                </button>
-            </td>
-        `;
+        tr.dataset.index = index;
+
+        const isEditing = det._editing === true;
+
+        if (isEditing) {
+            const optionsEncargado = document.getElementById('vcEncargado').options;
+            let optionsHtml = '';
+            for (let i = 0; i < optionsEncargado.length; i++) {
+                const opt = optionsEncargado[i];
+                const selected = det.codencargado && String(det.codencargado) === String(opt.value) ? 'selected' : '';
+                optionsHtml += `<option value="${opt.value}" ${selected}>${opt.text}</option>`;
+            }
+
+            tr.innerHTML = `
+                <td class="px-1 py-1 text-xs">
+                    <input type="text" id="edit-codigo-${index}" value="${det.codigo || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs" readonly>
+                </td>
+                <td class="px-1 py-1 text-xs">
+                    <select id="edit-bodega-${index}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">
+                        ${document.getElementById('vcArtBodega').innerHTML}
+                    </select>
+                </td>
+                <td class="px-1 py-1 text-xs">
+                    <input type="number" id="edit-cantidad-${index}" value="${det.cantidad || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs text-right" step="any">
+                </td>
+                <td class="px-1 py-1 text-xs">
+                    <input type="text" id="edit-um-${index}" value="${det.um || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs" readonly>
+                </td>
+                <td class="px-1 py-1 text-xs">${det.nombre || ''}</td>
+                <td class="px-1 py-1 text-xs">
+                    <input type="number" id="edit-punit-${index}" value="${det.punit || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs text-right" step="any">
+                </td>
+                <td class="px-1 py-1 text-xs">
+                    <input type="date" id="edit-fecha-${index}" value="${det.fecha || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">
+                </td>
+                <td class="px-1 py-1 text-xs">
+                    <select id="edit-encargado-${index}" class="edit-encargado-select w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">
+                        ${optionsHtml}
+                    </select>
+                </td>
+                <td class="px-1 py-1 text-xs">
+                    <span class="px-1.5 py-0.5 rounded text-xs ${det.estado === 'Cerrado' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                        ${det.estado || 'Abierto'}
+                    </span>
+                </td>
+                <td class="px-1 py-1 text-center whitespace-nowrap">
+                    <button type="button" onclick="guardarEditDetalleVC(${index})" class="text-green-500 hover:text-green-700 text-xs mr-1" title="Guardar">
+                        <i class='bx bx-check'></i>
+                    </button>
+                    <button type="button" onclick="cancelarEditDetalleVC(${index})" class="text-gray-500 hover:text-gray-700 text-xs" title="Cancelar">
+                        <i class='bx bx-x'></i>
+                    </button>
+                </td>
+            `;
+            const bodegaSelect = tr.querySelector(`#edit-bodega-${index}`);
+            if (bodegaSelect && det.bodega) {
+                bodegaSelect.value = det.bodega;
+            }
+            const encargadoSelect = tr.querySelector(`#edit-encargado-${index}`);
+            if (encargadoSelect && typeof jQuery !== 'undefined') {
+                jQuery(encargadoSelect).select2({ width: '100%', language: 'es' });
+                if (det.codencargado) {
+                    jQuery(encargadoSelect).val(String(det.codencargado)).trigger('change');
+                }
+            }
+        } else {
+            let nombreEncargado = '';
+            const selectEncargado = document.getElementById('vcEncargado');
+            if (selectEncargado && selectEncargado.options.length > 0 && det.codencargado) {
+                for (let i = 0; i < selectEncargado.options.length; i++) {
+                    const optVal = selectEncargado.options[i].value;
+                    const detVal = String(det.codencargado);
+                    if (optVal === detVal) {
+                        nombreEncargado = selectEncargado.options[i].text;
+                        break;
+                    }
+                }
+            }
+            if (!nombreEncargado && det.codencargado) {
+                nombreEncargado = '(Encargado ' + det.codencargado + ')';
+            }
+            tr.innerHTML = `
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.codigo || ''}</td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.bodega || ''}</td>
+                <td class="px-1 py-1.5 text-aq-text text-right whitespace-nowrap text-xs">${formatNumberCL(det.cantidad)}</td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.um || ''}</td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.nombre || ''}</td>
+                <td class="px-1 py-1.5 text-aq-text text-right whitespace-nowrap text-xs">${formatNumberCL(det.punit)}</td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.fecha || ''}</td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${nombreEncargado || '-'}</td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap">
+                    <span class="px-1.5 py-0.5 rounded text-xs ${det.estado === 'Cerrado' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                        ${det.estado || 'Abierto'}
+                    </span>
+                </td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap">
+                    ${isEditing ? '<button type="button" onclick="guardarEditDetalleVC(' + index + ')" class="text-green-500 hover:text-green-700 text-xs mr-1" title="Guardar"><i class="bx bx-check"></i></button><button type="button" onclick="cancelarEditDetalleVC(' + index + ')" class="text-gray-500 hover:text-gray-700 text-xs" title="Cancelar"><i class="bx bx-x"></i></button>' : (modoEdicionVC ? '<button type="button" onclick="editarDetalleVC(' + index + ')" class="text-blue-500 hover:text-blue-700 text-xs mr-1" title="Editar"><i class="bx bx-edit"></i></button><button type="button" onclick="eliminarDetalleVC(' + index + ')" class="text-red-500 hover:text-red-700 text-xs" title="Eliminar"><i class="bx bx-trash"></i></button>' : '<span class="text-aq-muted text-xs">-</span>')}
+                </td>
+            `;
+        }
         tbody.appendChild(tr);
     });
 }
@@ -501,6 +702,13 @@ function actualizarResumenVC() {
     const procesoSelect = document.getElementById('vcProceso');
     document.getElementById('resumenProceso').textContent = procesoSelect.options[procesoSelect.selectedIndex]?.text || '-';
     document.getElementById('resumenTotalArt').textContent = detallesVC.length;
+
+    let totalCantidad = 0;
+    detallesVC.forEach(d => {
+        totalCantidad += d.cantidad || 0;
+    });
+    document.getElementById('resumenTotalCant').textContent = formatNumberCL(totalCantidad);
+
     document.getElementById('resumenOT').parentElement.classList.add('flex', 'items-center', 'gap-1');
     document.getElementById('resumenProceso').parentElement.classList.add('flex', 'items-center', 'gap-1');
 }
@@ -559,7 +767,13 @@ function abrirBusquedaOT() {
 
 function buscarArticuloVCInput() {
     const codigo = document.getElementById('vcArtCod').value;
-    if (!codigo) return;
+    if (!codigo) {
+        if (tabulatorMovArticulo) {
+            tabulatorMovArticulo.setData([]);
+        }
+        document.getElementById('saldoFinalMov').textContent = '-';
+        return;
+    }
     buscarXHRVC('buscar_articulo', {codigo: codigo}, function(data) {
         if (data.success) {
             if (document.getElementById('vcArtNombre')) {
@@ -569,12 +783,33 @@ function buscarArticuloVCInput() {
             if (!document.getElementById('vcArtPUnit').value) {
                 document.getElementById('vcArtPUnit').value = data.data.precio || 0;
             }
+            cargarHistorialArticulo(codigo);
         } else {
             Toastify({text: 'Artículo no encontrado', style: {background: '#f44336'}}).showToast();
             if (document.getElementById('vcArtNombre')) {
                 document.getElementById('vcArtNombre').value = '';
             }
             document.getElementById('vcArtUM').value = '';
+            if (tabulatorMovArticulo) {
+                tabulatorMovArticulo.setData([]);
+            }
+            document.getElementById('saldoFinalMov').textContent = '-';
+        }
+    });
+}
+
+function cargarHistorialArticulo(codigo) {
+    buscarXHRVC('historial_articulo', {codigo: codigo}, function(data) {
+        if (data.success) {
+            if (tabulatorMovArticulo) {
+                tabulatorMovArticulo.setData(data.historial || []);
+            }
+            document.getElementById('saldoFinalMov').textContent = formatNumberCL(data.suma_saldo);
+        } else {
+            if (tabulatorMovArticulo) {
+                tabulatorMovArticulo.setData([]);
+            }
+            document.getElementById('saldoFinalMov').textContent = '-';
         }
     });
 }
@@ -610,6 +845,7 @@ function abrirListaArticulosVC() {
                 }
                 document.getElementById('vcArtUM').value = row.um || '';
                 document.getElementById('vcArtPUnit').value = row.precio || 0;
+                cargarHistorialArticulo(row.codigo);
             }
         });
     });

@@ -39,9 +39,11 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
             "buscar_articulo": lambda d: self._buscar_articulo(d.get("codigo")),
             "listar_articulos": lambda _: self._listar_articulos(),
             "historial_articulo": lambda d: self._historial_articulo(d.get("codigo")),
+            "movimientos_articulo_ot": lambda d: self._movimientos_articulo_ot(d.get("codigo"), d.get("ot")),
             "buscar_ot": lambda d: self._buscar_ot(d.get("numero")),
             "listar_subot_ref": lambda d: self._listar_subot_ref(d.get("ot")),
             "listar_subvc_ref": lambda d: self._listar_subvc_ref(d.get("ot")),
+            "listar_subpe_ref": lambda d: self._listar_subpe_ref(d.get("ot")),
             "listar_articulos_produccion": lambda _: self._listar_articulos_produccion(),
         }
         return handlers.get(action, lambda _: JsonResponse({"success": False, "message": "Acción inválida"}))
@@ -143,6 +145,45 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"subvc": resultado})
         except Exception as e:
             return JsonResponse({"subvc": [], "error": str(e)})
+
+    def _listar_subpe_ref(self, ot_numero: str | None) -> JsonResponse:
+        if not ot_numero:
+            return JsonResponse({"subpe": []})
+        try:
+            movs = Movs.objects.filter(
+                numero=float(ot_numero),
+                tipo=6,
+                linea__gt=0
+            ).select_related('codigo')
+
+            resultado = []
+            for m in movs:
+                fecha_str = m.fecha.strftime("%d-%m-%Y") if m.fecha else ""
+                nombre_proceso = ""
+                if m.proceso:
+                    proc = Procesos.objects.filter(cod=int(m.proceso)).first()
+                    if proc:
+                        nombre_proceso = proc.nombre
+
+                tipo_art = ""
+                um_art = ""
+                if m.codigo:
+                    tipo_art = m.codigo.tipo or ""
+                    um_art = m.codigo.um or ""
+
+                resultado.append({
+                    "fecha": fecha_str,
+                    "codigo": m.codigo.codigo if m.codigo else "",
+                    "nombre": m.codigo.descr if m.codigo else "",
+                    "cantidad": abs(m.cantidad) if m.cantidad else 0,
+                    "um": um_art,
+                    "tipo": tipo_art,
+                    "proceso": nombre_proceso,
+                })
+
+            return JsonResponse({"subpe": resultado})
+        except Exception as e:
+            return JsonResponse({"subpe": [], "error": str(e)})
 
     def _buscar_articulo(self, codigo: str | None) -> JsonResponse:
         if not codigo:
@@ -275,7 +316,7 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
                 "data": {
                     "numero": encabezado.numero,
                     "fecha": encabezado.fecha.strftime("%Y-%m-%d") if encabezado.fecha else "",
-                    "encargado": str(encabezado.codencargado) if encabezado.codencargado else "",
+                    "codencargado": str(encabezado.codencargado) if encabezado.codencargado else "",
                     "encargado_nombre": encargado_nombre,
                     "proceso": str(encabezado.proceso) if encabezado.proceso else "",
                     "proceso_nombre": proceso_nombre,
@@ -299,7 +340,7 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
 
             detalles = list(movs.exclude(linea=0).values(
                 "codigo", "cantidad", "punit", "bodega", "linea",
-                "fecha", "estado"
+                "fecha", "estado", "codencargado"
             ))
 
             for d in detalles:
@@ -472,33 +513,104 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
                     'tipo__nombre',
                     'tipo__signo',
                     'bodega',
-                    'cantidad'
+                    'cantidad',
+                    'codencargado'
                 )
-                .order_by('fecha')
+                .order_by('-fecha')
             )
+
+            empleados_map = {int(e.cod): e.nombre for e in Empleados.objects.all()}
+
             historial = []
-            saldo_total = 0
+            saldo_acumulado = 0
 
             for s in saldos:
                 signo = s['tipo__signo'] if s['tipo__signo'] else 1
-                saldo_total += (s['cantidad'] or 0) * signo
+                cantidad_signada = (s['cantidad'] or 0) * signo
+                saldo_acumulado += cantidad_signada
+
+            saldo_final = round(saldo_acumulado, 2)
 
             for s in saldos:
+                encargado_nombre = ''
+                if s['codencargado']:
+                    try:
+                        encargado_nombre = empleados_map.get(int(s['codencargado']), '')
+                    except:
+                        pass
+
                 historial.append({
+                    'fecha': s['fecha'].strftime("%d-%m-%Y") if s['fecha'] else '',
                     'codigo': s['codigo__codigo'] or '',
-                    'descr': s['codigo__descr'] or '',
-                    'fecha': s['fecha'].isoformat() if s['fecha'] else '',
+                    'descripcion': s['codigo__descr'] or '',
                     'numero': s['numero'] or 0,
                     'tipo': s['tipo__nombre'] or '',
                     'bodega': str(s['bodega']) if s['bodega'] else '',
                     'cantidad': s['cantidad'] or 0,
-                    'saldo': round(saldo_total, 2),
+                    'encargado': encargado_nombre,
+                    'saldo': saldo_final,
                 })
 
             return JsonResponse({
                 "success": True,
                 "historial": historial,
-                "suma_saldo": round(saldo_total, 2)
+                "suma_saldo": saldo_final
+            })
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _movimientos_articulo_ot(self, codigo: str | None, ot_numero: str | None) -> JsonResponse:
+        try:
+            movs_qs = Movs.objects.filter(
+                tipo=8,
+                linea__gt=0
+            ).select_related('codigo', 'tipo')
+
+            movs = movs_qs.order_by('numero', 'fecha', 'codigo')
+
+            procesos_map = {int(p.cod): p.nombre for p in Procesos.objects.all()}
+
+            movimientos = []
+            total_consumido = 0
+            saldo_acumulado = 0
+
+            for m in movs:
+                cantidad = abs(m.cantidad) if m.cantidad else 0
+                saldo_acumulado += cantidad
+
+                cod_articulo = m.codigo.codigo if m.codigo else ''
+                is_seleccionado = codigo and cod_articulo and cod_articulo.upper() == codigo.upper()
+
+                if is_seleccionado:
+                    total_consumido += cantidad
+
+                proceso_nombre = ''
+                if m.proceso:
+                    try:
+                        proceso_nombre = procesos_map.get(int(m.proceso), '')
+                    except:
+                        pass
+
+                movimientos.append({
+                    'fecha': m.fecha.strftime("%d-%m-%Y") if m.fecha else '',
+                    'ot': int(m.numero) if m.numero else 0,
+                    'codigo': cod_articulo,
+                    'descripcion': m.codigo.descr if m.codigo else '',
+                    'um': m.codigo.um if m.codigo else '',
+                    'cantidad': cantidad,
+                    'tipo_articulo': m.codigo.tipo if m.codigo else '',
+                    'proceso_nombre': proceso_nombre,
+                    'estado': m.estado or '',
+                    'saldo': round(saldo_acumulado, 2),
+                    'seleccionado': is_seleccionado,
+                })
+
+            return JsonResponse({
+                "success": True,
+                "movimientos": movimientos,
+                "total_consumido": round(total_consumido, 2),
+                'saldo_final': round(saldo_acumulado, 2),
+                "codigo": codigo or '',
             })
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})

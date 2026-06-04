@@ -188,7 +188,7 @@ class IndexRegistroMobileView(LoginRequiredMixin, TemplateView):
                     codencargado=registro.codencargado,
                     proceso=None,
                     codigo=det.articulo,
-                    cantidad=det.cantidad,
+                    cantidad=det.cantidad if registro.tipo_registro == 'PE' else det.cantidad *-1,
                     punit=0,
                     bodega=None,
                     tipodocref=8,

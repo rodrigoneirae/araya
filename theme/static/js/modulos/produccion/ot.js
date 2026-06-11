@@ -2,6 +2,9 @@ const urlOt = (document.currentScript?.dataset.url) || '/';
 
 let detallesOt = [];
 let modoEdicionOt = false;
+let tabSubDetalleOT = null;
+let tabSubValeConsumo = null;
+let tabSubParteEntrada = null;
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -59,6 +62,159 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+function getEncargadoOptions() {
+    const select = document.getElementById('otEncargado');
+    if (!select) return {};
+    const opts = {};
+    for (let i = 0; i < select.options.length; i++) {
+        const opt = select.options[i];
+        if (opt.value) {
+            opts[opt.value] = opt.text;
+        }
+    }
+    return opts;
+}
+
+function abrirModalEditarSubitemRow(row) {
+    if (!modoEdicionOt) {
+        Toastify({text: 'Debe activar edición para modificar', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+    const d = row.getData();
+    const opts = getEncargadoOptions();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50';
+    overlay.innerHTML = `
+        <div class="bg-aq-surface border border-aq-border rounded-xl shadow-xl w-full max-w-md mx-4 p-5">
+            <h3 class="text-base font-semibold text-aq-text mb-3">Editar Artículo</h3>
+            <div class="text-xs text-aq-muted mb-4">
+                <span class="font-medium text-aq-text">${d.codigo || ''}</span> - ${d.nombre || ''}
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-aq-text mb-1">Cantidad</label>
+                    <input type="number" id="editSubCant" step="any" value="${d.cantidad || 0}"
+                        class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-aq-text mb-1">Encargado</label>
+                    <select id="editSubEncargado"
+                        class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs">
+                        <option value="">---</option>
+                        ${Object.entries(opts).map(([val, label]) =>
+                            `<option value="${val}" ${String(val) === String(d.codencargado || '') ? 'selected' : ''}>${label}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-aq-text mb-1">P. Unitario</label>
+                    <input type="number" id="editSubPUnit" step="any" value="${d.punit || 0}"
+                        class="w-full px-2 py-1.5 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-xs">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-5">
+                <button type="button" id="btnEditSubCancel"
+                    class="px-3 py-1.5 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2 text-xs">Cancelar</button>
+                <button type="button" id="btnEditSubSave"
+                    class="px-3 py-1.5 rounded-lg bg-aq-primary text-white hover:opacity-85 text-xs">Guardar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#btnEditSubCancel').addEventListener('click', function() {
+        overlay.remove();
+    });
+    overlay.querySelector('#btnEditSubSave').addEventListener('click', function() {
+        const cantidad = parseFloat(overlay.querySelector('#editSubCant').value) || 0;
+        const codencargado = overlay.querySelector('#editSubEncargado').value;
+        const punit = parseFloat(overlay.querySelector('#editSubPUnit').value) || 0;
+        const numero = document.getElementById('otNumero').value;
+
+        if (!numero || !d.tipo_cod || d.linea === undefined) {
+            Toastify({text: 'Datos insuficientes para guardar', style: {background: '#f44336'}}).showToast();
+            return;
+        }
+
+        function updateField(campo, valor, callback) {
+            buscarXHROt('editar_subitem', {numero: numero, tipo_cod: d.tipo_cod, linea: d.linea, campo: campo, valor: valor}, function(data) {
+                if (!data.success) {
+                    Toastify({text: 'Error al actualizar ' + campo + ': ' + data.message, style: {background: '#f44336'}}).showToast();
+                } else if (callback) {
+                    callback();
+                }
+            });
+        }
+
+        let pendientes = 3;
+        function contar() {
+            pendientes--;
+            if (pendientes <= 0) {
+                overlay.remove();
+                cargarSubformulariosOT(numero);
+                Toastify({text: 'Actualizado correctamente', style: {background: '#4caf50'}}).showToast();
+            }
+        }
+        updateField('cantidad', cantidad, contar);
+        updateField('codencargado', codencargado, contar);
+        updateField('punit', punit, contar);
+    });
+
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.remove();
+    });
+}
+
+function initSubTabulators(callback) {
+    const colDef = [
+        { title: 'Artículo', field: 'codigo', width: 80 },
+        { title: 'Nombre', field: 'nombre', widthGrow: 2 },
+        { title: 'Cant', field: 'cantidad', width: 70, hozAlign: 'right' },
+        { title: 'UM', field: 'um', width: 50, hozAlign: 'center' },
+        { title: 'Encargado', field: 'codencargado', width: 120,
+            formatter: function(cell) {
+                const opts = getEncargadoOptions();
+                const v = cell.getValue();
+                return opts[v] || v || '-';
+            }
+        },
+        { title: 'P.Unit', field: 'punit', width: 80, hozAlign: 'right' },
+        { title: '_linea', field: 'linea', visible: false },
+        { title: '_tipo_cod', field: 'tipo_cod', visible: false },
+    ];
+    let built = 0;
+    function onBuilt() {
+        built++;
+        if (built === 3 && typeof callback === 'function') {
+            callback();
+        }
+    }
+    tabSubDetalleOT = new Tabulator('#tablaSubDetalleOT', {
+        columns: colDef, data: [], layout: 'fitColumns', minHeight: '100px',
+        placeholder: 'Sin datos', tableBuilt: onBuilt,
+    });
+    tabSubValeConsumo = new Tabulator('#tablaSubValeConsumo', {
+        columns: colDef, data: [], layout: 'fitColumns', minHeight: '100px',
+        placeholder: 'Sin datos', tableBuilt: onBuilt,
+    });
+    tabSubParteEntrada = new Tabulator('#tablaSubParteEntrada', {
+        columns: colDef, data: [], layout: 'fitColumns', minHeight: '100px',
+        placeholder: 'Sin datos', tableBuilt: onBuilt,
+    });
+    tabSubDetalleOT.on("rowClick", function(e, row) { abrirModalEditarSubitemRow(row); });
+    tabSubValeConsumo.on("rowClick", function(e, row) { abrirModalEditarSubitemRow(row); });
+    tabSubParteEntrada.on("rowClick", function(e, row) { abrirModalEditarSubitemRow(row); });
+}
+
+function cargarSubformulariosOT(numero) {
+    buscarXHROt('cargar_subformularios', {numero: numero}, function(data) {
+        if (tabSubDetalleOT) tabSubDetalleOT.setData(data.detalle_ot || []);
+        if (tabSubValeConsumo) tabSubValeConsumo.setData(data.vale_consumo || []);
+        if (tabSubParteEntrada) tabSubParteEntrada.setData(data.parte_entrada || []);
+    });
+}
+
 function cargarDatosIniciales() {
     buscarXHROt('listar_encargados', {}, function(data) {
         const select = document.getElementById('otEncargado');
@@ -101,14 +257,15 @@ function cargarDatosIniciales() {
         cargarListasORPE();
     });
 
-    const fecha = new Date().toISOString().split('T')[0];
-    document.getElementById('otFecha').value = fecha;
-    nuevaOt();
-    setCamposOtEditable(true);
-    document.getElementById('btnEditarOt').classList.add('hidden');
-    document.getElementById('btnGuardarOt').classList.remove('hidden');
+    document.getElementById('otFecha').value = new Date().toISOString().split('T')[0];
 
-    cargarListasORPE();
+    initSubTabulators(function() {
+        nuevaOt();
+        setCamposOtEditable(true);
+        document.getElementById('btnEditarOt').classList.add('hidden');
+        document.getElementById('btnGuardarOt').classList.remove('hidden');
+        cargarListasORPE();
+    });
 }
 
 function cargarListasORPE() {
@@ -314,10 +471,9 @@ function nuevaOt() {
     document.getElementById('inputPE').value = '';
     const seccionRelacionados = document.getElementById('seccionRelacionados');
     if (seccionRelacionados) seccionRelacionados.classList.add('hidden');
-    const tablaPe = document.getElementById('tablaPeRelacionados');
-    if (tablaPe) tablaPe.innerHTML = '<tr><td colspan="4" class="px-3 py-2 text-center text-aq-muted text-xs">Sin PE relacionados</td></tr>';
-    const tablaVc = document.getElementById('tablaVcRelacionados');
-    if (tablaVc) tablaVc.innerHTML = '<tr><td colspan="4" class="px-3 py-2 text-center text-aq-muted text-xs">Sin VC relacionados</td></tr>';
+    if (tabSubDetalleOT) tabSubDetalleOT.setData([]);
+    if (tabSubValeConsumo) tabSubValeConsumo.setData([]);
+    if (tabSubParteEntrada) tabSubParteEntrada.setData([]);
     setCamposOtEditable(true);
 }
 
@@ -926,47 +1082,7 @@ function cargarOt(numero) {
                 seccionRelacionados.classList.remove('hidden');
             }
 
-            const tablaPe = document.getElementById('tablaPeRelacionados');
-            if (tablaPe) {
-                tablaPe.innerHTML = '';
-                const peRelacionados = data.data.pe_relacionados || [];
-                if (peRelacionados.length === 0) {
-                    tablaPe.innerHTML = '<tr><td colspan="4" class="px-3 py-2 text-center text-aq-muted text-xs">Sin PE relacionados</td></tr>';
-                } else {
-                    peRelacionados.forEach(pe => {
-                        const tr = document.createElement('tr');
-                        tr.className = 'hover:bg-aq-surface text-xs border-b border-aq-border';
-                        tr.innerHTML = `
-                            <td class="px-2 py-1.5 text-aq-text">${pe.numero || ''}</td>
-                            <td class="px-2 py-1.5 text-aq-text">${pe.fecha || ''}</td>
-                            <td class="px-2 py-1.5 text-aq-text">${pe.encargado || ''}</td>
-                            <td class="px-2 py-1.5 text-aq-text">${pe.estado || ''}</td>
-                        `;
-                        tablaPe.appendChild(tr);
-                    });
-                }
-            }
-
-            const tablaVc = document.getElementById('tablaVcRelacionados');
-            if (tablaVc) {
-                tablaVc.innerHTML = '';
-                const vcRelacionados = data.data.vc_relacionados || [];
-                if (vcRelacionados.length === 0) {
-                    tablaVc.innerHTML = '<tr><td colspan="4" class="px-3 py-2 text-center text-aq-muted text-xs">Sin VC relacionados</td></tr>';
-                } else {
-                    vcRelacionados.forEach(vc => {
-                        const tr = document.createElement('tr');
-                        tr.className = 'hover:bg-aq-surface text-xs border-b border-aq-border';
-                        tr.innerHTML = `
-                            <td class="px-2 py-1.5 text-aq-text">${vc.numero || ''}</td>
-                            <td class="px-2 py-1.5 text-aq-text">${vc.tipo || ''}</td>
-                            <td class="px-2 py-1.5 text-aq-text">${vc.fecha || ''}</td>
-                            <td class="px-2 py-1.5 text-aq-text">${vc.estado || ''}</td>
-                        `;
-                        tablaVc.appendChild(tr);
-                    });
-                }
-            }
+            cargarSubformulariosOT(numero);
 
             if (data.data.estado === 'Cerrado' || data.data.estado === 'Terminado') {
                 setCamposOtEditable(false);

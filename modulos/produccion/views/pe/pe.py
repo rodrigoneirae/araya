@@ -163,13 +163,13 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": False, "message": "Artículo no encontrado"})
 
     def _listar_articulos(self) -> JsonResponse:
-        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").order_by("descr")[:100]
+        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").order_by("descr")
         return JsonResponse({"articulos": list(articulos)})
 
     def _listar_articulos_produccion(self) -> JsonResponse:
         articulos = Articulos.objects.exclude(tipo="Insumo").values(
             "codigo", "descr", "tipo", "um", "precio", "prc"
-        ).order_by("codigo")[:100]
+        ).order_by("codigo")
 
         procesos_map = {int(p.cod): p.nombre for p in Procesos.objects.all()}
 
@@ -195,7 +195,7 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
     def _listar_pe(self) -> JsonResponse:
         movs = Movs.objects.filter(linea=0, tipo=6).values(
             "numero", "fecha", "docref", "tipodocref", "proceso", "estado", "codencargado"
-        ).order_by("-numero")[:50]
+        ).order_by("-numero")
         resultado = []
         for m in movs:
             fecha = ""

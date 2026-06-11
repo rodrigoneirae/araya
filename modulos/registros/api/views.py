@@ -50,6 +50,9 @@ class RegistroArticuloListCreateAPIView(generics.ListCreateAPIView):
         estado = self.request.query_params.get('estado')
         if estado:
             qs = qs.filter(estado=estado.upper())
+        ot_numero = self.request.query_params.get('ot_numero')
+        if ot_numero:
+            qs = qs.filter(ot_numero=ot_numero)
         return qs
 
     def get_serializer_class(self):

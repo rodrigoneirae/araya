@@ -58,6 +58,7 @@ class RegistroArticulo {
   final String? tipoRegistro;
   final double? otNumero;
   final double? codencargado;
+  final String? encargadoNombre;
   final List<RegistroDetalle> detalles;
 
   RegistroArticulo({
@@ -70,6 +71,7 @@ class RegistroArticulo {
     this.tipoRegistro,
     this.otNumero,
     this.codencargado,
+    this.encargadoNombre,
     required this.detalles,
   });
 
@@ -84,6 +86,7 @@ class RegistroArticulo {
       tipoRegistro: json['tipo_registro'] as String?,
       otNumero: (json['ot_numero'] as num?)?.toDouble(),
       codencargado: (json['codencargado'] as num?)?.toDouble(),
+      encargadoNombre: json['encargado_nombre'] as String?,
       detalles: (json['detalles'] as List<dynamic>?)
               ?.map((e) => RegistroDetalle.fromJson(e as Map<String, dynamic>))
               .toList() ??

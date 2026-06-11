@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from modulos.maestros.models.articulos import Articulos
+from modulos.maestros.models.empleados import Empleados
 from modulos.registros.models import RegistroArticuloCabecera, RegistroArticuloDetalle
 
 
@@ -31,15 +32,24 @@ class RegistroArticuloDetalleWriteSerializer(serializers.Serializer):
 class RegistroArticuloCabeceraSerializer(serializers.ModelSerializer):
     usuario_username = serializers.CharField(source='usuario.username', read_only=True)
     detalles = RegistroArticuloDetalleSerializer(many=True, read_only=True)
+    encargado_nombre = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = RegistroArticuloCabecera
         fields = [
             'id', 'folio', 'usuario', 'usuario_username', 'fecha_hora',
             'documento', 'estado', 'tipo_registro', 'ot_numero',
-            'codencargado', 'detalles',
+            'codencargado', 'encargado_nombre', 'detalles',
         ]
         read_only_fields = ['usuario', 'fecha_hora', 'folio']
+
+    def get_encargado_nombre(self, obj):
+        if obj.codencargado is not None:
+            try:
+                return Empleados.objects.get(cod=obj.codencargado).nombre
+            except Empleados.DoesNotExist:
+                return None
+        return None
 
 
 class RegistroArticuloCreateSerializer(serializers.Serializer):

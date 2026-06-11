@@ -1,5 +1,13 @@
 {% extends 'plantilla/base/base.html' %}
 {% load static %}
+{% block extra_css %}
+<style>
+    .tabulator { border: 1px solid theme(border aq-border); font-size: 0.75rem; }
+    .tabulator .tabulator-header { background-color: rgb(var(--aq-surface-2)); color: rgb(var(--aq-text)); }
+    .tabulator .tabulator-row:hover { background-color: rgb(var(--aq-surface-2)); }
+    .tabulator .tabulator-row:nth-child(even) { background-color: rgb(var(--aq-bg)); }
+</style>
+{% endblock extra_css %}
 {% block content %}
 <div class="h-full w-full mx-auto px-4 py-2">
     <div class="bg-aq-surface border border-aq-border rounded-xl shadow-lg h-full flex flex-col">
@@ -64,47 +72,25 @@
                         </div>
                     </div>
 
-                    <div id="seccionRelacionados" class="hidden space-y-4">
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <div class="bg-aq-surface-2 border border-aq-border rounded-lg p-3">
-                                <h4 class="text-sm font-semibold text-aq-text mb-2 flex items-center gap-1">
-                                    <i class='bx bx-file'></i> Partes de Entrada (PE) Relacionados
+                    <div id="seccionRelacionados" class="hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            <div>
+                                <h4 class="text-sm font-semibold text-aq-text mb-2 flex items-center gap-2">
+                                    <i class='bx bx-package text-aq-primary'></i> Detalle OT
                                 </h4>
-                                <div class="overflow-x-auto">
-                                    <table class="w-full border-collapse min-w-[400px]">
-                                        <thead>
-                                            <tr class="bg-aq-primary text-white text-xs">
-                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">N° PE</th>
-                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">Fecha</th>
-                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">Encargado</th>
-                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">Estado</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="tablaPeRelacionados">
-                                            <tr><td colspan="4" class="px-3 py-2 text-center text-aq-muted text-xs">Sin PE relacionados</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <div id="tablaSubDetalleOT" class="w-full border border-aq-border rounded-lg" style="min-height: 150px;"></div>
                             </div>
-                            <div class="bg-aq-surface-2 border border-aq-border rounded-lg p-3">
-                                <h4 class="text-sm font-semibold text-aq-text mb-2 flex items-center gap-1">
-                                    <i class='bx bx-file'></i> Vales de Consumo (VC) Relacionados
+                            <div>
+                                <h4 class="text-sm font-semibold text-aq-text mb-2 flex items-center gap-2">
+                                    <i class='bx bx-cart text-red-500'></i> Vale Consumo
                                 </h4>
-                                <div class="overflow-x-auto">
-                                    <table class="w-full border-collapse min-w-[400px]">
-                                        <thead>
-                                            <tr class="bg-aq-primary text-white text-xs">
-                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">N° VC</th>
-                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">Tipo</th>
-                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">Fecha</th>
-                                                <th class="px-2 py-1.5 text-left whitespace-nowrap">Estado</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="tablaVcRelacionados">
-                                            <tr><td colspan="4" class="px-3 py-2 text-center text-aq-muted text-xs">Sin VC relacionados</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <div id="tablaSubValeConsumo" class="w-full border border-aq-border rounded-lg" style="min-height: 150px;"></div>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold text-aq-text mb-2 flex items-center gap-2">
+                                    <i class='bx bx-upload text-emerald-500'></i> Parte Entrada
+                                </h4>
+                                <div id="tablaSubParteEntrada" class="w-full border border-aq-border rounded-lg" style="min-height: 150px;"></div>
                             </div>
                         </div>
                     </div>
@@ -191,6 +177,7 @@
 
 
 
-<script src="{% static 'js/modulos/produccion/ot.js' %}" data-url="{% url 'produccion:produccion_ingreso_ot' %}" data-csrf-token="{{ csrf_token }}"></script>
-
 {% endblock %}
+{% block extra_js %}
+    <script src="{% static 'js/modulos/produccion/ot.js' %}" data-url="{% url 'produccion:produccion_ingreso_ot' %}"></script>
+{% endblock extra_js %}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../constants/araya_theme.dart';
 import '../models/orden_trabajo.dart';
+import '../models/registro_articulo.dart';
 import '../services/api_service.dart';
 import '../services/theme_service.dart';
 import 'registro_form_screen.dart';
@@ -24,6 +25,7 @@ class _OTDetailScreenState extends State<OTDetailScreen> {
   bool _loading = true;
   String? _error;
   OrdenTrabajoDetalle? _ot;
+  List<RegistroArticulo> _registros = [];
 
   @override
   void initState() {
@@ -38,10 +40,14 @@ class _OTDetailScreenState extends State<OTDetailScreen> {
     });
 
     try {
-      final ot = await widget.apiService.fetchOTDetalle(widget.numero);
+      final results = await Future.wait([
+        widget.apiService.fetchOTDetalle(widget.numero),
+        widget.apiService.fetchRegistrosByOT(widget.numero),
+      ]);
       if (!mounted) return;
       setState(() {
-        _ot = ot;
+        _ot = results[0] as OrdenTrabajoDetalle?;
+        _registros = results[1] as List<RegistroArticulo>;
         _loading = false;
       });
     } catch (e) {
@@ -208,6 +214,48 @@ class _OTDetailScreenState extends State<OTDetailScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.history, color: cs.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Historial (${_registros.length})',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  if (_registros.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: Text(
+                          'Sin registros',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    ..._registros.map((r) => _historialItem(r, isDark, cs)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           if (ot.estado == 'Abierto')
             OutlinedButton.icon(
               onPressed: () {
@@ -261,6 +309,107 @@ class _OTDetailScreenState extends State<OTDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _historialItem(RegistroArticulo r, bool isDark, ColorScheme cs) {
+    final tipoColor = r.tipoRegistro == 'PE' ? Colors.blue : Colors.orange;
+    final tipoLabel = r.tipoRegistro == 'PE' ? 'PE' : 'VC';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: tipoColor.withValues(alpha: isDark ? 0.2 : 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  tipoLabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: tipoColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  r.documento.isNotEmpty ? r.documento : 'Registro #${r.id}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (r.encargadoNombre != null && r.encargadoNombre!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.person, size: 13,
+                    color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted),
+                const SizedBox(width: 4),
+                Text(
+                  r.encargadoNombre!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 8),
+          ...r.detalles.map((d) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        d.articuloDescr,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                        ),
+                      ),
+                      Text(
+                        d.articuloCodigo,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  d.cantidad.toStringAsFixed(d.cantidad == d.cantidad.roundToDouble() ? 0 : 2),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                  ),
+                ),
+              ],
+            ),
+          )),
+          if (r != _registros.last) const Divider(),
+        ],
+      ),
     );
   }
 

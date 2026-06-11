@@ -247,6 +247,23 @@ class ApiService {
     throw Exception('Error al cargar órdenes de trabajo');
   }
 
+  Future<List<RegistroArticulo>> fetchRegistrosByOT(double otNumero) async {
+    final uri = Uri.parse(_registrosUrl).replace(
+      queryParameters: {'ot_numero': otNumero.toString()},
+    );
+    final response = await _client
+        .get(uri, headers: _headers())
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body) as List<dynamic>;
+      return data
+          .map((e) => RegistroArticulo.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    throw Exception('Error al cargar registros de OT');
+  }
+
   Future<OrdenTrabajoDetalle?> fetchOTDetalle(double numero) async {
     final uri = Uri.parse('$_otUrl$numero/');
     final response = await _client

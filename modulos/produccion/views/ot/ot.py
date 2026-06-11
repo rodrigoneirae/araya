@@ -56,6 +56,8 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
             "buscar_referencia": self._buscar_referencia,
             "historial_articulo": self._historial_articulo,
             "generar_pdf": lambda d: self._generar_pdf_ot(self.request, d),
+            "cargar_subformularios": lambda d: self._cargar_subformularios(d.get("numero")),
+            "editar_subitem": self._editar_subitem,
         }
         return handlers.get(action, lambda _: JsonResponse({"success": False, "message": "Acción inválida"}))
 
@@ -286,6 +288,96 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                     "vc_relacionados": vc_relacionados,
                 }
             })
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _cargar_subformularios(self, numero: str | None) -> JsonResponse:
+        if not numero:
+            return JsonResponse({"success": False, "message": "Número de OT requerido"})
+        try:
+            ot_val = float(numero)
+
+            def encargado_nombre(m):
+                if m.codencargado:
+                    emp = Empleados.objects.filter(cod=m.codencargado).first()
+                    return emp.nombre if emp else ""
+                return ""
+
+            def build_row(m):
+                return {
+                    "codigo": m.codigo.codigo if m.codigo else "",
+                    "nombre": m.codigo.descr if m.codigo else "",
+                    "cantidad": abs(m.cantidad),
+                    "um": m.codigo.um if m.codigo else "",
+                    "encargado": encargado_nombre(m),
+                    "codencargado": m.codencargado or "",
+                    "punit": m.punit or 0,
+                    "linea": m.linea,
+                    "tipo_cod": m.tipo.cod if m.tipo else None,
+                }
+
+            def get_detalle_ot():
+                qs = Movs.objects.select_related("codigo", "tipo").filter(
+                    tipo__cod__in=[8],
+                    numero=ot_val,
+                    linea=1
+                )
+                return [build_row(m) for m in qs if m.cantidad and m.cantidad != 0]
+
+            def get_vale_consumo():
+                qs = Movs.objects.select_related("codigo", "tipo").filter(
+                    tipo__cod__in=[10],
+                    numero=ot_val,
+                    linea__gt=0
+                )
+                return [build_row(m) for m in qs if m.cantidad and m.cantidad != 0]
+
+            def get_parte_entrada():
+                qs = Movs.objects.select_related("codigo", "tipo").filter(
+                    tipo__cod__in=[6],
+                    numero=ot_val,
+                    linea__gt=0
+                )
+                return [build_row(m) for m in qs if m.cantidad and m.cantidad != 0]
+
+            return JsonResponse({
+                "detalle_ot": get_detalle_ot(),
+                "vale_consumo": get_vale_consumo(),
+                "parte_entrada": get_parte_entrada(),
+            })
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _editar_subitem(self, data: dict[str, Any]) -> JsonResponse:
+        try:
+            numero = data.get("numero")
+            tipo_cod = data.get("tipo_cod")
+            linea = data.get("linea")
+            campo = data.get("campo")
+            valor = data.get("valor")
+
+            if not all([numero, tipo_cod, linea, campo]):
+                return JsonResponse({"success": False, "message": "Faltan datos para identificar el registro"})
+
+            qs = Movs.objects.filter(
+                numero=float(numero),
+                tipo__cod=int(tipo_cod),
+                linea=int(linea),
+            )
+
+            if not qs.exists():
+                return JsonResponse({"success": False, "message": "Registro no encontrado"})
+
+            if campo == "cantidad":
+                qs.update(cantidad=abs(float(valor)))
+            elif campo == "punit":
+                qs.update(punit=float(valor) if valor else None)
+            elif campo == "codencargado":
+                qs.update(codencargado=float(valor) if valor else None)
+            else:
+                return JsonResponse({"success": False, "message": f"Campo '{campo}' no válido"})
+
+            return JsonResponse({"success": True, "message": "Actualizado correctamente"})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 

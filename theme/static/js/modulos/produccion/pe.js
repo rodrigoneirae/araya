@@ -701,16 +701,19 @@ function buscarArticuloPEInput() {
     const codigo = document.getElementById('peArtCod').value;
     if (!codigo) return;
     buscarXHRPE('buscar_articulo', {codigo: codigo}, function(data) {
+        const nombreEl = document.getElementById('peArtNombre');
+        const umEl = document.getElementById('peArtUM');
+        const punitEl = document.getElementById('peArtPUnit');
         if (data.success) {
-            document.getElementById('peArtNombre').value = data.data.nombre || '';
-            document.getElementById('peArtUM').value = data.data.um || '';
-            if (!document.getElementById('peArtPUnit').value) {
-                document.getElementById('peArtPUnit').value = data.data.precio || 0;
+            if (nombreEl) nombreEl.value = data.data.nombre || '';
+            if (umEl) umEl.value = data.data.um || '';
+            if (punitEl && !punitEl.value) {
+                punitEl.value = data.data.precio || 0;
             }
         } else {
             Toastify({text: 'Artículo no encontrado', style: {background: '#f44336'}}).showToast();
-            document.getElementById('peArtNombre').value = '';
-            document.getElementById('peArtUM').value = '';
+            if (nombreEl) nombreEl.value = '';
+            if (umEl) umEl.value = '';
         }
     });
 }
@@ -739,7 +742,8 @@ function abrirListaArticulosPE() {
             filtroCampos: ['codigo', 'descr', 'tipo', 'proceso'],
             onSelect: function(row) {
                 document.getElementById('peArtCod').value = row.codigo;
-                document.getElementById('peArtNombre').value = row.descr || '';
+                const nombreEl = document.getElementById('peArtNombre');
+                if (nombreEl) nombreEl.value = row.descr || '';
                 document.getElementById('peArtUM').value = row.um || '';
                 document.getElementById('peArtPUnit').value = row.precio || 0;
             }

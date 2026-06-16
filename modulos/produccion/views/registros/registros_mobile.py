@@ -147,15 +147,22 @@ class IndexRegistroMobileView(LoginRequiredMixin, TemplateView):
             usr = self.request.user.username if self.request.user.is_authenticated else ""
             time_user = timezone.now()
 
+            if registro.ot_numero:
+                numero_doc = float(registro.ot_numero)
+            else:
+                ultimo = Movs.objects.filter(tipo=tipo_obj, linea=0).order_by("-numero").first()
+                numero_doc = (ultimo.numero + 1) if ultimo else 1
+                registro.ot_numero = numero_doc
+
             existe_header = Movs.objects.filter(
-                numero=registro.ot_numero,
+                numero=numero_doc,
                 tipo=tipo_obj,
                 linea=0
             ).exists()
 
             if not existe_header:
                 Movs.objects.create(
-                    numero=registro.ot_numero,
+                    numero=numero_doc,
                     tipo=tipo_obj,
                     linea=0,
                     fecha=registro.fecha_hora.strftime("%Y-%m-%d"),
@@ -169,7 +176,7 @@ class IndexRegistroMobileView(LoginRequiredMixin, TemplateView):
                 )
 
             ultimo_detalle = Movs.objects.filter(
-                numero=registro.ot_numero,
+                numero=numero_doc,
                 tipo=tipo_obj,
                 linea__gt=0
             ).order_by('-linea').first()
@@ -181,7 +188,7 @@ class IndexRegistroMobileView(LoginRequiredMixin, TemplateView):
                 estado_detalle = "Cerrado" if codigo_str.upper().startswith("P") else "Abierto"
 
                 Movs.objects.create(
-                    numero=registro.ot_numero,
+                    numero=numero_doc,
                     tipo=tipo_obj,
                     linea=siguiente_linea,
                     fecha=registro.fecha_hora.strftime("%Y-%m-%d"),
@@ -200,14 +207,14 @@ class IndexRegistroMobileView(LoginRequiredMixin, TemplateView):
                 siguiente_linea += 1
 
             registro.estado = 'CERRADO'
-            registro.documento = f"{tipo_doc}-{int(registro.ot_numero)}"
-            registro.save(update_fields=['estado', 'documento'])
+            registro.documento = f"{tipo_doc}-{int(numero_doc)}"
+            registro.save(update_fields=['estado', 'documento', 'ot_numero'])
 
             tipo_label = "PE" if registro.tipo_registro == 'PE' else "VC"
             return JsonResponse({
                 "success": True,
-                "message": f"{tipo_label} {int(registro.ot_numero)} creado correctamente",
-                "numero": int(registro.ot_numero)
+                "message": f"{tipo_label} {int(numero_doc)} creado correctamente",
+                "numero": int(numero_doc)
             })
         except RegistroArticuloCabecera.DoesNotExist:
             return JsonResponse({"success": False, "message": "Registro no encontrado"})

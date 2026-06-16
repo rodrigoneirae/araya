@@ -79,6 +79,7 @@ Write-Host ""
 & $Python -c "
 import django
 import whitenoise
+import psycopg2
 import pyodbc
 import mssql
 import ttkbootstrap
@@ -135,6 +136,7 @@ Write-Host ""
     --include-package=rest_framework `
     --include-package=whitenoise `
     --include-package=dotenv `
+    --include-package=psycopg2 `
     --include-package=mssql `
     --include-package=pyodbc `
     --include-package=waitress `

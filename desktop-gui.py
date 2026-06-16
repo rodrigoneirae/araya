@@ -98,15 +98,20 @@ if not ENV_FILE.exists():
         f"FERNET_KEY=Xn6kYz8dR2p2R0cM5lMZx0C7yF3Xk3Wk8y8zqY9N0xE=\n"
         f"ALLOWED_HOSTS=127.0.0.1,localhost\n"
         f"APPHOST=localhost\n"
-        f"APPPORT=1433\n"
-        f"APPDB=Prod\n"
-        f"APPUSER=sa\n"
+        f"APPPORT=5432\n"
+        f"APPDB=araya\n"
+        f"APPUSER=araya\n"
         f"APPPASSWORD=\n"
         f"SOFTLAND_HOST=localhost\n"
         f"SOFTLAND_PORT=1433\n"
         f"SOFTLAND_DB=\n"
         f"SOFTLAND_USER=sa\n"
         f"SOFTLAND_PASSWORD=\n"
+        f"BACKUP_HOST=localhost\n"
+        f"BACKUP_PORT=1433\n"
+        f"BACKUP_DB=\n"
+        f"BACKUP_USER=sa\n"
+        f"BACKUP_PASSWORD=\n"
     )
 
 tauri_version = os.environ.get('APP_VERSION')
@@ -219,6 +224,15 @@ def actualizar_database_settings():
     settings.DATABASES['default']['HOST'] = os.getenv("APPHOST")
 
     settings.DATABASES['default']['PORT'] = os.getenv("APPPORT")
+
+    if 'backup' in settings.DATABASES:
+        settings.DATABASES['backup']['NAME'] = os.getenv("BACKUP_DB")
+        settings.DATABASES['backup']['USER'] = os.getenv("BACKUP_USER")
+        settings.DATABASES['backup']['PASSWORD'] = decrypt_password(
+            os.getenv("BACKUP_PASSWORD", "")
+        )
+        settings.DATABASES['backup']['HOST'] = os.getenv("BACKUP_HOST")
+        settings.DATABASES['backup']['PORT'] = os.getenv("BACKUP_PORT")
 
     if 'softland' in settings.DATABASES:
         settings.DATABASES['softland']['NAME'] = os.getenv("SOFTLAND_DB")
@@ -573,15 +587,15 @@ host_var = ttk.StringVar(
 )
 
 port_var = ttk.StringVar(
-    value=os.getenv("APPPORT", "1433")
+    value=os.getenv("APPPORT", "5432")
 )
 
 name_var = ttk.StringVar(
-    value=os.getenv("APPDB", "Prod")
+    value=os.getenv("APPDB", "araya")
 )
 
 user_var = ttk.StringVar(
-    value=os.getenv("APPUSER", "sa")
+    value=os.getenv("APPUSER", "araya")
 )
 
 password_var = ttk.StringVar(
@@ -765,7 +779,7 @@ tab_araya = ttk.Frame(notebook)
 notebook.add(tab_araya, text="  Araya  ")
 
 araya_fields = [
-    ("Servidor SQL", host_var, None),
+    ("Servidor PostgreSQL", host_var, None),
     ("Puerto", port_var, None),
     ("Base de Datos", name_var, None),
     ("Usuario", user_var, None),

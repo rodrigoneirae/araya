@@ -14,7 +14,7 @@
         <div class="p-4 border-b border-aq-border">
             <div class="flex justify-between items-center">
                 <h1 class="text-2xl font-bold text-aq-text">Orden de Trabajo (OT)</h1>
-                {% include 'components/action_buttons.html' with entity='Ot' gender='a' suffix_ids=True round=False extra_after='<button type="button" onclick="imprimirOt()" id="btnImprimirOt" class="w-10 h-10 flex items-center justify-center rounded-lg bg-blue-500 text-white hover:opacity-85 hidden" title="Imprimir PDF"><i class="bx bx-printer text-xl"></i></button>' %}
+                {% include 'components/action_buttons.html' with entity='Ot' gender='a' suffix_ids=True round=False extra_after='<button type="button" onclick="imprimirOt()" id="btnImprimirOt" class="w-10 h-10 flex items-center justify-center  bg-blue-500 text-white hover:opacity-85 hidden" title="Imprimir PDF"><i class="bx bx-printer text-xl"></i></button>' %}
             </div>
         </div>
 
@@ -38,31 +38,31 @@
                         <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">OT</label>
                             <div class="flex gap-2">
-                                <input type="text" id="otNumero" onchange="buscarFolioInput()" class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
-                                <button type="button" onclick="buscarOt()" class="px-3 py-2 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                <input type="text" id="otNumero" onchange="buscarFolioInput()" class="flex-1 min-w-0 px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
+                                <button type="button" onclick="buscarOt()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
                                     <i class='bx bx-search'></i>
                                 </button>
                             </div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Fecha</label>
-                            <input type="date" id="otFecha" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                            <input type="date" id="otFecha" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Encargado</label>
-                            <select id="otEncargado" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                            <select id="otEncargado" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                                 <option value="">--- Seleccionar ---</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Proceso</label>
-                            <select id="otProceso" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                            <select id="otProceso" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                                 <option value="">--- Seleccionar ---</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Estado</label>
-                            <select id="otEstado" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                            <select id="otEstado" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                                 <option value="">--- Seleccionar ---</option>
                                 <option value="Abierto">Abierto</option>
                                 <option value="En Proceso">En Proceso</option>
@@ -78,19 +78,19 @@
                                 <h4 class="text-sm font-semibold text-aq-text mb-2 flex items-center gap-2">
                                     <i class='bx bx-package text-aq-primary'></i> Detalle OT
                                 </h4>
-                                <div id="tablaSubDetalleOT" class="w-full border border-aq-border rounded-lg" style="min-height: 150px;"></div>
+                                <div id="tablaSubDetalleOT" class="w-full border border-aq-border " style="min-height: 150px;"></div>
                             </div>
                             <div>
                                 <h4 class="text-sm font-semibold text-aq-text mb-2 flex items-center gap-2">
                                     <i class='bx bx-cart text-red-500'></i> Vale Consumo
                                 </h4>
-                                <div id="tablaSubValeConsumo" class="w-full border border-aq-border rounded-lg" style="min-height: 150px;"></div>
+                                <div id="tablaSubValeConsumo" class="w-full border border-aq-border " style="min-height: 150px;"></div>
                             </div>
                             <div>
                                 <h4 class="text-sm font-semibold text-aq-text mb-2 flex items-center gap-2">
                                     <i class='bx bx-upload text-emerald-500'></i> Parte Entrada
                                 </h4>
-                                <div id="tablaSubParteEntrada" class="w-full border border-aq-border rounded-lg" style="min-height: 150px;"></div>
+                                <div id="tablaSubParteEntrada" class="w-full border border-aq-border " style="min-height: 150px;"></div>
                             </div>
                         </div>
                     </div>
@@ -164,7 +164,7 @@
                         </table>
                     </div>
                 </div>
-                <div id="resumenOt" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2 p-2 bg-aq-surface-2 rounded-lg text-xs">
+                <div id="resumenOt" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2 p-2 bg-aq-surface-2  text-xs">
                     <div><span class="text-aq-text font-medium">Encargado:</span> <span id="resumenEncargado" class="text-aq-primary">-</span></div>
                     <div><span class="text-aq-text font-medium">Proceso:</span> <span id="resumenProceso" class="text-aq-primary">-</span></div>
                     <div><span class="text-aq-text font-medium">Estado:</span> <span id="resumenEstado">-</span></div>

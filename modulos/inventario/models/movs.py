@@ -22,7 +22,7 @@ class Movs(models.Model):
     rut = models.CharField(
         db_column='RUT',
         max_length=13,
-        db_collation='Modern_Spanish_CI_AS',
+
         blank=True,
         null=True
     )
@@ -67,5 +67,5 @@ class Movs(models.Model):
 
 
     class Meta:
-        managed = False
         db_table = 'Movs'
+        default_permissions = ()

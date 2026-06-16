@@ -59,6 +59,14 @@ function cargarDatosInicialesPE() {
                 option.textContent = t.cod + ' - ' + t.nombre;
                 select.appendChild(option);
             });
+            if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && !jQuery(select).data('select2')) {
+                jQuery(select).select2({
+                    language: 'es',
+                    width: '100%',
+                    placeholder: '--- Seleccionar ---',
+                    allowClear: true,
+                });
+            }
         }
     });
 
@@ -71,6 +79,14 @@ function cargarDatosInicialesPE() {
                 option.textContent = b.nombre;
                 select.appendChild(option);
             });
+            if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && !jQuery(select).data('select2')) {
+                jQuery(select).select2({
+                    language: 'es',
+                    width: '100%',
+                    placeholder: '--- Seleccionar ---',
+                    allowClear: true,
+                });
+            }
         }
     });
 
@@ -353,6 +369,8 @@ function cargarPE(numero) {
 
             const docSelect = document.getElementById('peTipoDoc');
             if (data.data.tipodocref) {
+                const val = String(Number(data.data.tipodocref));
+                const $sel = jQuery(docSelect);
                 let found = false;
                 for (let i = 0; i < docSelect.options.length; i++) {
                     const optVal = docSelect.options[i].value.split(' - ')[0];
@@ -364,11 +382,12 @@ function cargarPE(numero) {
                 }
                 if (!found) {
                     const option = document.createElement('option');
-                    option.value = data.data.tipodocref;
-                    option.textContent = data.data.tipodocref + ' - ' + (data.data.tipodocref_nombre || '');
+                    option.value = val;
+                    option.textContent = val + ' - ' + (data.data.tipodocref_nombre || '');
                     docSelect.appendChild(option);
-                    docSelect.value = data.data.tipodocref;
+                    docSelect.value = val;
                 }
+                $sel.val(val).trigger('change');
             }
             
             document.getElementById('peRef').value = data.data.docref || '';

@@ -314,6 +314,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                     "punit": m.punit or 0,
                     "linea": m.linea,
                     "tipo_cod": m.tipo.cod if m.tipo else None,
+                    "fecha": m.fecha.strftime("%Y-%m-%d") if m.fecha else "",
                 }
 
             def get_detalle_ot():

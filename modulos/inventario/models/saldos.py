@@ -11,5 +11,5 @@ class Saldos(models.Model):
     numero = models.FloatField(db_column='Numero', blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'Saldos'
+        default_permissions = ()

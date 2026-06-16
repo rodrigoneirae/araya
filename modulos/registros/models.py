@@ -42,8 +42,7 @@ class RegistroArticuloCabecera(models.Model):
 
     class Meta:
         db_table = 'RegistroArticuloCabecera'
-        verbose_name = 'Registro de Artículo'
-        verbose_name_plural = 'Registros de Artículos'
+        default_permissions = ()
         ordering = ['-fecha_hora']
 
 
@@ -64,6 +63,6 @@ class RegistroArticuloDetalle(models.Model):
 
     class Meta:
         db_table = 'RegistroArticuloDetalle'
-        verbose_name = 'Detalle de Registro'
-        verbose_name_plural = 'Detalles de Registros'
+        default_permissions = ()
+
 #26978

@@ -1,11 +1,11 @@
 # AGENTS.md
 
 ## Project Overview
-Django-based web application called "Araya" with desktop GUI capabilities and Flutter mobile app. Uses SQL Server as database backend (dual database: Araya DB + Softland DB).
+Django-based web application called "Araya" with desktop GUI capabilities and Flutter mobile app. Uses PostgreSQL as main database and SQL Server for Softland ERP integration (dual database: `default` = PostgreSQL, `softland` = SQL Server).
 
 ## Tech Stack
 - **Framework**: Django 6.0.4
-- **Database**: SQL Server (mssql-django, pyodbc) - dual databases (`default` + `softland`)
+- **Database**: PostgreSQL (psycopg2-binary) for `default`, SQL Server (mssql-django, pyodbc) for `softland`
 - **API**: Django REST Framework (already configured in `araya/base.py`)
 - **Styling**: Tailwind 4 CSS (django-tailwind)
 - **Desktop GUI**: ttkbootstrap + tkinter with Waitress WSGI server
@@ -113,7 +113,7 @@ cd araya_mobile && flutter analyze
 .venv/bin/python -c "import django; django.setup()"
 
 # Verify Python dependencies
-.venv/bin/python -c "import django, whitenoise, pyodbc, mssql, rest_framework"
+.venv/bin/python -c "import django, whitenoise, psycopg2, pyodbc, mssql, rest_framework"
 
 # Flutter analyze
 cd araya_mobile && flutter analyze
@@ -128,7 +128,7 @@ cd araya_mobile && flutter analyze
 - Additional DRF endpoints can be added in `modulos/*/api/` or via router config
 
 ## Database Connections
-- **default**: Main Araya application database (SQL Server via ODBC Driver 18)
+- **default**: Main Araya application database (PostgreSQL via psycopg2)
 - **softland**: Softland ERP integration database (SQL Server via ODBC Driver 18)
 
 ## Build Artifacts
@@ -143,6 +143,7 @@ cd araya_mobile && flutter analyze
 - Desktop settings: `araya.settings.desktop` (standalone, does NOT import base)
 - `araya/base.py` is the shared base settings module (NOT inside `settings/`)
 - Run `collectstatic` before building desktop executable
+- PostgreSQL requires `psycopg2-binary` package
 - SQL Server requires ODBC Driver 18 with `TrustServerCertificate=yes`
 - DRF (`rest_framework`) is already included in `INSTALLED_APPS` via `araya/base.py`
 - Styles are written in `/theme/static_src/`

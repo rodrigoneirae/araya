@@ -1,4 +1,3 @@
-
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -22,7 +21,7 @@ DJANGO_APPS = [
     'django.contrib.staticfiles',
 ]
 
-PROJECT_APPS =[
+PROJECT_APPS = [
     'modulos.core.apps.CoreConfig',
     'modulos.maestros.apps.MaestrosConfig',
     'modulos.inventario.apps.InventarioConfig',
@@ -30,7 +29,7 @@ PROJECT_APPS =[
     'modulos.softland.apps.SoftlandConfig',
     'modulos.registros.apps.RegistrosConfig',
 ]
-THIRD_PARTY_APPS =[
+THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
 ]
@@ -70,12 +69,20 @@ WSGI_APPLICATION = 'araya.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'mssql',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get("APPDB"),
         'USER': os.environ.get("APPUSER"),
         'PASSWORD': os.environ.get("APPPASSWORD"),
         'HOST': os.environ.get("APPHOST"),
         'PORT': os.environ.get("APPPORT"),
+    },
+    'backup': {
+        'ENGINE': 'mssql',
+        'NAME': os.environ.get("BACKUP_DB"),
+        'USER': os.environ.get("BACKUP_USER"),
+        'PASSWORD': os.environ.get("BACKUP_PASSWORD"),
+        'HOST': os.environ.get("BACKUP_HOST"),
+        'PORT': os.environ.get("BACKUP_PORT"),
         'OPTIONS': {
             'driver': 'ODBC Driver 18 for SQL Server',
             'extra_params': 'TrustServerCertificate=yes',
@@ -113,7 +120,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
@@ -125,12 +131,10 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 AUTH_USER_MODEL = "core.User"
 LOGIN_URL = "login"
 LOGOUT_REDIRECT_URL = "login"
 UPDATE_REDIRECT_URL = "update"
-
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

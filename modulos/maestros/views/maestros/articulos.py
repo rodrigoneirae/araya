@@ -77,16 +77,35 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": False})
         try:
             articulo = Articulos.objects.get(codigo=codigo)
+            tipo_val = articulo.tipo or ""
+            if articulo.tipo_articulo_id:
+                try:
+                    tipo_val = articulo.tipo_articulo.nombre
+                except TipoArticulo.DoesNotExist:
+                    pass
+            um_val = articulo.um or ""
+            if um_val:
+                try:
+                    um_obj = UnidadMedida.objects.get(nombre__iexact=um_val.strip())
+                    um_val = um_obj.nombre
+                except UnidadMedida.DoesNotExist:
+                    try:
+                        um_obj = UnidadMedida.objects.get(abreviatura__iexact=um_val.strip())
+                        um_val = um_obj.nombre
+                    except UnidadMedida.DoesNotExist:
+                        pass
+            estado = "Inactivo" if articulo.tipo == "Inactivo" else "Activo"
             return JsonResponse({
                 "success": True,
                 "data": {
                     "codigo": articulo.codigo,
                     "nombre": articulo.descr or "",
-                    "tipo": articulo.tipo or "",
-                    "um": articulo.um or "",
+                    "tipo": tipo_val,
+                    "estado": estado,
+                    "um": um_val,
                     "stomin": articulo.stomin if articulo.stomin is not None else "",
                     "stomax": articulo.stomax if articulo.stomax is not None else "",
-                    "proceso": articulo.prc or ""
+                    "proceso": articulo.prc if articulo.prc is not None else "",
                 }
             })
         except Articulos.DoesNotExist:
@@ -95,10 +114,18 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
     def _guardar(self, data: dict[str, Any]) -> JsonResponse:
         try:
             usuario = self.request.user.username
+            tipo_nombre = data.get("tipo")
+            tipo_articulo_obj = None
+            if tipo_nombre:
+                try:
+                    tipo_articulo_obj = TipoArticulo.objects.get(nombre=tipo_nombre)
+                except TipoArticulo.DoesNotExist:
+                    pass
             articulo = Articulos(
                 codigo=data.get("codigo"),
                 descr=data.get("nombre"),
-                tipo=data.get("tipo"),
+                tipo=tipo_nombre,
+                tipo_articulo=tipo_articulo_obj,
                 um=data.get("um"),
                 stomin=data.get("stomin") or None,
                 stomax=data.get("stomax") or None,
@@ -116,7 +143,13 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
             usuario = self.request.user.username
             articulo = Articulos.objects.get(codigo=data.get("codigo"))
             articulo.descr = data.get("nombre")
-            articulo.tipo = data.get("tipo")
+            tipo_nombre = data.get("tipo")
+            articulo.tipo = tipo_nombre
+            if tipo_nombre:
+                try:
+                    articulo.tipo_articulo = TipoArticulo.objects.get(nombre=tipo_nombre)
+                except TipoArticulo.DoesNotExist:
+                    articulo.tipo_articulo = None
             articulo.um = data.get("um")
             articulo.stomin = data.get("stomin") or None
             articulo.stomax = data.get("stomax") or None
@@ -133,6 +166,11 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": False, "message": "Código requerido"})
         try:
             articulo = Articulos.objects.get(codigo=codigo)
+            if articulo.tipo_articulo_id is None and articulo.tipo not in ("Activo", "Inactivo", ""):
+                try:
+                    articulo.tipo_articulo = TipoArticulo.objects.get(nombre=articulo.tipo)
+                except TipoArticulo.DoesNotExist:
+                    pass
             articulo.tipo = 'Inactivo'
             articulo.usr = self.request.user.username
             articulo.timeuser = timezone.now()
@@ -151,7 +189,10 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": False, "message": "Código requerido"})
         try:
             articulo = Articulos.objects.get(codigo=codigo)
-            articulo.tipo = 'Activo'
+            if articulo.tipo_articulo_id:
+                articulo.tipo = articulo.tipo_articulo.nombre
+            else:
+                articulo.tipo = 'Activo'
             articulo.usr = self.request.user.username
             articulo.timeuser = timezone.now()
             articulo.save(using="default")

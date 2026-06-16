@@ -43,6 +43,18 @@ function buscarXHR(action, datos, callback) {
     .catch(err => console.error('Error:', err));
 }
 
+function refrescarSelect2(id) {
+    if (typeof jQuery === 'undefined' || !jQuery.fn.select2) return;
+    var $el = jQuery('#' + id);
+    if ($el.data('select2')) {
+        $el.select2('destroy');
+        $el.removeData('select2');
+    }
+    if (typeof initSelect2 === 'function') {
+        initSelect2(document.getElementById(id).parentElement);
+    }
+}
+
 function cargarProcesos() {
     buscarXHR('listar_procesos', {}, function(data) {
         const select = document.getElementById('procesos');
@@ -53,6 +65,7 @@ function cargarProcesos() {
                 option.textContent = p.nombre;
                 select.appendChild(option);
             });
+            refrescarSelect2('procesos');
         }
     });
 }
@@ -67,6 +80,7 @@ function cargarTipos() {
                 option.textContent = t.nombre;
                 select.appendChild(option);
             });
+            refrescarSelect2('tipo');
         }
     });
 }
@@ -81,6 +95,7 @@ function cargarUMedida() {
                 option.textContent = u.nombre + ' (' + u.abreviatura + ')';
                 select.appendChild(option);
             });
+            refrescarSelect2('um');
         }
     });
 }
@@ -110,6 +125,14 @@ function abrirListaArticulos() {
     });
 }
 
+function actualizarSelect2(id) {
+    if (typeof jQuery === 'undefined' || !jQuery.fn.select2) return;
+    var $el = jQuery('#' + id);
+    if ($el.data('select2')) {
+        $el.trigger('change');
+    }
+}
+
 function buscarPorCodigo() {
     const codigo = document.getElementById('codigo').value.trim().toUpperCase();
     if (!codigo) {
@@ -127,11 +150,14 @@ function buscarPorCodigo() {
         if (data.success && data.data) {
             document.getElementById('nombre').value = data.data.nombre || '';
             document.getElementById('tipo').value = data.data.tipo || '';
+            actualizarSelect2('tipo');
             document.getElementById('um').value = data.data.um || '';
+            actualizarSelect2('um');
             document.getElementById('stomin').value = data.data.stomin !== null && data.data.stomin !== '' ? data.data.stomin : '';
             document.getElementById('stomax').value = data.data.stomax !== null && data.data.stomax !== '' ? data.data.stomax : '';
             document.getElementById('procesos').value = data.data.proceso || '';
-            tipoOriginal = data.data.tipo || '';
+            actualizarSelect2('procesos');
+            tipoOriginal = data.data.estado || 'Activo';
             setCamposDisabled(true);
             document.getElementById('btnGuardar').classList.add('hidden');
             document.getElementById('btnEditar').classList.remove('hidden');
@@ -143,6 +169,9 @@ function buscarPorCodigo() {
             document.getElementById('articuloForm').reset();
             document.getElementById('codigo').value = codigo;
             setCamposDisabled(false);
+            actualizarSelect2('tipo');
+            actualizarSelect2('um');
+            actualizarSelect2('procesos');
             document.getElementById('btnGuardar').classList.remove('hidden');
             document.getElementById('btnEditar').classList.add('hidden');
             document.getElementById('btnEliminar').classList.add('hidden');
@@ -155,7 +184,15 @@ function buscarPorCodigo() {
 function setCamposDisabled(disabled) {
     ['codigo', 'nombre', 'tipo', 'um', 'stomin', 'stomax', 'procesos'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.disabled = disabled;
+        if (!el) return;
+        if (el.tagName === 'SELECT' && typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+            jQuery(el).prop('disabled', disabled);
+            if (jQuery(el).data('select2')) {
+                jQuery(el).trigger('change.select2');
+            }
+        } else {
+            el.disabled = disabled;
+        }
     });
 }
 
@@ -171,6 +208,9 @@ function nuevoArticulo() {
         document.getElementById('articuloForm').reset();
         codigoInput.value = '';
         setCamposDisabled(true);
+        actualizarSelect2('tipo');
+        actualizarSelect2('um');
+        actualizarSelect2('procesos');
         document.getElementById('btnGuardar').classList.add('hidden');
         const btnNuevo = document.getElementById('btnNuevo');
         if (btnNuevo) btnNuevo.innerHTML = '<i class="bx bx-plus text-xl"></i>';
@@ -182,6 +222,9 @@ function nuevoArticulo() {
         codigoInput.value = '';
         codigoInput.focus();
         setCamposDisabled(false);
+        actualizarSelect2('tipo');
+        actualizarSelect2('um');
+        actualizarSelect2('procesos');
         document.getElementById('btnGuardar').classList.remove('hidden');
         const btnNuevo = document.getElementById('btnNuevo');
         if (btnNuevo) btnNuevo.innerHTML = '<i class="bx bx-x text-xl"></i>';

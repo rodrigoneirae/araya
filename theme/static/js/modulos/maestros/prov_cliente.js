@@ -43,6 +43,26 @@ function buscarXHR(action, datos, callback) {
     .catch(err => console.error('Error:', err));
 }
 
+function refrescarSelect2(id) {
+    if (typeof jQuery === 'undefined' || !jQuery.fn.select2) return;
+    var $el = jQuery('#' + id);
+    if ($el.data('select2')) {
+        $el.select2('destroy');
+        $el.removeData('select2');
+    }
+    if (typeof initSelect2 === 'function') {
+        initSelect2(document.getElementById(id).parentElement);
+    }
+}
+
+function actualizarSelect2(id) {
+    if (typeof jQuery === 'undefined' || !jQuery.fn.select2) return;
+    var $el = jQuery('#' + id);
+    if ($el.data('select2')) {
+        $el.trigger('change');
+    }
+}
+
 function cargarTipos() {
     buscarXHR('listar_tipos', {}, function(data) {
         const select = document.getElementById('tipo');
@@ -53,6 +73,7 @@ function cargarTipos() {
                 option.textContent = t.descr;
                 select.appendChild(option);
             });
+            refrescarSelect2('tipo');
         }
     });
 }
@@ -67,6 +88,7 @@ function cargarCpagos() {
                 option.textContent = c.descr + (c.dias ? ' (' + c.dias + ' días)' : '');
                 select.appendChild(option);
             });
+            refrescarSelect2('cpago');
         }
     });
 }
@@ -115,6 +137,7 @@ function buscarPorRut() {
             document.getElementById('dig_ver').value = data.data.dig_ver || '';
             document.getElementById('nombre').value = data.data.nombre || '';
             document.getElementById('tipo').value = data.data.tipo || '';
+            actualizarSelect2('tipo');
             document.getElementById('sigla').value = data.data.sigla || '';
             document.getElementById('giro').value = data.data.giro || '';
             document.getElementById('direccion').value = data.data.direccion || '';
@@ -124,6 +147,7 @@ function buscarPorRut() {
             document.getElementById('fax').value = data.data.fax || '';
             document.getElementById('email').value = data.data.email || '';
             document.getElementById('cpago').value = data.data.cpago || '';
+            actualizarSelect2('cpago');
             document.getElementById('contacto').value = data.data.contacto || '';
             document.getElementById('emailcontacto').value = data.data.emailcontacto || '';
             setCamposDisabled(true);
@@ -138,6 +162,8 @@ function buscarPorRut() {
             document.getElementById('clienteForm').reset();
             document.getElementById('rut').value = rut;
             setCamposDisabled(false);
+            actualizarSelect2('tipo');
+            actualizarSelect2('cpago');
             document.getElementById('btnGuardar').classList.remove('hidden');
             document.getElementById('btnEditar').classList.add('hidden');
             document.getElementById('btnEliminar').classList.add('hidden');
@@ -150,7 +176,15 @@ function buscarPorRut() {
 function setCamposDisabled(disabled) {
     ['rut', 'dig_ver', 'nombre', 'tipo', 'sigla', 'giro', 'direccion', 'comuna', 'ciudad', 'fono', 'fax', 'email', 'cpago', 'contacto', 'emailcontacto'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.disabled = disabled;
+        if (!el) return;
+        if (el.tagName === 'SELECT' && typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+            jQuery(el).prop('disabled', disabled);
+            if (jQuery(el).data('select2')) {
+                jQuery(el).trigger('change.select2');
+            }
+        } else {
+            el.disabled = disabled;
+        }
     });
 }
 
@@ -164,6 +198,8 @@ function nuevoCliente() {
         document.getElementById('clienteForm').reset();
         rutInput.value = '';
         setCamposDisabled(true);
+        actualizarSelect2('tipo');
+        actualizarSelect2('cpago');
         document.getElementById('btnGuardar').classList.add('hidden');
         const btnNuevo = document.getElementById('btnNuevo');
         if (btnNuevo) btnNuevo.innerHTML = '<i class="bx bx-plus text-xl"></i>';
@@ -175,6 +211,8 @@ function nuevoCliente() {
         rutInput.value = '';
         rutInput.focus();
         setCamposDisabled(false);
+        actualizarSelect2('tipo');
+        actualizarSelect2('cpago');
         document.getElementById('btnGuardar').classList.remove('hidden');
         const btnNuevo = document.getElementById('btnNuevo');
         if (btnNuevo) btnNuevo.innerHTML = '<i class="bx bx-x text-xl"></i>';

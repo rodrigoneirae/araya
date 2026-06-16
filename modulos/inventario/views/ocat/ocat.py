@@ -188,7 +188,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     "tipodocref": encabezado.tipodocref or "",
                     "tipodocref_nombre": tipo_doc_nombre,
                     "docref": int(encabezado.docref) if encabezado.docref else "",
-                    "codencargado": str(encabezado.codencargado) if encabezado.codencargado else "",
+                    "codencargado": int(encabezado.codencargado) if encabezado.codencargado else "",
                     "codencargado_nombre": encargado_nombre,
                     "estado": encabezado.estado or "",
                     "neto": float(encabezado.neto or 0),

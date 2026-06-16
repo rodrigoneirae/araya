@@ -32,13 +32,12 @@ class User(AbstractUser):
     #     return item
 
 class Usuarios(models.Model):
-    id = models.CharField(db_column='ID', primary_key=True, max_length=15, db_collation='Modern_Spanish_CI_AS')
-    nombres = models.CharField(db_column='Nombres', max_length=30, db_collation='Modern_Spanish_CI_AS', blank=True, null=True)
-    pass_field = models.CharField(db_column='Pass', max_length=15, db_collation='Modern_Spanish_CI_AS')
+    id = models.CharField(db_column='ID', primary_key=True, max_length=15)
+    nombres = models.CharField(db_column='Nombres', max_length=30, blank=True, null=True)
+    pass_field = models.CharField(db_column='Pass', max_length=15)
     perfil = models.SmallIntegerField(db_column='Perfil')
 
     class Meta:
-        managed = False
         db_table = 'Usuarios'
-
+        default_permissions = ()
 

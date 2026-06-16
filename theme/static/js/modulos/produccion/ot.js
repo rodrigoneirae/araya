@@ -170,6 +170,14 @@ function initSubTabulators(callback) {
     const colDef = [
         { title: 'Artículo', field: 'codigo', width: 80 },
         { title: 'Nombre', field: 'nombre', widthGrow: 2 },
+        { title: 'Fecha', field: 'fecha', width: 90, hozAlign: 'center',
+            formatter: function(cell) {
+                const v = cell.getValue();
+                if (!v) return '-';
+                const parts = v.split('-');
+                return parts.length === 3 ? parts.reverse().join('-') : v;
+            }
+        },
         { title: 'Cant', field: 'cantidad', width: 70, hozAlign: 'right' },
         { title: 'UM', field: 'um', width: 50, hozAlign: 'center' },
         { title: 'Encargado', field: 'codencargado', width: 120,

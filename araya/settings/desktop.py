@@ -100,12 +100,20 @@ WSGI_APPLICATION = 'araya.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'mssql',
-        'NAME': os.environ.get("APPDB", "Prod"),
-        'USER': os.environ.get("APPUSER", "sa"),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get("APPDB", "araya"),
+        'USER': os.environ.get("APPUSER", "araya"),
         'PASSWORD': os.environ.get("APPPASSWORD", ""),
         'HOST': os.environ.get("APPHOST", "localhost"),
-        'PORT': os.environ.get("APPPORT", "1433"),
+        'PORT': os.environ.get("APPPORT", "5432"),
+    },
+    'backup': {
+        'ENGINE': 'mssql',
+        'NAME': os.environ.get("BACKUP_DB", ""),
+        'USER': os.environ.get("BACKUP_USER", "sa"),
+        'PASSWORD': os.environ.get("BACKUP_PASSWORD", ""),
+        'HOST': os.environ.get("BACKUP_HOST", "localhost"),
+        'PORT': os.environ.get("BACKUP_PORT", "1433"),
         'OPTIONS': {
             'driver': 'ODBC Driver 18 for SQL Server',
             'extra_params': 'TrustServerCertificate=yes',

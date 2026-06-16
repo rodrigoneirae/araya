@@ -139,7 +139,6 @@ function cargarDatosIniciales() {
                     jQuery(patenteSel).select2({
                         language: 'es',
                         width: '100%',
-                        dropdownAutoWidth: true,
                         placeholder: '--- Seleccionar ---',
                         allowClear: true,
                     });
@@ -148,7 +147,6 @@ function cargarDatosIniciales() {
                 jQuery(patenteSel).select2({
                     language: 'es',
                     width: '100%',
-                    dropdownAutoWidth: true,
                     placeholder: '--- Seleccionar ---',
                     allowClear: true,
                 });
@@ -216,7 +214,6 @@ function actualizarSelect2(el) {
             $el.select2({
                 language: 'es',
                 width: '100%',
-                dropdownAutoWidth: true,
                 placeholder: $el.find('option:first').text() || 'Seleccionar...',
                 allowClear: true,
             });
@@ -701,9 +698,11 @@ function cargarOcat(numero) {
             document.getElementById('ocatRef').value = data.data.docref || '';
             const encargadoSelect = document.getElementById('ocatEncargado');
             if (data.data.codencargado) {
+                const val = String(data.data.codencargado);
+                const $sel = jQuery(encargadoSelect);
                 let found = false;
                 for (let i = 0; i < encargadoSelect.options.length; i++) {
-                    if (String(encargadoSelect.options[i].value) === String(data.data.codencargado)) {
+                    if (String(encargadoSelect.options[i].value) === val) {
                         encargadoSelect.selectedIndex = i;
                         found = true;
                         break;
@@ -711,13 +710,14 @@ function cargarOcat(numero) {
                 }
                 if (!found) {
                     const option = document.createElement('option');
-                    option.value = data.data.codencargado;
-                    option.textContent = data.data.codencargado_nombre || data.data.codencargado;
+                    option.value = val;
+                    option.textContent = data.data.codencargado_nombre || val;
                     encargadoSelect.appendChild(option);
-                    encargadoSelect.value = data.data.codencargado;
+                    encargadoSelect.value = val;
                 }
+                $sel.prop('disabled', false).val(val).trigger('change');
+                $sel.prop('disabled', true);
             }
-            actualizarSelect2(encargadoSelect);
             document.getElementById('ocatEstado').value = data.data.estado || 'Abierto';
             document.getElementById('ocatNeto').value = data.data.neto || 0;
             document.getElementById('ocatTotal').value = data.data.total || 0;

@@ -19,7 +19,7 @@ rm -rf .nuitka/ .cache/ 2>/dev/null || true
 find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 
 echo "Verificando dependencias..."
-$PY -c "import django, whitenoise, pyodbc, mssql" || {
+$PY -c "import django, whitenoise, psycopg2, pyodbc, mssql" || {
   echo "Faltan dependencias."
   exit 1
 }
@@ -45,6 +45,7 @@ $PY -m nuitka \
   --include-package=django.contrib.sessions \
   --include-package=whitenoise \
   --include-package=dotenv \
+  --include-package=psycopg2 \
   --include-package=mssql \
   --include-package=pyodbc \
   --include-module=pyodbc \

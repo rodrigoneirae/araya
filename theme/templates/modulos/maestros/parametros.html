@@ -6,7 +6,7 @@
         <div class="p-4 border-b border-aq-border">
             <div class="flex justify-between items-center">
                 <h1 class="text-2xl font-bold text-aq-text">Parámetros del Sistema</h1>
-                <a href="{% url 'home' %}" class="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-500 text-white hover:bg-gray-600" title="Salir">
+                <a href="{% url 'home' %}" class="w-10 h-10 flex items-center justify-center  bg-gray-500 text-white hover:bg-gray-600" title="Salir">
                     <i class='bx bx-exit text-lg'></i>
                 </a>
             </div>
@@ -56,27 +56,27 @@
                             <div class="flex-1">
                                 <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
                                 <div class="flex gap-2">
-                                    <input type="number" id="bodegaCod" class="flex-1 px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
-                                    <button type="button" onclick="abrirListaBodegas()" class="px-3 py-2 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                    <input type="number" id="bodegaCod" class="flex-1 px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
+                                    <button type="button" onclick="abrirListaBodegas()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
                                         <i class='bx bx-search'></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="w-24">
-                                <label class="block text-sm font-medium text-aq-text mb-1">Activo</label>
-                                <div class="h-[42px] flex items-center justify-center bg-aq-surface border border-aq-border rounded-lg">
+                                <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                                <div class="h-[42px] flex items-center justify-center bg-aq-surface  ">
                                     <input type="checkbox" id="bodegaEstado" class="w-5 h-5 cursor-pointer" style="accent-color: rgb(74 124 89);">
                                 </div>
                             </div>
                         </div>
                         <div class="flex-1">
                             <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
-                            <input type="text" id="bodegaNombre" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre de la bodega">
+                            <input type="text" id="bodegaNombre" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre de la bodega">
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-aq-text mb-1">Glosa / Descripción</label>
-                        <input type="text" id="bodegaGlosa" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Descripción adicional">
+                        <input type="text" id="bodegaGlosa" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Descripción adicional">
                     </div>
                 </form>
             </div>
@@ -93,26 +93,26 @@
                             <div class="flex-1">
                                 <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
                                 <div class="flex gap-2">
-                                    <input type="number" id="docCod" class="flex-1 px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
-                                    <button type="button" onclick="abrirListaDocs()" class="px-3 py-2 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                    <input type="number" id="docCod" class="flex-1 px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
+                                    <button type="button" onclick="abrirListaDocs()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
                                         <i class='bx bx-search'></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="w-24">
-                                <label class="block text-sm font-medium text-aq-text mb-1">Activo</label>
-                                <div class="h-[42px] flex items-center justify-center bg-aq-surface border border-aq-border rounded-lg">
+                                <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                                <div class="h-[42px] flex items-center justify-center bg-aq-surface ">
                                     <input type="checkbox" id="docEstado" class="w-5 h-5 cursor-pointer" style="accent-color: rgb(74 124 89);">
                                 </div>
                             </div>
                         </div>
                         <div class="flex-1">
                             <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
-                            <input type="text" id="docNombre" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre del documento">
+                            <input type="text" id="docNombre" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre del documento">
                         </div>
                         <div class="flex-1">
                             <label class="block text-sm font-medium text-aq-text mb-1">Signo</label>
-                            <select id="docSigno" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text">
+                            <select id="docSigno" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text">
                                 <option value="">--- Seleccionar Signo ---</option>
                                 <option value="1">1 - Aumenta Stock</option>
                                 <option value="0">0 - No Mueve Stock</option>
@@ -135,27 +135,27 @@
                             <div class="flex-1">
                                 <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
                                 <div class="flex gap-2">
-                                    <input type="number" id="procesoCod" class="flex-1 px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
-                                    <button type="button" onclick="abrirListaProcesos()" class="px-3 py-2 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                    <input type="number" id="procesoCod" class="flex-1 px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
+                                    <button type="button" onclick="abrirListaProcesos()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
                                         <i class='bx bx-search'></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="w-24">
-                                <label class="block text-sm font-medium text-aq-text mb-1">Activo</label>
-                                <div class="h-[42px] flex items-center justify-center bg-aq-surface border border-aq-border rounded-lg">
+                                <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                                <div class="h-[42px] flex items-center justify-center bg-aq-surface  ">
                                     <input type="checkbox" id="procesoEstado" class="w-5 h-5 cursor-pointer" style="accent-color: rgb(74 124 89);">
                                 </div>
                             </div>
                         </div>
                         <div class="flex-1">
                             <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
-                            <input type="text" id="procesoNombre" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre del proceso">
+                            <input type="text" id="procesoNombre" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre del proceso">
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-aq-text mb-1">Glosa / Descripción</label>
-                        <input type="text" id="procesoGlosa" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Descripción adicional">
+                        <input type="text" id="procesoGlosa" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Descripción adicional">
                     </div>
                 </form>
             </div>
@@ -172,27 +172,27 @@
                             <div class="flex-1">
                                 <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
                                 <div class="flex gap-2">
-                                    <input type="number" id="empleadoCod" class="flex-1 px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
-                                    <button type="button" onclick="abrirListaEmpleados()" class="px-3 py-2 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                    <input type="number" id="empleadoCod" class="flex-1 px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
+                                    <button type="button" onclick="abrirListaEmpleados()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
                                         <i class='bx bx-search'></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="w-24">
-                                <label class="block text-sm font-medium text-aq-text mb-1">Activo</label>
-                                <div class="h-[42px] flex items-center justify-center bg-aq-surface border border-aq-border rounded-lg">
+                                <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                                <div class="h-[42px] flex items-center justify-center bg-aq-surface  ">
                                     <input type="checkbox" id="empleadoEstado" class="w-5 h-5 cursor-pointer" style="accent-color: rgb(74 124 89);">
                                 </div>
                             </div>
                         </div>
                         <div class="flex-1">
                             <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
-                            <input type="text" id="empleadoNombre" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre del empleado">
+                            <input type="text" id="empleadoNombre" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre del empleado">
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-aq-text mb-1">Glosa / Descripción</label>
-                        <input type="text" id="empleadoGlosa" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Descripción adicional">
+                        <input type="text" id="empleadoGlosa" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Descripción adicional">
                     </div>
                 </form>
             </div>
@@ -209,30 +209,30 @@
                             <div class="flex-1">
                                 <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
                                 <div class="flex gap-2">
-                                    <input type="number" id="cpagoCod" class="flex-1 px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
-                                    <button type="button" onclick="abrirListaCpagos()" class="px-3 py-2 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                    <input type="number" id="cpagoCod" class="flex-1 px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
+                                    <button type="button" onclick="abrirListaCpagos()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
                                         <i class='bx bx-search'></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="w-24">
-                                <label class="block text-sm font-medium text-aq-text mb-1">Activo</label>
-                                <div class="h-[42px] flex items-center justify-center bg-aq-surface border border-aq-border rounded-lg">
+                                <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                                <div class="h-[42px] flex items-center justify-center bg-aq-surface ">
                                     <input type="checkbox" id="cpagoEstado" class="w-5 h-5 cursor-pointer" style="accent-color: rgb(74 124 89);">
                                 </div>
                             </div>
                         </div>
                         <div class="flex-1">
                             <label class="block text-sm font-medium text-aq-text mb-1">Descripción</label>
-                            <input type="text" id="cpagoDescr" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Descripción">
+                            <input type="text" id="cpagoDescr" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Descripción">
                         </div>
                         <div class="flex-1">
                             <label class="block text-sm font-medium text-aq-text mb-1">Días</label>
-                            <input type="number" id="cpagoDias" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Días">
+                            <input type="number" id="cpagoDias" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Días">
                         </div>
                         <div class="flex-1">
                             <label class="block text-sm font-medium text-aq-text mb-1">Glosa / Notas</label>
-                            <input type="text" id="cpagoGlosa" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Notas">
+                            <input type="text" id="cpagoGlosa" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Notas">
                         </div>
                     </div>
                 </form>
@@ -250,22 +250,22 @@
                             <div class="flex-1">
                                 <label class="block text-sm font-medium text-aq-text mb-1">RUT</label>
                                 <div class="flex gap-2">
-                                    <input type="text" id="transportistaRut" class="flex-1 px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="RUT">
-                                    <button type="button" onclick="abrirListaTransportistas()" class="px-3 py-2 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                    <input type="text" id="transportistaRut" class="flex-1 px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="RUT">
+                                    <button type="button" onclick="abrirListaTransportistas()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
                                         <i class='bx bx-search'></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="w-24">
-                                <label class="block text-sm font-medium text-aq-text mb-1">Activo</label>
-                                <div class="h-[42px] flex items-center justify-center bg-aq-surface border border-aq-border rounded-lg">
+                                <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                                <div class="h-[42px] flex items-center justify-center bg-aq-surface  ">
                                     <input type="checkbox" id="transportistaEstado" class="w-5 h-5 cursor-pointer" style="accent-color: rgb(74 124 89);">
                                 </div>
                             </div>
                         </div>
                         <div class="flex-1">
                             <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
-                            <input type="text" id="transportistaNombre" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre del transportista">
+                            <input type="text" id="transportistaNombre" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre del transportista">
                         </div>
                     </div>
                 </form>
@@ -274,7 +274,7 @@
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-lg font-medium text-aq-text">Patentes</h3>
                         <div class="flex gap-2">
-                            <button type="button" id="btnAgregarPatente" onclick="abrirModalPatente()" class="px-3 py-1.5 rounded-lg bg-aq-primary text-white text-sm hover:opacity-85 flex items-center gap-1">
+                            <button type="button" id="btnAgregarPatente" onclick="abrirModalPatente()" class="px-3 py-1.5  bg-aq-primary text-white text-sm hover:opacity-85 flex items-center gap-1">
                                 <i class="bx bx-plus"></i> Agregar
                             </button>
                         </div>
@@ -300,17 +300,17 @@
 </div>
 
 <div id="modalPatente" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-aq-surface rounded-lg p-4 sm:p-6 w-full max-w-sm border border-aq-border">
+    <div class="bg-aq-surface  p-4 sm:p-6 w-full max-w-sm border border-aq-border">
         <h3 class="text-lg font-semibold text-aq-text mb-4">Agregar Patente</h3>
         <div class="mb-4">
             <label class="block text-sm font-medium text-aq-text mb-1">Patente</label>
-            <input type="text" id="patenteInput" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text uppercase" placeholder="Ingrese patente" maxlength="8">
+            <input type="text" id="patenteInput" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text uppercase" placeholder="Ingrese patente" maxlength="8">
         </div>
         <div class="flex justify-end gap-2">
-            <button onclick="cerrarModalPatente()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+            <button onclick="cerrarModalPatente()" class="px-4 py-2  border border-aq-border text-aq-text hover:bg-aq-surface-2">
                 Cancelar
             </button>
-            <button onclick="confirmarAgregarPatente()" class="px-4 py-2 rounded-lg bg-aq-primary text-white hover:opacity-85">
+            <button onclick="confirmarAgregarPatente()" class="px-4 py-2  bg-aq-primary text-white hover:opacity-85">
                 Agregar
             </button>
         </div>

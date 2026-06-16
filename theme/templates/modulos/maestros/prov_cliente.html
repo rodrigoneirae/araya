@@ -13,9 +13,9 @@
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-aq-text mb-1">RUT</label>
                     <div class="flex items-center gap-2">
-                        <input type="text" id="rut" name="rut" onkeyup="if(event.key==='Enter')buscarPorRut()" class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text uppercase" placeholder="RUT">
-                        <input type="text" id="dig_ver" name="dig_ver" class="w-10 sm:w-12 px-2 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text uppercase" placeholder="DV">
-                        <button type="button" onclick="abrirListaClientes()" class="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                        <input type="text" id="rut" name="rut" maxlength="13" onkeyup="if(event.key==='Enter')buscarPorRut()" class="flex-1 min-w-0 px-3 py-2  border border-aq-border bg-aq-bg text-aq-text uppercase" placeholder="RUT">
+                        <input type="text" id="dig_ver" name="dig_ver" maxlength="1" class="w-10 sm:w-12 px-2 py-2  border border-aq-border bg-aq-bg text-aq-text uppercase" placeholder="DV">
+                        <button type="button" onclick="abrirListaClientes()" class="w-9 h-9 flex-shrink-0 flex items-center justify-center  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
                             <i class='bx bx-search'></i>
                         </button>
                     </div>
@@ -23,71 +23,71 @@
 
                 <div>
                     <label class="block text-sm font-medium text-aq-text mb-1">Tipo</label>
-                    <select id="tipo" name="tipo" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <select id="tipo" name="tipo" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                         <option value="">--- Seleccionar Tipo ---</option>
                     </select>
                 </div>
 
                 <div class="sm:col-span-2 lg:col-span-3">
                     <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
-                    <input type="text" id="nombre" name="nombre" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <input type="text" id="nombre" name="nombre" maxlength="50" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-aq-text mb-1">Sigla</label>
-                    <input type="text" id="sigla" name="sigla" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <input type="text" id="sigla" name="sigla" maxlength="20" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                 </div>
 
                 <div class="sm:col-span-2 lg:col-span-2">
                     <label class="block text-sm font-medium text-aq-text mb-1">Giro</label>
-                    <input type="text" id="giro" name="giro" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <input type="text" id="giro" name="giro" maxlength="50" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                 </div>
 
                 <div class="lg:col-span-3">
                     <label class="block text-sm font-medium text-aq-text mb-1">Dirección</label>
-                    <input type="text" id="direccion" name="direccion" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <input type="text" id="direccion" name="direccion" maxlength="50" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-aq-text mb-1">Fono</label>
-                    <input type="text" id="fono" name="fono" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <input type="text" id="fono" name="fono" maxlength="20" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-aq-text mb-1">Comuna</label>
-                    <input type="text" id="comuna" name="comuna" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <input type="text" id="comuna" name="comuna" maxlength="18" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-aq-text mb-1">Ciudad</label>
-                    <input type="text" id="ciudad" name="ciudad" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <input type="text" id="ciudad" name="ciudad" maxlength="20" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-aq-text mb-1">Condición de Pago</label>
-                    <select id="cpago" name="cpago" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <select id="cpago" name="cpago" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                         <option value="">--- Seleccionar ---</option>
                     </select>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-aq-text mb-1">Fax</label>
-                    <input type="text" id="fax" name="fax" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <input type="text" id="fax" name="fax" maxlength="20" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-aq-text mb-1">Email</label>
-                    <input type="email" id="email" name="email" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <input type="email" id="email" name="email" maxlength="50" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-aq-text mb-1">Contacto</label>
-                    <input type="text" id="contacto" name="contacto" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <input type="text" id="contacto" name="contacto" maxlength="50" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-aq-text mb-1">Email Contacto</label>
-                    <input type="email" id="emailcontacto" name="emailcontacto" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <input type="email" id="emailcontacto" name="emailcontacto" maxlength="50" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                 </div>
             </div>
         </form>

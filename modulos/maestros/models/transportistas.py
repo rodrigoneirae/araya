@@ -10,9 +10,7 @@ class Transportistas(models.Model):
 
     class Meta:
         db_table = 'Transportistas'
-        verbose_name = 'Transportista'
-        verbose_name_plural = 'Transportistas'
-        managed = True
+        default_permissions = ()
 
     def __str__(self):
         return f"{self.nombre} ({self.rut})"
@@ -29,9 +27,7 @@ class Patentes(models.Model):
 
     class Meta:
         db_table = 'Patentes'
-        verbose_name = 'Patente'
-        verbose_name_plural = 'Patentes'
-        managed = True
+        default_permissions = ()
 
     def __str__(self):
         return self.patente

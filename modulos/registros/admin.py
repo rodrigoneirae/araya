@@ -5,7 +5,6 @@ from .models import RegistroArticuloCabecera, RegistroArticuloDetalle
 class RegistroArticuloDetalleInline(admin.TabularInline):
     model = RegistroArticuloDetalle
     extra = 0
-    readonly_fields = ('articulo', 'cantidad', 'observacion')
 
 
 @admin.register(RegistroArticuloCabecera)

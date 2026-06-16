@@ -43,10 +43,23 @@ class EmpleadoSearchAPIView(APIView):
 class RegistroArticuloListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    def _get_encargado_cod(self, request):
+        try:
+            empleado = Empleados.objects.get(user=request.user)
+            return empleado.cod
+        except Empleados.DoesNotExist:
+            return None
+
     def get_queryset(self):
-        qs = RegistroArticuloCabecera.objects.filter(
-            usuario=self.request.user,
-        ).prefetch_related('detalles__articulo')
+        cod_encargado = self._get_encargado_cod(self.request)
+        if cod_encargado is not None:
+            qs = RegistroArticuloCabecera.objects.filter(
+                Q(usuario=self.request.user) | Q(codencargado=cod_encargado),
+            ).prefetch_related('detalles__articulo')
+        else:
+            qs = RegistroArticuloCabecera.objects.filter(
+                usuario=self.request.user,
+            ).prefetch_related('detalles__articulo')
         estado = self.request.query_params.get('estado')
         if estado:
             qs = qs.filter(estado=estado.upper())
@@ -72,6 +85,16 @@ class RegistroArticuloDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        cod_encargado = None
+        try:
+            empleado = Empleados.objects.get(user=self.request.user)
+            cod_encargado = empleado.cod
+        except Empleados.DoesNotExist:
+            pass
+        if cod_encargado is not None:
+            return RegistroArticuloCabecera.objects.filter(
+                Q(usuario=self.request.user) | Q(codencargado=cod_encargado),
+            ).prefetch_related('detalles__articulo')
         return RegistroArticuloCabecera.objects.filter(
             usuario=self.request.user,
         ).prefetch_related('detalles__articulo')

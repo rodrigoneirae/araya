@@ -7,8 +7,6 @@ import '../services/sync_service.dart';
 import '../services/theme_service.dart';
 import 'login_screen.dart';
 import 'ot_list_screen.dart';
-import 'registro_form_screen.dart';
-import 'registros_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ApiService apiService;
@@ -272,38 +270,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => OTListScreen(
-                        apiService: widget.apiService,
-                      ),
-                    ),
-                  ),
-                ),
-                Divider(height: 1, indent: 16, endIndent: 16,
-                    color: isDark ? ArayaColors.darkBorder : ArayaColors.lightBorder),
-                _menuItem(
-                  icon: Icons.add_circle_outline,
-                  title: 'Nuevo Registro',
-                  subtitle: 'Ingresar artículos',
-                  color: cs.primary,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => RegistroFormScreen(
-                        apiService: widget.apiService,
-                      ),
-                    ),
-                  ),
-                ),
-                Divider(height: 1, indent: 16, endIndent: 16,
-                    color: isDark ? ArayaColors.darkBorder : ArayaColors.lightBorder),
-                _menuItem(
-                  icon: Icons.list_alt,
-                  title: 'Mis Registros',
-                  subtitle: _pendingCount > 0
-                      ? '$_pendingCount pendientes de sync'
-                      : 'Ver registros ingresados',
-                  color: cs.primary,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => RegistrosListScreen(
                         apiService: widget.apiService,
                       ),
                     ),

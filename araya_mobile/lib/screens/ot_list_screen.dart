@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../constants/araya_theme.dart';
@@ -15,11 +17,12 @@ class OTListScreen extends StatefulWidget {
   State<OTListScreen> createState() => _OTListScreenState();
 }
 
-class _OTListScreenState extends State<OTListScreen> {
+class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver {
   bool _loading = true;
   String? _error;
   List<OrdenTrabajo> _ots = [];
   String _estadoFiltro = 'Abierto';
+  Timer? _refreshTimer;
 
   static const _estados = ['Abierto', 'Cerrado'];
 
@@ -36,14 +39,32 @@ class _OTListScreenState extends State<OTListScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _fetch();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _fetch(silent: true));
   }
 
-  Future<void> _fetch() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _fetch(silent: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetch({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
 
     try {
       final ots = await widget.apiService.fetchOTs(estado: _estadoFiltro);
@@ -54,10 +75,12 @@ class _OTListScreenState extends State<OTListScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = 'Error al cargar órdenes de trabajo';
-      });
+      if (!silent) {
+        setState(() {
+          _loading = false;
+          _error = 'Error al cargar órdenes de trabajo';
+        });
+      }
     }
   }
 
@@ -181,14 +204,17 @@ class _OTListScreenState extends State<OTListScreen> {
                                   return Card(
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(16),
-                                      onTap: () => Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => OTDetailScreen(
-                                            apiService: widget.apiService,
-                                            numero: ot.numero,
+                                      onTap: () async {
+                                        await Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => OTDetailScreen(
+                                              apiService: widget.apiService,
+                                              numero: ot.numero,
+                                            ),
                                           ),
-                                        ),
-                                      ),
+                                        );
+                                        _fetch();
+                                      },
                                       child: Padding(
                                         padding: const EdgeInsets.all(16),
                                         child: Column(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../constants/araya_theme.dart';
@@ -21,23 +23,42 @@ class OTDetailScreen extends StatefulWidget {
   State<OTDetailScreen> createState() => _OTDetailScreenState();
 }
 
-class _OTDetailScreenState extends State<OTDetailScreen> {
+class _OTDetailScreenState extends State<OTDetailScreen> with WidgetsBindingObserver {
   bool _loading = true;
   String? _error;
   OrdenTrabajoDetalle? _ot;
   List<RegistroArticulo> _registros = [];
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _fetch();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _fetch(silent: true));
   }
 
-  Future<void> _fetch() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _fetch(silent: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetch({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
 
     try {
       final results = await Future.wait([
@@ -49,13 +70,16 @@ class _OTDetailScreenState extends State<OTDetailScreen> {
         _ot = results[0] as OrdenTrabajoDetalle?;
         _registros = results[1] as List<RegistroArticulo>;
         _loading = false;
+        if (!silent) _error = null;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = 'Error al cargar orden de trabajo';
-      });
+      if (!silent) {
+        setState(() {
+          _loading = false;
+          _error = 'Error al cargar orden de trabajo';
+        });
+      }
     }
   }
 
@@ -118,166 +142,218 @@ class _OTDetailScreenState extends State<OTDetailScreen> {
     final ot = _ot!;
     final estadoColor = _estadoColor(ot.estado);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: estadoColor.withValues(alpha: isDark ? 0.2 : 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          ot.estado,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: estadoColor,
+    return RefreshIndicator(
+      onRefresh: _fetch,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: estadoColor.withValues(alpha: isDark ? 0.2 : 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            ot.estado,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: estadoColor,
+                            ),
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        'OT ${ot.numero.toInt()}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                        const Spacer(),
+                        Text(
+                          'OT ${ot.numero.toInt()}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    _infoRow(Icons.calendar_today, 'Fecha', _formatFecha(ot.fecha), isDark),
+                    if (ot.encargado != null) ...[
+                      const SizedBox(height: 8),
+                      _infoRow(Icons.person, 'Encargado', ot.encargado!.nombre, isDark),
                     ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Divider(),
-                  const SizedBox(height: 8),
-                  _infoRow(Icons.calendar_today, 'Fecha', _formatFecha(ot.fecha), isDark),
-                  if (ot.encargado != null) ...[
-                    const SizedBox(height: 8),
-                    _infoRow(Icons.person, 'Encargado', ot.encargado!.nombre, isDark),
+                    if (ot.procesoNombre != null) ...[
+                      const SizedBox(height: 8),
+                      _infoRow(Icons.build_outlined, 'Proceso', ot.procesoNombre!, isDark),
+                    ],
+                    if (ot.glosa != null && ot.glosa!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      _infoRow(Icons.note, 'Glosa', ot.glosa!, isDark),
+                    ],
                   ],
-                  if (ot.procesoNombre != null) ...[
-                    const SizedBox(height: 8),
-                    _infoRow(Icons.build_outlined, 'Proceso', ot.procesoNombre!, isDark),
-                  ],
-                  if (ot.glosa != null && ot.glosa!.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    _infoRow(Icons.note, 'Glosa', ot.glosa!, isDark),
-                  ],
-                ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.list_alt, color: cs.primary, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Detalles (${ot.detalles.length})',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.list_alt, color: cs.primary, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Detalles (${ot.detalles.length})',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        'Total: ${ot.stats.totalCantidad.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Divider(),
-                  ...ot.detalles.map((d) => _detalleItem(d, isDark)),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.history, color: cs.primary, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Historial (${_registros.length})',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Divider(),
-                  if (_registros.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Center(
-                        child: Text(
-                          'Sin registros',
+                        const Spacer(),
+                        Text(
+                          'Total: ${ot.stats.totalCantidad.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontSize: 13,
                             color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
                           ),
                         ),
-                      ),
-                    )
-                  else
-                    ..._registros.map((r) => _historialItem(r, isDark, cs)),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    ...ot.detalles.map((d) => _detalleItem(d, isDark)),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          if (ot.estado == 'Abierto')
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => RegistroFormScreen(
-                      apiService: widget.apiService,
-                      ordenTrabajoDetalle: ot,
-                    ),
+            if (ot.parteEntrada.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.assignment_return, color: cs.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Parte de Entrada (${ot.parteEntrada.length})',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Divider(),
+                      ...ot.parteEntrada.map((s) => _subitemItem(s, isDark, cs)),
+                    ],
                   ),
-                );
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Crear Registro'),
+                ),
+              ),
+            ],
+            if (ot.valeConsumo.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.outbox, color: cs.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Vale de Consumo (${ot.valeConsumo.length})',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Divider(),
+                      ...ot.valeConsumo.map((s) => _subitemItem(s, isDark, cs)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (_registros.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.history, color: cs.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Historial de Registro (${_registros.length})',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Divider(),
+                      ..._registros.map((r) => _registroItem(r, isDark, cs)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            if (ot.estado == 'Abierto')
+              OutlinedButton.icon(
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => RegistroFormScreen(
+                        apiService: widget.apiService,
+                        ordenTrabajoDetalle: ot,
+                      ),
+                    ),
+                  );
+                  _fetch();
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Crear Registro'),
+              ),
+            if (ot.estado == 'Abierto') const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.check),
+              label: const Text('Cerrar'),
             ),
-          if (ot.estado == 'Abierto') const SizedBox(height: 8),
-          FilledButton.icon(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.check),
-            label: const Text('Cerrar'),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -312,9 +388,96 @@ class _OTDetailScreenState extends State<OTDetailScreen> {
     );
   }
 
-  Widget _historialItem(RegistroArticulo r, bool isDark, ColorScheme cs) {
+
+  Widget _subitemItem(MovsSubitem s, bool isDark, ColorScheme cs) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s.descr,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Text(
+                          s.codigo,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                          ),
+                        ),
+                        if (s.encargadoNombre != null && s.encargadoNombre!.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Icon(Icons.person, size: 12,
+                              color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted),
+                          const SizedBox(width: 3),
+                          Text(
+                            s.encargadoNombre!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: cs.primary,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                s.cantidad.toStringAsFixed(s.cantidad == s.cantidad.roundToDouble() ? 0 : 2),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                ),
+              ),
+            ],
+          ),
+          if (s.fecha != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.calendar_today, size: 11,
+                    color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted),
+                const SizedBox(width: 4),
+                Text(
+                  _formatFecha(s.fecha!),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _registroItem(RegistroArticulo r, bool isDark, ColorScheme cs) {
     final tipoColor = r.tipoRegistro == 'PE' ? Colors.blue : Colors.orange;
     final tipoLabel = r.tipoRegistro == 'PE' ? 'PE' : 'VC';
+    DateTime? fecha;
+    try {
+      fecha = DateTime.parse(r.fechaHora);
+    } catch (_) {}
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -351,11 +514,28 @@ class _OTDetailScreenState extends State<OTDetailScreen> {
               ),
             ],
           ),
+          if (fecha != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.calendar_today, size: 12,
+                    color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted),
+                const SizedBox(width: 4),
+                Text(
+                  _formatFecha(fecha),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (r.encargadoNombre != null && r.encargadoNombre!.isNotEmpty) ...[
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.person, size: 13,
+                Icon(Icons.person, size: 12,
                     color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted),
                 const SizedBox(width: 4),
                 Text(
@@ -407,7 +587,6 @@ class _OTDetailScreenState extends State<OTDetailScreen> {
               ],
             ),
           )),
-          if (r != _registros.last) const Divider(),
         ],
       ),
     );

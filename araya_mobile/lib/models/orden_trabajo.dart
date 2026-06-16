@@ -22,6 +22,7 @@ class OTDetalle {
   final double cantidad;
   final double punit;
   final double neto;
+  final double pendiente;
 
   OTDetalle({
     required this.linea,
@@ -31,6 +32,7 @@ class OTDetalle {
     required this.cantidad,
     required this.punit,
     required this.neto,
+    this.pendiente = 0,
   });
 
   factory OTDetalle.fromJson(Map<String, dynamic> json) {
@@ -42,6 +44,7 @@ class OTDetalle {
       cantidad: (json['cantidad'] as num?)?.toDouble() ?? 0,
       punit: (json['punit'] as num?)?.toDouble() ?? 0,
       neto: (json['neto'] as num?)?.toDouble() ?? 0,
+      pendiente: (json['pendiente'] as num?)?.toDouble() ?? 0,
     );
   }
 }
@@ -49,13 +52,19 @@ class OTDetalle {
 class OTStats {
   final int totalDetalle;
   final double totalCantidad;
+  final double totalPendiente;
 
-  OTStats({required this.totalDetalle, required this.totalCantidad});
+  OTStats({
+    required this.totalDetalle,
+    required this.totalCantidad,
+    this.totalPendiente = 0,
+  });
 
   factory OTStats.fromJson(Map<String, dynamic> json) {
     return OTStats(
       totalDetalle: json['total_detalle'] as int? ?? 0,
       totalCantidad: (json['total_cantidad'] as num?)?.toDouble() ?? 0,
+      totalPendiente: (json['total_pendiente'] as num?)?.toDouble() ?? 0,
     );
   }
 }
@@ -104,6 +113,41 @@ class OrdenTrabajo {
   }
 }
 
+class MovsSubitem {
+  final int? tipoCod;
+  final double linea;
+  final String codigo;
+  final String descr;
+  final double cantidad;
+  final DateTime? fecha;
+  final double? codencargado;
+  final String? encargadoNombre;
+
+  MovsSubitem({
+    this.tipoCod,
+    required this.linea,
+    required this.codigo,
+    required this.descr,
+    required this.cantidad,
+    this.fecha,
+    this.codencargado,
+    this.encargadoNombre,
+  });
+
+  factory MovsSubitem.fromJson(Map<String, dynamic> json) {
+    return MovsSubitem(
+      tipoCod: json['tipo_cod'] as int?,
+      linea: (json['linea'] as num?)?.toDouble() ?? 0,
+      codigo: json['codigo'] as String? ?? '',
+      descr: json['descr'] as String? ?? '',
+      cantidad: (json['cantidad'] as num?)?.toDouble() ?? 0,
+      fecha: json['fecha'] != null ? DateTime.parse(json['fecha'] as String) : null,
+      codencargado: (json['codencargado'] as num?)?.toDouble(),
+      encargadoNombre: json['encargado_nombre'] as String?,
+    );
+  }
+}
+
 class OrdenTrabajoDetalle {
   final double numero;
   final DateTime fecha;
@@ -114,6 +158,8 @@ class OrdenTrabajoDetalle {
   final String estado;
   final String? glosa;
   final List<OTDetalle> detalles;
+  final List<MovsSubitem> parteEntrada;
+  final List<MovsSubitem> valeConsumo;
   final OTStats stats;
 
   OrdenTrabajoDetalle({
@@ -126,6 +172,8 @@ class OrdenTrabajoDetalle {
     required this.estado,
     this.glosa,
     required this.detalles,
+    this.parteEntrada = const [],
+    this.valeConsumo = const [],
     required this.stats,
   });
 
@@ -143,6 +191,14 @@ class OrdenTrabajoDetalle {
       glosa: json['glosa'] as String?,
       detalles: (json['detalles'] as List<dynamic>?)
               ?.map((e) => OTDetalle.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      parteEntrada: (json['parte_entrada'] as List<dynamic>?)
+              ?.map((e) => MovsSubitem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      valeConsumo: (json['vale_consumo'] as List<dynamic>?)
+              ?.map((e) => MovsSubitem.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
       stats: OTStats.fromJson(json['stats'] as Map<String, dynamic>),

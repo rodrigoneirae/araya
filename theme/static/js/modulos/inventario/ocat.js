@@ -115,6 +115,32 @@ function cargarDatosIniciales() {
         }
     });
 
+    buscarXHROcat('listar_clasificaciones', {}, function(data) {
+        const select = document.getElementById('ocatArtCategoria');
+        if (select && data.clasificaciones) {
+            data.clasificaciones.forEach(c => {
+                const option = document.createElement('option');
+                option.value = c.codigo;
+                option.textContent = c.codigo + ' - ' + c.descripcion;
+                select.appendChild(option);
+            });
+            actualizarSelect2(select);
+        }
+    });
+
+    buscarXHROcat('listar_tratamientos', {}, function(data) {
+        const select = document.getElementById('ocatArtTratamiento');
+        if (select && data.tratamientos) {
+            data.tratamientos.forEach(t => {
+                const option = document.createElement('option');
+                option.value = t.codigo_ler;
+                option.textContent = t.codigo_ler + ' - ' + t.descripcion;
+                select.appendChild(option);
+            });
+            actualizarSelect2(select);
+        }
+    });
+
     const transpSelect = document.getElementById('ocatTransportista');
     const patenteSelect = document.getElementById('ocatPatente');
     if (transpSelect) {
@@ -222,7 +248,7 @@ function actualizarSelect2(el) {
 }
 
 function setCamposOcatEditable(editable) {
-    const inputs = ['ocatFecha', 'ocatProveedor', 'ocatTipoDoc', 'ocatRef', 'ocatEncargado', 'ocatArtCod', 'ocatArtCant', 'ocatArtPUnit', 'ocatArtFecha', 'ocatNeto', 'ocatTotal', 'ocatTransportista', 'ocatPatente', 'ocatPeso'];
+    const inputs = ['ocatFecha', 'ocatProveedor', 'ocatTipoDoc', 'ocatRef', 'ocatEncargado', 'ocatArtCod', 'ocatArtCant', 'ocatArtPUnit', 'ocatArtFecha', 'ocatArtPeso', 'ocatNeto', 'ocatTotal', 'ocatTransportista', 'ocatPatente', 'ocatPeso'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -238,6 +264,18 @@ function setCamposOcatEditable(editable) {
     if (bodega) {
         bodega.disabled = !editable;
         actualizarSelect2(bodega);
+    }
+
+    const categoria = document.getElementById('ocatArtCategoria');
+    if (categoria) {
+        categoria.disabled = !editable;
+        actualizarSelect2(categoria);
+    }
+
+    const tratamiento = document.getElementById('ocatArtTratamiento');
+    if (tratamiento) {
+        tratamiento.disabled = !editable;
+        actualizarSelect2(tratamiento);
     }
     
     const provBtn = document.querySelector('#ocatProveedor + button');
@@ -348,6 +386,9 @@ function agregarArticuloOcat() {
     const punit = parseFloat(document.getElementById('ocatArtPUnit').value) || 0;
     const bodega = document.getElementById('ocatArtBodega').value;
     const fecha = document.getElementById('ocatArtFecha').value;
+    const peso = parseFloat(document.getElementById('ocatArtPeso').value) || 0;
+    const categoria = document.getElementById('ocatArtCategoria').value;
+    const tratamiento = document.getElementById('ocatArtTratamiento').value;
 
     if (!cod) {
         Toastify({text: 'Ingrese código de artículo', style: {background: '#f44336'}}).showToast();
@@ -381,7 +422,12 @@ function agregarArticuloOcat() {
         estado: 'Abierto',
         subtotal: total,
         total: total,
-        cup: 0
+        cup: 0,
+        peso: peso,
+        categoria: categoria || null,
+        categoria_nombre: categoria ? (document.getElementById('ocatArtCategoria').selectedOptions[0]?.text.split(' - ')[1] || '') : '',
+        tratamiento: tratamiento || null,
+        tratamiento_nombre: tratamiento ? (document.getElementById('ocatArtTratamiento').selectedOptions[0]?.text.split(' - ')[1] || '') : ''
     });
 
     document.getElementById('ocatArtCod').value = '';
@@ -389,8 +435,13 @@ function agregarArticuloOcat() {
     document.getElementById('ocatArtUM').value = '';
     document.getElementById('ocatArtCant').value = '';
     document.getElementById('ocatArtPUnit').value = '';
+    document.getElementById('ocatArtPeso').value = '';
+    document.getElementById('ocatArtCategoria').value = '';
+    document.getElementById('ocatArtTratamiento').value = '';
     document.getElementById('ocatArtBodega').value = 1;
     actualizarSelect2(document.getElementById('ocatArtBodega'));
+    actualizarSelect2(document.getElementById('ocatArtCategoria'));
+    actualizarSelect2(document.getElementById('ocatArtTratamiento'));
     document.getElementById('ocatArtCod').focus();
 
     renderizarDetalleOcat();
@@ -408,7 +459,7 @@ function renderizarDetalleOcat() {
     tbody.innerHTML = '';
     
     if (detallesOcat.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="13" class="px-3 py-4 text-center text-aq-text">Sin artículos agregados</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="17" class="px-3 py-4 text-center text-aq-text">Sin artículos agregados</td></tr>';
         document.getElementById('resumenProceso').innerHTML = 'Sin proceso';
         document.getElementById('resumenSaldoCUP').textContent = '0';
         document.getElementById('resumenNuevoSaldo').textContent = '0';
@@ -469,9 +520,11 @@ const totalEncabezado = parseFloat(document.getElementById('ocatTotal').value) |
             <td class="px-1 py-1 text-aq-text text-right">${d.punit ? d.punit.toFixed(0) : 0}</td>
             <td class="px-1 py-1 text-aq-text">${d.um || ''}</td>
             <td class="px-1 py-1 text-aq-text">${d.bodega || ''}</td>
+            <td class="px-1 py-1 text-aq-text text-right">${d.peso || 0}</td>
             <td class="px-1 py-1 text-aq-text text-right">${d.canttotal || 0}</td>
             <td class="px-1 py-1 text-aq-text text-right">${d.falta !== undefined ? d.falta : faltaFinal}</td>
-            <td class="px-1 py-1 text-aq-text">${d.proceso || ''} - ${d.proceso_nombre || ''}</td>
+            <td class="px-1 py-1 text-aq-text">${d.categoria ? d.categoria + ' - ' + (d.categoria_nombre || '') : ''}</td>
+            <td class="px-1 py-1 text-aq-text">${d.tratamiento ? d.tratamiento + ' - ' + (d.tratamiento_nombre || '') : ''}</td>
             <td class="px-1 py-1 text-aq-text">${fechaFmt}</td>
             <td class="px-1 py-1 text-aq-text">${d.estado || ''}</td>
             <td class="px-1 py-1 text-aq-text text-right">${subtotal.toFixed(0)}</td>
@@ -771,7 +824,12 @@ function cargarOcat(numero) {
                 estado: d.estado || '',
                 subtotal: (d.cantidad || 0) * (d.punit || 0),
                 total: d.total || 0,
-                cup: d.cup || 0
+                cup: d.cup || 0,
+                peso: d.peso || 0,
+                categoria: d.categoria || null,
+                categoria_nombre: d.categoria_nombre || '',
+                tratamiento: d.tratamiento || null,
+                tratamiento_nombre: d.tratamiento_nombre || ''
             }));
             let sumaCant = 0;
             detallesOcat.forEach(d => { sumaCant += d.cantidad || 0; });

@@ -2,6 +2,8 @@ from django.contrib import admin
 from .models.auxiliares import TipoArticulo, UnidadMedida
 from .models.transportistas import Transportistas, Patentes
 from .models.empleados import Empleados
+from .models.clasificacion import Clasificacion
+from .models.tratamiento_ler import TratamientoLER
 
 
 @admin.register(TipoArticulo)
@@ -44,3 +46,17 @@ class EmpleadosAdmin(admin.ModelAdmin):
     search_fields = ('cod', 'nombre')
     list_filter = ('estado',)
     raw_id_fields = ('user',)
+
+
+@admin.register(Clasificacion)
+class ClasificacionAdmin(admin.ModelAdmin):
+    list_display = ('codigo', 'descripcion')
+    search_fields = ('codigo', 'descripcion')
+    ordering = ('codigo',)
+
+
+@admin.register(TratamientoLER)
+class TratamientoLERAdmin(admin.ModelAdmin):
+    list_display = ('codigo_ler', 'descripcion', 'codigo_ara')
+    search_fields = ('codigo_ler', 'descripcion', 'codigo_ara')
+    ordering = ('codigo_ler',)

@@ -118,8 +118,9 @@
 
             <div id="contenido-detalle" class="tab-content hidden flex flex-col h-full">
                 <h3 class="text-lg font-semibold text-aq-text mb-3">Detalle de Artículos</h3>
-                <div class="w-full lg:w-1/2">
+                <div class="w-full">
                     <div class="flex gap-2 mb-3 flex-wrap items-end">
+
                     <div class="w-24 sm:w-28 md:w-32">
                         <div class="flex h-[34px]">
                             <input type="text" id="ocatArtCod" onchange="buscarArticuloInput()" class="w-full px-2 py-1.5 rounded-l-lg border border-aq-border bg-aq-bg text-aq-text text-xs" placeholder="Código">
@@ -148,14 +149,28 @@
                     <div class="w-28 sm:w-32">
                         <input type="date" id="ocatArtFecha" class="w-full px-2 py-1.5  border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
                     </div>
-                    <button type="button" onclick="agregarArticuloOcat()" class="px-3 py-1.5  bg-aq-primary text-white hover:opacity-85 text-xs h-[34px]" title="Agregar">
+                    <div class="w-20 sm:w-24">
+                        <input type="number" id="ocatArtPeso" class="w-full px-2 py-1.5  border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="Peso">
+                    </div>
+                    <div class="w-28 sm:w-32 md:w-36">
+                        <select id="ocatArtCategoria" class="w-full px-2 py-1.5  border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
+                            <option value="">Categoría</option>
+                        </select>
+                    </div>
+                    <div class="w-28 sm:w-32 md:w-36">
+                        <select id="ocatArtTratamiento" class="w-full px-2 py-1.5  border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
+                            <option value="">Tratamiento</option>
+                        </select>
+                    </div>
+                            <button type="button" onclick="agregarArticuloOcat()" class="px-3 py-1.5  bg-aq-primary text-white hover:opacity-85 text-xs h-[34px]" title="Agregar">
                         <i class='bx bx-plus'></i>
                     </button>
                 </div>
+
                 </div>
                 <div class="w-full flex-1 overflow-auto min-h-0">
                     <div class="overflow-x-auto min-w-0">
-                        <table class="w-full border-collapse min-w-[800px]">
+                        <table class="w-full border-collapse min-w-[1000px]">
                             <thead>
                                 <tr class="bg-aq-surface-2 text-aq-text text-xs">
                                     <th class="px-1 py-2 text-left whitespace-nowrap">Código</th>
@@ -164,9 +179,11 @@
                                     <th class="px-1 py-2 text-right whitespace-nowrap">P.Unit</th>
                                     <th class="px-1 py-2 text-left whitespace-nowrap">UM</th>
                                     <th class="px-1 py-2 text-left whitespace-nowrap">Bodega</th>
+                                    <th class="px-1 py-2 text-right whitespace-nowrap">Peso</th>
                                     <th class="px-1 py-2 text-right whitespace-nowrap">CantTotal</th>
                                     <th class="px-1 py-2 text-right whitespace-nowrap">Falta</th>
-                                    <th class="px-1 py-2 text-left whitespace-nowrap">Proceso</th>
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">Categoría</th>
+                                    <th class="px-1 py-2 text-left whitespace-nowrap">Tratamiento</th>
                                     <th class="px-1 py-2 text-left whitespace-nowrap">Fecha</th>
                                     <th class="px-1 py-2 text-left whitespace-nowrap">Estado</th>
                                     <th class="px-1 py-2 text-right whitespace-nowrap">Subtotal</th>

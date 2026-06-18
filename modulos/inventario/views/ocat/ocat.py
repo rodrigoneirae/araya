@@ -13,6 +13,8 @@ from modulos.maestros.models.articulos import Articulos
 from modulos.maestros.models.procesos import Procesos
 from modulos.maestros.models.bodegas import Bodegas
 from modulos.maestros.models.transportistas import Transportistas, Patentes
+from modulos.maestros.models.clasificacion import Clasificacion
+from modulos.maestros.models.tratamiento_ler import TratamientoLER
 
 
 class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
@@ -43,6 +45,8 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             "listar_transportistas": lambda _: self._listar_transportistas(),
             "listar_patentes": lambda d: self._listar_patentes(d.get("rut")),
             "buscar_por_patente": lambda d: self._buscar_por_patente(d.get("patente")),
+            "listar_clasificaciones": lambda _: self._listar_clasificaciones(),
+            "listar_tratamientos": lambda _: self._listar_tratamientos(),
         }
         return handlers.get(action, lambda _: JsonResponse({"success": False, "message": "Acción inválida"}))
 
@@ -130,13 +134,20 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
 
             detalles = list(movs.exclude(linea=0).filter(tipo=7).values(
                 "codigo", "cantidad", "punit", "total", "bodega", "linea",
-                "canttotal", "neto", "iva", "proceso", "fecha", "estado", "cup"
+                "canttotal", "neto", "iva", "proceso", "fecha", "estado", "cup",
+                "peso", "categoria", "tratamiento"
             ))
 
             procesos_map = {float(p.cod): p.nombre for p in Procesos.objects.all()}
+            clasificaciones_map = {str(c.codigo): c.descripcion for c in Clasificacion.objects.all()}
+            tratamientos_map = {str(t.codigo_ler): t.descripcion for t in TratamientoLER.objects.all()}
             for d in detalles:
                 if d.get("proceso"):
                     d["proceso_nombre"] = procesos_map.get(float(d["proceso"]), "")
+                if d.get("categoria"):
+                    d["categoria_nombre"] = clasificaciones_map.get(str(d["categoria"]), "")
+                if d.get("tratamiento"):
+                    d["tratamiento_nombre"] = tratamientos_map.get(str(d["tratamiento"]), "")
 
 
 
@@ -295,6 +306,10 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             )
 
             for i, det in enumerate(detalles, start=1):
+                cod_categoria = det.get("categoria") or None
+                cod_tratamiento = det.get("tratamiento") or None
+                categoria_obj = Clasificacion.objects.filter(codigo=cod_categoria).first() if cod_categoria else None
+                tratamiento_obj = TratamientoLER.objects.filter(codigo_ler=cod_tratamiento).first() if cod_tratamiento else None
                 Movs.objects.create(
                     numero=numero,
                     tipo=tipo,
@@ -313,6 +328,9 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     estado=estado,
                     bodega=float(det.get("bodega")) if det.get("bodega") else None,
                     proceso=det.get("proceso"),
+                    peso=float(det.get("peso", 0)) if det.get("peso") else None,
+                    categoria=categoria_obj,
+                    tratamiento=tratamiento_obj,
                     usr=usr,
                     timeuser=time_user
                 )
@@ -390,6 +408,14 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             })
         except Patentes.DoesNotExist:
             return JsonResponse({"success": False})
+
+    def _listar_clasificaciones(self) -> JsonResponse:
+        data = Clasificacion.objects.values("codigo", "descripcion").order_by("codigo")
+        return JsonResponse({"clasificaciones": list(data)})
+
+    def _listar_tratamientos(self) -> JsonResponse:
+        data = TratamientoLER.objects.values("codigo_ler", "descripcion", "codigo_ara").order_by("codigo_ler")
+        return JsonResponse({"tratamientos": list(data)})
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

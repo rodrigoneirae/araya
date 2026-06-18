@@ -2,6 +2,8 @@ from django.db import models
 
 from modulos.maestros.models import Articulos
 from modulos.maestros.models.docs import Docs
+from modulos.maestros.models.clasificacion import Clasificacion
+from modulos.maestros.models.tratamiento_ler import TratamientoLER
 
 
 class Movs(models.Model):
@@ -65,6 +67,21 @@ class Movs(models.Model):
 
     patente_id = models.IntegerField(blank=True, null=True)
 
+    peso = models.FloatField(db_column='Peso', blank=True, null=True)
+    categoria = models.ForeignKey(
+        Clasificacion,
+        db_column='Categoria',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True
+    )
+    tratamiento = models.ForeignKey(
+        TratamientoLER,
+        db_column='Tratamiento',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True
+    )
 
     class Meta:
         db_table = 'Movs'

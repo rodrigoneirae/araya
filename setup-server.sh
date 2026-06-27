@@ -128,8 +128,7 @@ sudo -u postgres psql -c "ALTER USER ${DB_USER} CREATEDB;"
 # -------- 7. .env de producción --------
 log "Generando .env de producción..."
 ENV_FILE="${APP_DIR}/.env"
-if [[ ! -f "$ENV_FILE" ]]; then
-  cat > "$ENV_FILE" <<EOF
+cat > "$ENV_FILE" <<EOF
 # --- Django ---
 DJANGO_SETTINGS_MODULE=araya.settings.prod
 DJANGO_SECRET_KEY=${SECRET_KEY}
@@ -157,9 +156,8 @@ DB_PORT=5432
 # SOFTLAND_HOST=
 # SOFTLAND_PORT=1433
 EOF
-  chown "${APP_USER}:${APP_USER}" "$ENV_FILE"
-  chmod 600 "$ENV_FILE"
-fi
+chown "${APP_USER}:${APP_USER}" "$ENV_FILE"
+chmod 600 "$ENV_FILE"
 
 # -------- 8. Migraciones y static --------
 log "Aplicando migraciones y collectstatic..."

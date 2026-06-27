@@ -306,6 +306,18 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
+
+if [[ -f /var/log/cloudflared.log ]]; then
+  chown "${APP_USER}:${APP_USER}" /var/log/cloudflared.log
+else
+  touch /var/log/cloudflared.log
+  chown "${APP_USER}:${APP_USER}" /var/log/cloudflared.log
+fi
+if [[ -d /etc/cloudflared ]]; then
+  chmod 755 /etc/cloudflared
+  chown -R "${APP_USER}:${APP_USER}" /etc/cloudflared
+fi
+
 systemctl enable --now cloudflared
 
 # -------- 13. Firewall --------

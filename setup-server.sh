@@ -22,7 +22,7 @@ DB_PASS="$(openssl rand -hex 16)"
 SECRET_KEY="$(openssl rand -hex 32)"
 CLOUDFLARED_VERSION="2024.12.2"
 GUNICORN_WORKERS=3
-GUNICORN_SOCK="/run/araya.sock"
+GUNICORN_SOCK="/run/araya/araya.sock"
 
 # -------- Helpers --------
 log()   { echo -e "\033[1;32m[+]\033[0m $*"; }
@@ -176,14 +176,15 @@ User=${APP_USER}
 Group=www-data
 WorkingDirectory=${APP_DIR}
 EnvironmentFile=${ENV_FILE}
+RuntimeDirectory=araya
+RuntimeDirectoryMode=0775
 ExecStart=${APP_DIR}/.venv/bin/gunicorn \\
     --workers ${GUNICORN_WORKERS} \\
-    --bind unix:${GUNICORN_SOCK} \\
+    --bind unix:/run/araya/araya.sock \\
     --access-logfile - \\
     --error-logfile - \\
     araya.wsgi:application
 ExecReload=/bin/kill -s HUP \$MAINPID
-RuntimeDirectory=/run
 KillMode=mixed
 TimeoutStopSec=5
 PrivateTmp=true

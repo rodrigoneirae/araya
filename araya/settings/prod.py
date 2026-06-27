@@ -1,4 +1,4 @@
-from .base import *
+from araya.base import *
 import os
 
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"

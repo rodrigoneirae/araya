@@ -4,6 +4,7 @@ from .models.transportistas import Transportistas, Patentes
 from .models.empleados import Empleados
 from .models.clasificacion import Clasificacion
 from .models.tratamiento_ler import TratamientoLER
+from .models.sucursales import Sucursal
 
 
 @admin.register(TipoArticulo)
@@ -60,3 +61,16 @@ class TratamientoLERAdmin(admin.ModelAdmin):
     list_display = ('codigo_ler', 'descripcion', 'codigo_ara')
     search_fields = ('codigo_ler', 'descripcion', 'codigo_ara')
     ordering = ('codigo_ler',)
+
+
+class SucursalInline(admin.TabularInline):
+    model = Sucursal
+    extra = 1
+
+
+@admin.register(Sucursal)
+class SucursalAdmin(admin.ModelAdmin):
+    list_display = ('cliente', 'codigo', 'nombre', 'ciudad', 'estado')
+    search_fields = ('cliente__rut', 'cliente__nombre', 'codigo', 'nombre')
+    list_filter = ('estado',)
+    ordering = ('cliente', 'codigo')

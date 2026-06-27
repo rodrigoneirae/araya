@@ -1,0 +1,77 @@
+{% extends 'plantilla/base/base.html' %}
+{% load static %}
+{% block extra_css %}
+<style>
+    #spinnerCert { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.3s ease; }
+    #spinnerCert.hidden { opacity: 0; pointer-events: none; }
+</style>
+{% endblock %}
+{% block content %}
+<div id="spinnerCert" class="hidden">
+    <div class="loader-spinner">
+        <div class="spinner"></div>
+        <p class="text-white text-sm font-medium mt-3">Generando certificado...</p>
+    </div>
+</div>
+
+<div class="h-full w-full mx-auto px-4 py-2">
+    <div class="bg-aq-surface border border-aq-border rounded-xl shadow-lg h-full flex flex-col">
+        <div class="p-4 border-b border-aq-border">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-aq-text">Certificado de Destino Sustentable</h1>
+                <a href="{% url 'home' %}" class="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-500 text-white hover:bg-gray-600" title="Salir">
+                    <i class='bx bx-exit text-lg'></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="p-4 border-b border-aq-border">
+            <div class="xl:w-2/3">
+                <div class="flex flex-wrap gap-2 items-end">
+                    <div class="flex-1 min-w-[130px]">
+                        <label class="block text-xs text-aq-text/60 mb-1">RUT Cliente</label>
+                        <div class="flex gap-1">
+                            <input type="text" id="certRut" class="flex-1 min-w-0 px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text" placeholder="RUT cliente">
+                            <button type="button" onclick="abrirListaClientes()" class="px-2 py-1.5 rounded-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white text-sm" title="Buscar">
+                                <i class='bx bx-search'></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="min-w-[140px] flex-1">
+                        <label class="block text-xs text-aq-text/60 mb-1">Nombre</label>
+                        <span id="certNombre" class="block px-2 py-1.5 text-sm rounded-lg border border-dashed border-aq-border text-aq-text/60 truncate min-h-[36px] leading-[22px]">&nbsp;</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-aq-text/60 mb-1">Fecha Inicio</label>
+                        <input type="date" id="certFechaInicio" class="px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-aq-text/60 mb-1">Fecha Corte</label>
+                        <input type="date" id="certFechaCorte" class="px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-aq-text/60 mb-1">Fecha Emisión</label>
+                        <input type="date" id="certFechaEmision" class="px-2 py-1.5 text-sm rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    </div>
+                    <div class="flex gap-1 pb-[1px]">
+                        <button type="button" onclick="generarPDF()" class="btn-gen px-3 py-1.5 text-xs rounded-lg bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 font-medium shadow-sm hover:shadow-md transition-all duration-150 flex items-center gap-1.5 border border-red-400/20">
+                            <i class='bx bxs-file-pdf text-sm'></i> Generar Certificado
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 flex items-center justify-center p-4">
+            <div class="text-center text-aq-text/40">
+                <i class='bx bx-certification text-6xl'></i>
+                <p class="mt-2 text-sm">Complete los filtros y presione "Generar Certificado"</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+    <script src="{% static 'js/modulos/inventario/informes/certificado_destino_sustentable.js' %}" data-url="{% url 'inventario:inventario_certificado_destino_sustentable' %}"></script>
+{% endblock %}

@@ -56,12 +56,23 @@
                             <label class="block text-sm font-medium text-aq-text mb-1">Fecha</label>
                             <input type="date" id="ocatFecha" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                         </div>
-                        <div class="sm:col-span-2 lg:col-span-1">
-                            <label class="block text-sm font-medium text-aq-text mb-1">Proveedor</label>
-                            <div class="flex gap-2">
-                                <select id="ocatProveedor" class="flex-1 min-w-0 px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
-                                    <option value="">--- Seleccionar ---</option>
-                                </select>
+                        <div class="sm:col-span-2 lg:col-span-2">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-aq-text mb-1">Proveedor</label>
+                                    <div class="flex gap-2">
+                                        <select id="ocatProveedor" class="flex-1 min-w-0 px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
+                                            <option value="">--- Seleccionar ---</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-aq-text mb-1">Sucursal</label>
+                                    <select id="ocatSucursal" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
+                                        <option value="">--- Seleccionar ---</option>
+                                    </select>
+                                    <span id="ocatSucursalDir" class="text-xs text-aq-text/60 mt-0.5 block"></span>
+                                </div>
                             </div>
                         </div>
                         <div class="sm:col-span-1">

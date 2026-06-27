@@ -4,6 +4,7 @@ from modulos.maestros.models import Articulos
 from modulos.maestros.models.docs import Docs
 from modulos.maestros.models.clasificacion import Clasificacion
 from modulos.maestros.models.tratamiento_ler import TratamientoLER
+from modulos.maestros.models.sucursales import Sucursal
 
 
 class Movs(models.Model):
@@ -78,6 +79,13 @@ class Movs(models.Model):
     tratamiento = models.ForeignKey(
         TratamientoLER,
         db_column='Tratamiento',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True
+    )
+    sucursal = models.ForeignKey(
+        Sucursal,
+        db_column='Sucursal',
         on_delete=models.SET_NULL,
         blank=True,
         null=True

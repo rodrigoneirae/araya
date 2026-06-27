@@ -25,6 +25,29 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('[data-sucursal-editar]');
+        if (btn) {
+            const tr = btn.closest('tr');
+            abrirModalSucursal({
+                id: tr.dataset.id,
+                codigo: tr.dataset.codigo,
+                nombre: tr.dataset.nombre,
+                direccion: tr.dataset.direccion,
+                comuna: tr.dataset.comuna,
+                ciudad: tr.dataset.ciudad,
+                fono: tr.dataset.fono,
+                contacto: tr.dataset.contacto,
+                estado: tr.dataset.estado,
+            });
+        }
+        const btnDel = e.target.closest('[data-sucursal-eliminar]');
+        if (btnDel) {
+            const tr = btnDel.closest('tr');
+            eliminarSucursal(tr.dataset.id, tr.dataset.nombre);
+        }
+    });
 });
 
 function buscarXHR(action, datos, callback) {
@@ -158,6 +181,7 @@ function buscarPorRut() {
             actualizarBtnEliminar();
             modoEdicion = false;
             resetBtnEditar();
+            cargarSucursales();
         } else {
             document.getElementById('clienteForm').reset();
             document.getElementById('rut').value = rut;
@@ -169,6 +193,140 @@ function buscarPorRut() {
             document.getElementById('btnEliminar').classList.add('hidden');
             modoEdicion = false;
             resetBtnEditar();
+            document.getElementById('sucursalesSection').classList.add('hidden');
+        }
+    });
+}
+
+let sucursalEditandoId = null;
+
+function cargarSucursales() {
+    const rut = document.getElementById('rut').value.trim().toUpperCase();
+    if (!rut) return;
+    buscarXHR('listar_sucursales', {rut: rut}, function(data) {
+        const section = document.getElementById('sucursalesSection');
+        const tbody = document.getElementById('sucursalesTableBody');
+        if (!data.success) {
+            section.classList.add('hidden');
+            return;
+        }
+        section.classList.remove('hidden');
+        tbody.innerHTML = '';
+        if (!data.sucursales || data.sucursales.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="px-3 py-4 text-center text-aq-text/60">No hay sucursales registradas</td></tr>';
+            return;
+        }
+        data.sucursales.forEach(s => {
+            const tr = document.createElement('tr');
+            tr.className = 'border-t border-aq-border hover:bg-aq-surface-alt/50';
+            tr.dataset.id = s.id;
+            tr.dataset.codigo = s.codigo || '';
+            tr.dataset.nombre = s.nombre || '';
+            tr.dataset.direccion = s.direccion || '';
+            tr.dataset.comuna = s.comuna || '';
+            tr.dataset.ciudad = s.ciudad || '';
+            tr.dataset.fono = s.fono || '';
+            tr.dataset.contacto = s.contacto || '';
+            tr.dataset.estado = s.estado ? '1' : '0';
+            tr.innerHTML = `
+                <td class="px-3 py-2">${s.codigo || ''}</td>
+                <td class="px-3 py-2">${s.nombre || ''}</td>
+                <td class="px-3 py-2">${s.direccion || ''}</td>
+                <td class="px-3 py-2">${s.comuna || ''}</td>
+                <td class="px-3 py-2">${s.ciudad || ''}</td>
+                <td class="px-3 py-2">${s.fono || ''}</td>
+                <td class="px-3 py-2">${s.contacto || ''}</td>
+                <td class="px-3 py-2 text-center">${s.estado ? '<span class="text-green-500"><i class="bx bx-check-circle"></i></span>' : '<span class="text-red-400"><i class="bx bx-x-circle"></i></span>'}</td>
+                <td class="px-3 py-2 text-center">
+                    <button type="button" data-sucursal-editar class="text-amber-500 hover:text-amber-600 mr-2" title="Editar">
+                        <i class="bx bx-edit"></i>
+                    </button>
+                    <button type="button" data-sucursal-eliminar class="text-red-500 hover:text-red-600" title="Eliminar">
+                        <i class="bx bx-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    });
+}
+
+function abrirModalSucursal(data) {
+    if (data) {
+        document.getElementById('modalSucursalTitle').textContent = 'Editar Sucursal';
+        document.getElementById('sucursalId').value = data.id || '';
+        document.getElementById('sucursalCodigo').value = data.codigo || '';
+        document.getElementById('sucursalNombre').value = data.nombre || '';
+        document.getElementById('sucursalDireccion').value = data.direccion || '';
+        document.getElementById('sucursalComuna').value = data.comuna || '';
+        document.getElementById('sucursalCiudad').value = data.ciudad || '';
+        document.getElementById('sucursalFono').value = data.fono || '';
+        document.getElementById('sucursalContacto').value = data.contacto || '';
+        document.getElementById('sucursalEstado').value = data.estado === '1' || data.estado === true ? '1' : '0';
+        sucursalEditandoId = data.id || null;
+    } else {
+        document.getElementById('modalSucursalTitle').textContent = 'Nueva Sucursal';
+        document.getElementById('sucursalForm').reset();
+        document.getElementById('sucursalEstado').value = '1';
+        sucursalEditandoId = null;
+    }
+    document.getElementById('modalSucursal').classList.remove('hidden');
+}
+
+function cerrarModalSucursal() {
+    document.getElementById('modalSucursal').classList.add('hidden');
+}
+
+function guardarSucursal() {
+    const codigo = document.getElementById('sucursalCodigo').value.trim();
+    const nombre = document.getElementById('sucursalNombre').value.trim();
+    if (!codigo) { Toastify({text: 'Ingrese un código', style: {background: '#f44336'}}).showToast(); return; }
+    if (!nombre) { Toastify({text: 'Ingrese un nombre', style: {background: '#f44336'}}).showToast(); return; }
+
+    const rut = document.getElementById('rut').value.trim().toUpperCase();
+    const datos = {
+        rut: rut,
+        codigo: codigo,
+        nombre: nombre,
+        direccion: document.getElementById('sucursalDireccion').value,
+        comuna: document.getElementById('sucursalComuna').value,
+        ciudad: document.getElementById('sucursalCiudad').value,
+        fono: document.getElementById('sucursalFono').value,
+        contacto: document.getElementById('sucursalContacto').value,
+        estado: document.getElementById('sucursalEstado').value,
+    };
+
+    const action = sucursalEditandoId ? 'editar_sucursal' : 'nueva_sucursal';
+    if (sucursalEditandoId) datos.id = sucursalEditandoId;
+
+    buscarXHR(action, datos, function(data) {
+        if (data.success) {
+            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+            cerrarModalSucursal();
+            cargarSucursales();
+        } else {
+            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+        }
+    });
+}
+
+function eliminarSucursal(id, nombre) {
+    mostrarModalConfirm({
+        titulo: 'Eliminar Sucursal',
+        mensaje: `¿Está seguro de eliminar la sucursal "${nombre}"?`,
+        datos: [],
+        icono: 'bx bx-trash text-xl sm:text-2xl text-red-500',
+        textoBoton: 'Eliminar',
+        colorBoton: 'bg-red-500 text-white hover:bg-red-600',
+        onConfirm: function() {
+            buscarXHR('eliminar_sucursal', {id: id}, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    cargarSucursales();
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
         }
     });
 }

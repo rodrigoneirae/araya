@@ -202,6 +202,59 @@ function cargarDatosIniciales() {
         });
     }
 
+    const provSelect = document.getElementById('ocatProveedor');
+    const sucSelect = document.getElementById('ocatSucursal');
+    const sucDirSpan = document.getElementById('ocatSucursalDir');
+    if (provSelect) {
+        jQuery(provSelect).on('select2:select select2:unselect', function() {
+            const rut = jQuery(provSelect).val();
+            if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery(sucSelect).data('select2')) {
+                jQuery(sucSelect).select2('destroy');
+            }
+            sucSelect.innerHTML = '<option value="">--- Seleccionar ---</option>';
+            if (rut) {
+                buscarXHROcat('listar_sucursales', {rut: rut}, function(data) {
+                    clienteDireccion = data.cliente_direccion || '';
+                    if (data.sucursales) {
+                        data.sucursales.forEach(s => {
+                            const option = document.createElement('option');
+                            option.value = s.id;
+                            option.textContent = s.codigo + ' - ' + s.nombre;
+                            option.dataset.direccion = s.direccion || '';
+                            sucSelect.appendChild(option);
+                        });
+                    }
+                    jQuery(sucSelect).select2({
+                        language: 'es',
+                        width: '100%',
+                        placeholder: '--- Seleccionar ---',
+                        allowClear: true,
+                    }).on('select2:select select2:unselect', function() {
+                        actualizarDireccionSucursal();
+                    });
+                    actualizarDireccionSucursal();
+                });
+            } else {
+                jQuery(sucSelect).select2({
+                    language: 'es',
+                    width: '100%',
+                    placeholder: '--- Seleccionar ---',
+                    allowClear: true,
+                });
+                sucDirSpan.textContent = '';
+            }
+        });
+    }
+
+    if (sucSelect) {
+        jQuery(sucSelect).select2({
+            language: 'es',
+            width: '100%',
+            placeholder: '--- Seleccionar ---',
+            allowClear: true,
+        });
+    }
+
     const fecha = new Date().toISOString().split('T')[0];
     document.getElementById('ocatFecha').value = fecha;
     document.getElementById('ocatArtFecha').value = fecha;
@@ -248,7 +301,7 @@ function actualizarSelect2(el) {
 }
 
 function setCamposOcatEditable(editable) {
-    const inputs = ['ocatFecha', 'ocatProveedor', 'ocatTipoDoc', 'ocatRef', 'ocatEncargado', 'ocatArtCod', 'ocatArtCant', 'ocatArtPUnit', 'ocatArtFecha', 'ocatArtPeso', 'ocatNeto', 'ocatTotal', 'ocatTransportista', 'ocatPatente', 'ocatPeso'];
+    const inputs = ['ocatFecha', 'ocatProveedor', 'ocatTipoDoc', 'ocatRef', 'ocatEncargado', 'ocatArtCod', 'ocatArtCant', 'ocatArtPUnit', 'ocatArtFecha', 'ocatArtPeso', 'ocatNeto', 'ocatTotal', 'ocatTransportista', 'ocatPatente', 'ocatSucursal', 'ocatPeso'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -569,25 +622,6 @@ function calcularTotalesOcat() {
 
 function guardarOcat() {
     const numero = document.getElementById('ocatNumero').value;
-
-    if (modoEdicionOcat) {
-        const estado = document.getElementById('ocatEstado').value;
-        mostrarModalConfirm({titulo: 'Guardar OCAT', mensaje: '¿Está seguro de guardar esta OCAT?', tipo: 'confirm', onConfirm: function() {
-            buscarXHROcat('editar_estado', {
-                numero: numero,
-                estado: estado
-            }, function(data) {
-                if (data.success) {
-                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-                    cargarOcat(data.numero);
-                } else {
-                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
-                }
-            });
-        }});
-        return;
-    }
-
     const rut = document.getElementById('ocatProveedor').value;
     const tipodocref = document.getElementById('ocatTipoDoc').value.split(' - ')[0];
     const docref = document.getElementById('ocatRef').value;
@@ -600,6 +634,7 @@ function guardarOcat() {
     const patenteId = patenteOption && patenteOption.dataset.id ? patenteOption.dataset.id : '';
     const transportistaRut = document.getElementById('ocatTransportista').value;
     const peso = document.getElementById('ocatPeso').value;
+    const sucursal_id = document.getElementById('ocatSucursal').value;
 
     if (rut === '') {
         Toastify({text: 'Seleccione un proveedor', style: {background: '#f44336'}}).showToast();
@@ -629,6 +664,7 @@ function guardarOcat() {
             patente_id: patenteId,
             transportista_rut: transportistaRut,
             peso: peso,
+            sucursal_id: sucursal_id,
             detalles: JSON.stringify(detallesOcat)
         }, function(data) {
             if (data.success) {
@@ -810,6 +846,36 @@ function cargarOcat(numero) {
                 actualizarSelect2(patenteSel);
             }
 
+            const sucSel = document.getElementById('ocatSucursal');
+            if (data.data.rut) {
+                buscarXHROcat('listar_sucursales', {rut: data.data.rut}, function(sucData) {
+                    clienteDireccion = sucData.cliente_direccion || '';
+                    sucSel.innerHTML = '<option value="">--- Seleccionar ---</option>';
+                    if (sucData.sucursales) {
+                        sucData.sucursales.forEach(s => {
+                            const option = document.createElement('option');
+                            option.value = s.id;
+                            option.textContent = s.codigo + ' - ' + s.nombre;
+                            option.dataset.direccion = s.direccion || '';
+                            sucSel.appendChild(option);
+                        });
+                    }
+                    jQuery(sucSel).select2({
+                        language: 'es',
+                        width: '100%',
+                        placeholder: '--- Seleccionar ---',
+                        allowClear: true,
+                    });
+                    if (data.data.sucursal_id) {
+                        const id = String(data.data.sucursal_id);
+                        jQuery(sucSel).val(id).trigger('change');
+                    }
+                    actualizarDireccionSucursal();
+                });
+            } else {
+                actualizarSelect2(sucSel);
+            }
+
             detallesOcat = (data.data.detalles || []).map(d => ({
                 codigo: d.codigo || '',
                 nombre: d.nombre || '',
@@ -829,7 +895,8 @@ function cargarOcat(numero) {
                 categoria: d.categoria || null,
                 categoria_nombre: d.categoria_nombre || '',
                 tratamiento: d.tratamiento || null,
-                tratamiento_nombre: d.tratamiento_nombre || ''
+                tratamiento_nombre: d.tratamiento_nombre || '',
+                sucursal_id: d.sucursal_id || null
             }));
             let sumaCant = 0;
             detallesOcat.forEach(d => { sumaCant += d.cantidad || 0; });
@@ -842,6 +909,21 @@ function cargarOcat(numero) {
             Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
         }
     });
+}
+
+let clienteDireccion = '';
+
+function actualizarDireccionSucursal() {
+    const sucSelect = document.getElementById('ocatSucursal');
+    const dirSpan = document.getElementById('ocatSucursalDir');
+    const selOpt = sucSelect.selectedIndex > 0 ? sucSelect.options[sucSelect.selectedIndex] : null;
+    if (selOpt && selOpt.value) {
+        dirSpan.textContent = selOpt.dataset.direccion || '';
+    } else if (clienteDireccion) {
+        dirSpan.textContent = 'Dir: ' + clienteDireccion;
+    } else {
+        dirSpan.textContent = '';
+    }
 }
 
 let indiceCUP = null;

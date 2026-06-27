@@ -9,6 +9,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 from modulos.maestros.models.prov_cliente import Provclientes
 from modulos.maestros.models.auxiliares import Cpago
+from modulos.maestros.models.sucursales import Sucursal
 
 
 def _get_movs_model():
@@ -48,6 +49,10 @@ class IndexProvClienteView(LoginRequiredMixin, TemplateView):
             "listar_ruts": lambda _: self._listar_ruts(),
             "listar_cpagos": lambda _: self._listar_cpagos(),
             "listar_tipos": lambda _: self._listar_tipos(),
+            "listar_sucursales": lambda d: self._listar_sucursales(d.get("rut")),
+            "nueva_sucursal": self._nueva_sucursal,
+            "editar_sucursal": self._editar_sucursal,
+            "eliminar_sucursal": lambda d: self._eliminar_sucursal(d.get("id")),
         }
         return handlers.get(action, lambda _: JsonResponse({"success": False, "message": "Acción inválida"}))
 
@@ -146,6 +151,78 @@ class IndexProvClienteView(LoginRequiredMixin, TemplateView):
                 Movs.objects.filter(rut=rut, estado='Inactivo').update(estado='Cerrado')
 
             return JsonResponse({"success": True, "message": "Cliente/Proveedor activado correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _listar_sucursales(self, rut: str | None) -> JsonResponse:
+        if not rut:
+            return JsonResponse({"success": False, "sucursales": []})
+        try:
+            cliente = Provclientes.objects.get(rut=rut)
+        except Provclientes.DoesNotExist:
+            return JsonResponse({"success": False, "sucursales": []})
+        sucursales = Sucursal.objects.filter(cliente=cliente).values(
+            "id", "codigo", "nombre", "direccion", "comuna", "ciudad", "fono", "contacto", "estado"
+        ).order_by("codigo")
+        return JsonResponse({"success": True, "sucursales": list(sucursales)})
+
+    def _nueva_sucursal(self, data: dict[str, Any]) -> JsonResponse:
+        rut = data.get("rut")
+        if not rut:
+            return JsonResponse({"success": False, "message": "RUT requerido"})
+        try:
+            cliente = Provclientes.objects.get(rut=rut)
+        except Provclientes.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Cliente no encontrado"})
+        try:
+            Sucursal.objects.create(
+                cliente=cliente,
+                codigo=data.get("codigo"),
+                nombre=data.get("nombre"),
+                direccion=data.get("direccion") or None,
+                comuna=data.get("comuna") or None,
+                ciudad=data.get("ciudad") or None,
+                fono=data.get("fono") or None,
+                contacto=data.get("contacto") or None,
+                estado=True,
+            )
+            return JsonResponse({"success": True, "message": "Sucursal guardada correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _editar_sucursal(self, data: dict[str, Any]) -> JsonResponse:
+        suc_id = data.get("id")
+        if not suc_id:
+            return JsonResponse({"success": False, "message": "ID requerido"})
+        try:
+            sucursal = Sucursal.objects.get(id=suc_id)
+        except Sucursal.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Sucursal no encontrada"})
+        try:
+            sucursal.codigo = data.get("codigo")
+            sucursal.nombre = data.get("nombre")
+            sucursal.direccion = data.get("direccion") or None
+            sucursal.comuna = data.get("comuna") or None
+            sucursal.ciudad = data.get("ciudad") or None
+            sucursal.fono = data.get("fono") or None
+            sucursal.contacto = data.get("contacto") or None
+            estado = data.get("estado")
+            if estado is not None:
+                sucursal.estado = estado in ("1", "true", "True", True)
+            sucursal.save()
+            return JsonResponse({"success": True, "message": "Sucursal actualizada correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _eliminar_sucursal(self, suc_id: str | None) -> JsonResponse:
+        if not suc_id:
+            return JsonResponse({"success": False, "message": "ID requerido"})
+        try:
+            sucursal = Sucursal.objects.get(id=suc_id)
+            sucursal.delete()
+            return JsonResponse({"success": True, "message": "Sucursal eliminada correctamente"})
+        except Sucursal.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Sucursal no encontrada"})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 

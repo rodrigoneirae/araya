@@ -15,6 +15,7 @@ from modulos.maestros.models.bodegas import Bodegas
 from modulos.maestros.models.transportistas import Transportistas, Patentes
 from modulos.maestros.models.clasificacion import Clasificacion
 from modulos.maestros.models.tratamiento_ler import TratamientoLER
+from modulos.maestros.models.sucursales import Sucursal
 
 
 class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
@@ -47,6 +48,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             "buscar_por_patente": lambda d: self._buscar_por_patente(d.get("patente")),
             "listar_clasificaciones": lambda _: self._listar_clasificaciones(),
             "listar_tratamientos": lambda _: self._listar_tratamientos(),
+            "listar_sucursales": lambda d: self._listar_sucursales(d.get("rut")),
         }
         return handlers.get(action, lambda _: JsonResponse({"success": False, "message": "Acción inválida"}))
 
@@ -135,7 +137,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             detalles = list(movs.exclude(linea=0).filter(tipo=7).values(
                 "codigo", "cantidad", "punit", "total", "bodega", "linea",
                 "canttotal", "neto", "iva", "proceso", "fecha", "estado", "cup",
-                "peso", "categoria", "tratamiento"
+                "peso", "categoria", "tratamiento", "sucursal_id"
             ))
 
             procesos_map = {float(p.cod): p.nombre for p in Procesos.objects.all()}
@@ -209,6 +211,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     "transportista_rut": transportista_rut,
                     "transportista_nombre": transportista_nombre,
                     "peso": encabezado.numid or "",
+                    "sucursal_id": encabezado.sucursal_id or "",
                     "patentes_disponibles": patentes_list,
                     "detalles": detalles
                 }
@@ -282,6 +285,9 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     patente_id = None
             transportista_rut = data.get("transportista_rut") or None
             peso = data.get("peso") or None
+            sucursal_id = data.get("sucursal_id") or None
+            if sucursal_id == "0":
+                sucursal_id = None
             if peso:
                 peso = float(peso)
 
@@ -301,6 +307,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                 patente_id=patente_id,
                 glosa=transportista_rut,
                 numid=peso,
+                sucursal_id=sucursal_id,
                 usr=usr,
                 timeuser=time_user
             )
@@ -331,6 +338,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     peso=float(det.get("peso", 0)) if det.get("peso") else None,
                     categoria=categoria_obj,
                     tratamiento=tratamiento_obj,
+                    sucursal_id=sucursal_id,
                     usr=usr,
                     timeuser=time_user
                 )
@@ -408,6 +416,19 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             })
         except Patentes.DoesNotExist:
             return JsonResponse({"success": False})
+
+    def _listar_sucursales(self, rut: str | None) -> JsonResponse:
+        if not rut:
+            return JsonResponse({"sucursales": [], "cliente_direccion": ""})
+        try:
+            cliente = Provclientes.objects.get(rut=rut)
+            cliente_direccion = f"{cliente.direccion or ''}, {cliente.comuna or ''}".strip(", ")
+        except Provclientes.DoesNotExist:
+            return JsonResponse({"sucursales": [], "cliente_direccion": ""})
+        sucursales = list(Sucursal.objects.filter(cliente__rut=rut).values("id", "codigo", "nombre", "direccion").order_by("codigo"))
+        if not sucursales and cliente_direccion:
+            sucursales.append({"id": 0, "codigo": "0", "nombre": cliente_direccion, "direccion": cliente_direccion})
+        return JsonResponse({"sucursales": sucursales, "cliente_direccion": cliente_direccion})
 
     def _listar_clasificaciones(self) -> JsonResponse:
         data = Clasificacion.objects.values("codigo", "descripcion").order_by("codigo")

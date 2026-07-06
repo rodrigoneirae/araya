@@ -544,16 +544,11 @@
         );
 
         let data;
-
-        try {
-
+        const ct = response.headers.get("content-type") || "";
+        if (ct.includes("application/json")) {
             data = await response.json();
-
-        } catch {
-
-            data = await response
-                .text()
-                .then(text => ({ text }));
+        } else {
+            data = { text: await response.text() };
         }
 
         if (!response.ok) {

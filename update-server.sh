@@ -43,10 +43,10 @@ log "4/7 - Migraciones..."
 sudo -u araya bash -lc "cd '${APP_DIR}' && set -a && source '${ENV_FILE}' && set +a && '${VENV_DIR}/bin/python' manage.py migrate --noinput"
 
 log "4b/7 - Verificando tabla core_user..."
-CHECK_SCRIPT=$(mktemp /tmp/check_core_user.XXXXXX.py)
+CHECK_SCRIPT="${APP_DIR}/.check_core_user.py"
 cat > "$CHECK_SCRIPT" <<'PYEOF'
 import os, sys
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'araya.settings.prod')
+os.environ['DJANGO_SETTINGS_MODULE'] = 'araya.settings.dev'
 import django
 django.setup()
 from django.db import connection, ProgrammingError
@@ -62,12 +62,13 @@ except ProgrammingError:
 else:
     print('core_user OK.')
 PYEOF
-chmod o+r "$CHECK_SCRIPT"
+chown araya:araya "$CHECK_SCRIPT"
 sudo -u araya bash -lc "cd '${APP_DIR}' && set -a && source '${ENV_FILE}' && set +a && '${VENV_DIR}/bin/python' '$CHECK_SCRIPT'"
 rm -f "$CHECK_SCRIPT"
 
 log "4c/7 - Restaurando datos desde backup..."
-sudo -u araya bash -lc "cd '${APP_DIR}' && set -a && source '${ENV_FILE}' && set +a && '${VENV_DIR}/bin/python' manage.py restore_from_backup"
+# Nota: prod.py NO tiene la DB 'backup'. Usamos araya.settings.dev que hereda de base.py con todas las DBs.
+sudo -u araya bash -lc "cd '${APP_DIR}' && set -a && source '${ENV_FILE}' && set +a && DJANGO_SETTINGS_MODULE=araya.settings.dev '${VENV_DIR}/bin/python' manage.py restore_from_backup"
 
 log "4d/7 - Verificando usuarios restaurados..."
 sudo -u araya psql -d araya_db -c "SELECT count(*) as total_usuarios FROM core_user;"

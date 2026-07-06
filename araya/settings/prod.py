@@ -13,7 +13,19 @@ DATABASES = {
         "PASSWORD": os.getenv("DB_PASSWORD") or os.getenv("APPPASSWORD", ""),
         "HOST": os.getenv("DB_HOST") or os.getenv("APPHOST", "127.0.0.1"),
         "PORT": os.getenv("DB_PORT") or os.getenv("APPPORT", "5432"),
-    }
+    },
+    "backup": {
+        "ENGINE": "mssql",
+        "NAME": os.getenv("BACKUP_DB_NAME") or os.getenv("BACKUP_DB"),
+        "USER": os.getenv("BACKUP_USER"),
+        "PASSWORD": os.getenv("BACKUP_PASSWORD"),
+        "HOST": os.getenv("BACKUP_HOST"),
+        "PORT": os.getenv("BACKUP_PORT", "1433"),
+        "OPTIONS": {
+            "driver": "ODBC Driver 18 for SQL Server",
+            "extra_params": "TrustServerCertificate=yes",
+        },
+    },
 }
 
 if os.getenv("SOFTLAND_DB_NAME") or os.getenv("SOFTLAND_DB"):

@@ -59,6 +59,20 @@ class IndexCoreView( LoginRequiredMixin,TemplateView):
                     abreviatura=unidad,
                 )
 
+        #eliminar movs
+        from datetime import datetime
+        from django.utils import timezone
+        from modulos.inventario.models.movs import Movs  # Ajusta el import a tu aplicación
+
+        fecha = timezone.make_aware(datetime(2026, 6, 1, 0, 0, 0))
+
+        eliminados, detalle = Movs.objects.filter(fecha__lt=fecha).delete()
+
+        print(eliminados)
+        print(detalle)
+
+
+
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseRedirect | HttpResponse:
         self.init_app()

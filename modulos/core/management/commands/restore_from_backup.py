@@ -1,10 +1,8 @@
 from django.core.management.base import BaseCommand
 from django.apps import apps
 from django.contrib.auth import get_user_model
-from django.db import connection, connections
+from django.db import connection, connections, ProgrammingError
 from django.db import models as dj_models
-
-User = get_user_model()
 
 BACKUP_DB = 'backup'
 PROJECT_APPS = {'core', 'maestros', 'inventario', 'registros', 'produccion'}
@@ -227,7 +225,17 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write('Verificando si existen usuarios en default...')
 
-        if User.objects.using('default').exists():
+        User = get_user_model()
+
+        try:
+            users_exist = User.objects.using('default').exists()
+        except ProgrammingError:
+            self.stdout.write(self.style.WARNING(
+                'La tabla de usuarios no existe. Ejecuta "migrate" primero.'
+            ))
+            return
+
+        if users_exist:
             self.stdout.write(self.style.WARNING(
                 'Ya existen usuarios en default. No se realizó ninguna copia.'
             ))

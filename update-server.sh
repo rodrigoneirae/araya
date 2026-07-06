@@ -42,6 +42,29 @@ sudo -u araya "${VENV_DIR}/bin/python" manage.py tailwind build
 log "4/7 - Migraciones..."
 sudo -u araya bash -lc "cd '${APP_DIR}' && set -a && source '${ENV_FILE}' && set +a && '${VENV_DIR}/bin/python' manage.py migrate --noinput"
 
+log "4b/7 - Verificando tabla core_user..."
+CHECK_SCRIPT=$(mktemp /tmp/check_core_user.XXXXXX.py)
+cat > "$CHECK_SCRIPT" <<'PYEOF'
+import os, sys
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'araya.settings.prod')
+import django
+django.setup()
+from django.db import connection, ProgrammingError
+try:
+    with connection.cursor() as c:
+        c.execute('SELECT 1 FROM core_user LIMIT 1')
+except ProgrammingError:
+    print('Tabla core_user no existe. Re-aplicando migraciones de core...')
+    from django.core.management import call_command
+    call_command('migrate', 'core', 'zero', verbosity=0, interactive=False)
+    call_command('migrate', 'core', verbosity=1, interactive=False)
+    print('core_user creada correctamente.')
+else:
+    print('core_user OK.')
+PYEOF
+sudo -u araya bash -lc "cd '${APP_DIR}' && set -a && source '${ENV_FILE}' && set +a && '${VENV_DIR}/bin/python' '$CHECK_SCRIPT'"
+rm -f "$CHECK_SCRIPT"
+
 log "5/7 - Collectstatic..."
 sudo -u araya "${VENV_DIR}/bin/python" manage.py collectstatic --noinput
 

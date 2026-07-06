@@ -118,6 +118,15 @@ def create_placeholder(parent, pk_value):
         pass
 
 
+def get_backup_columns(model):
+    """Obtiene las columnas que realmente existen en la tabla del backup (MSSQL)."""
+    with connections[BACKUP_DB].cursor() as cursor:
+        cursor.execute(
+            f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{model._meta.db_table}'"
+        )
+        return {row[0] for row in cursor.fetchall()}
+
+
 def copy_model_data(model, stdout):
     fk_fields = []
     for field in model._meta.get_fields():
@@ -140,9 +149,12 @@ def copy_model_data(model, stdout):
 
         is_string_fk = isinstance(pk_field, (dj_models.CharField, dj_models.TextField))
         collate_sql = ' COLLATE Latin1_General_BIN' if is_string_fk else ''
-        with connections[BACKUP_DB].cursor() as cursor:
-            cursor.execute(f'SELECT DISTINCT "{fk_col}"{collate_sql} FROM {model._meta.db_table}')
-            raw_values = [row[0] for row in cursor.fetchall() if row[0] is not None]
+        try:
+            with connections[BACKUP_DB].cursor() as cursor:
+                cursor.execute(f'SELECT DISTINCT "{fk_col}"{collate_sql} FROM {model._meta.db_table}')
+                raw_values = [row[0] for row in cursor.fetchall() if row[0] is not None]
+        except Exception:
+            continue
 
         fk_values = []
         for v in raw_values:
@@ -174,7 +186,33 @@ def copy_model_data(model, stdout):
             for v in missing:
                 create_placeholder(parent, v)
 
-    backup_objects = list(model.objects.using(BACKUP_DB).all().iterator())
+    # Detectar columnas que existen en el backup vs el modelo Django
+    backup_cols = get_backup_columns(model)
+    local_fields = {}
+    for field in model._meta.local_concrete_fields:
+        db_col = field.db_column or field.column
+        local_fields[db_col] = field.attname
+
+    cols_to_select = []
+    for db_col in local_fields:
+        if db_col in backup_cols:
+            cols_to_select.append(db_col)
+        else:
+            stdout.write(f'    Columna omitida: {db_col} (no existe en backup)\n')
+
+    col_sql = ', '.join(f'"{c}"' for c in cols_to_select)
+    with connections[BACKUP_DB].cursor() as cursor:
+        cursor.execute(f'SELECT {col_sql} FROM {model._meta.db_table}')
+        rows = cursor.fetchall()
+
+    backup_objects = []
+    for row in rows:
+        obj = model()
+        for db_col, value in zip(cols_to_select, row):
+            attname = local_fields[db_col]
+            setattr(obj, attname, value)
+        backup_objects.append(obj)
+
     if not backup_objects:
         return 0
 
@@ -193,7 +231,6 @@ def copy_model_data(model, stdout):
                             normalized = corrected
                 setattr(obj, fk.attname, normalized)
 
-        obj.pk = obj.pk
         obj.save(using='default', force_insert=True)
 
     return len(backup_objects)

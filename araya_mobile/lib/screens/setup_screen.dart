@@ -25,7 +25,7 @@ class _SetupScreenState extends State<SetupScreen> {
   @override
   void initState() {
     super.initState();
-    _urlController.text = widget.initialUrl ?? 'http://10.0.2.2:8000';
+    _urlController.text = widget.initialUrl ?? 'https://prod.arayaltda.cl';
   }
 
   @override
@@ -130,7 +130,7 @@ class _SetupScreenState extends State<SetupScreen> {
                 controller: _urlController,
                 decoration: const InputDecoration(
                   labelText: 'URL del backend',
-                  hintText: 'http://10.0.2.2:8000',
+                  hintText: 'https://prod.arayaltda.cl',
                   prefixIcon: Icon(Icons.link),
                 ),
                 keyboardType: TextInputType.url,

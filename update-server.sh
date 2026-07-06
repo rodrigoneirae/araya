@@ -65,6 +65,12 @@ PYEOF
 sudo -u araya bash -lc "cd '${APP_DIR}' && set -a && source '${ENV_FILE}' && set +a && '${VENV_DIR}/bin/python' '$CHECK_SCRIPT'"
 rm -f "$CHECK_SCRIPT"
 
+log "4c/7 - Restaurando datos desde backup..."
+sudo -u araya bash -lc "cd '${APP_DIR}' && set -a && source '${ENV_FILE}' && set +a && '${VENV_DIR}/bin/python' manage.py restore_from_backup"
+
+log "4d/7 - Verificando usuarios restaurados..."
+sudo -u araya psql -d araya_db -c "SELECT count(*) as total_usuarios FROM core_user;"
+
 log "5/7 - Collectstatic..."
 sudo -u araya "${VENV_DIR}/bin/python" manage.py collectstatic --noinput
 

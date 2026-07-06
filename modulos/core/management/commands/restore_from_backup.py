@@ -194,7 +194,7 @@ def copy_model_data(model, stdout):
                 setattr(obj, fk.attname, normalized)
 
         obj.pk = obj.pk
-        obj.save(using='default')
+        obj.save(using='default', force_insert=True)
 
     return len(backup_objects)
 

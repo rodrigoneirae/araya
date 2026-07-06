@@ -62,6 +62,7 @@ except ProgrammingError:
 else:
     print('core_user OK.')
 PYEOF
+chmod o+r "$CHECK_SCRIPT"
 sudo -u araya bash -lc "cd '${APP_DIR}' && set -a && source '${ENV_FILE}' && set +a && '${VENV_DIR}/bin/python' '$CHECK_SCRIPT'"
 rm -f "$CHECK_SCRIPT"
 

@@ -138,7 +138,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
     def _listar_ot(self) -> JsonResponse:
         movs = Movs.objects.filter(linea=0, tipo=8).values(
             "numero", "fecha", "codencargado", "proceso", "estado", "docref"
-        ).order_by("-numero")[:50]
+        ).order_by("-numero")
         resultado = []
         for m in movs:
             encargado_nombre = ""

@@ -168,7 +168,10 @@ function abrirModalEditarSubitemRow(row) {
 
 function initSubTabulators(callback) {
     const colDef = [
-        { title: 'Artículo', field: 'codigo', width: 80 },
+        { title: 'Artículo', field: 'codigo', width: 80,
+            bottomCalc: function() { return 'Totales'; },
+            bottomCalcFormatter: function(cell) { return cell.getValue(); }
+        },
         { title: 'Nombre', field: 'nombre', widthGrow: 2 },
         { title: 'Fecha', field: 'fecha', width: 90, hozAlign: 'center',
             formatter: function(cell) {
@@ -178,7 +181,12 @@ function initSubTabulators(callback) {
                 return parts.length === 3 ? parts.reverse().join('-') : v;
             }
         },
-        { title: 'Cant', field: 'cantidad', width: 70, hozAlign: 'right' },
+        { title: 'Cant', field: 'cantidad', width: 70, hozAlign: 'right', bottomCalc: 'sum',
+            bottomCalcFormatter: function(cell) {
+                const v = cell.getValue();
+                return v ? String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : 0;
+            }
+        },
         { title: 'UM', field: 'um', width: 50, hozAlign: 'center' },
         { title: 'Encargado', field: 'codencargado', width: 120,
             formatter: function(cell) {
@@ -187,7 +195,12 @@ function initSubTabulators(callback) {
                 return opts[v] || v || '-';
             }
         },
-        { title: 'P.Unit', field: 'punit', width: 80, hozAlign: 'right' },
+        { title: 'P.Unit', field: 'punit', width: 80, hozAlign: 'right', bottomCalc: 'sum',
+            bottomCalcFormatter: function(cell) {
+                const v = cell.getValue();
+                return v ? String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : 0;
+            }
+        },
         { title: '_linea', field: 'linea', visible: false },
         { title: '_tipo_cod', field: 'tipo_cod', visible: false },
     ];

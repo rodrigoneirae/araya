@@ -97,6 +97,7 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
                 "tipo": tipo_doc,
                 "cantidad": cantidad,
                 "um": um_art,
+                "precio": m.punit or 0,
                 "proceso": proceso_nom,
             })
 
@@ -126,7 +127,7 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
             bottom=Side(style="thin", color="d1d5db"),
         )
 
-        headers = ["Artículo", "Nombre", "Fecha", "N° OT", "Tipo", "Cant", "UM", "Proceso"]
+        headers = ["Artículo", "Nombre", "Fecha", "N° OT", "Tipo", "Cant", "UM", "Precio", "Proceso"]
         ws.append(headers)
         for col_idx in range(1, len(headers) + 1):
             cell = ws.cell(row=1, column=col_idx)
@@ -144,16 +145,19 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
         if enc_data and isinstance(enc_data, dict):
             for art_cod, art_data in sorted(enc_data["articulos"].items()):
                 for mov in art_data["movimientos"]:
-                    ws.append([art_cod, art_data["nombre"], mov["fecha"], mov["ot"], mov["tipo"], mov["cantidad"], mov["um"], mov["proceso"]])
+                    ws.append([art_cod, art_data["nombre"], mov["fecha"], mov["ot"], mov["tipo"], mov["cantidad"], mov["um"], mov["precio"], mov["proceso"]])
                     row_num = ws.max_row
-                    for col_idx in range(1, 9):
+                    for col_idx in range(1, 10):
                         cell = ws.cell(row=row_num, column=col_idx)
                         cell.border = thin_border
                         if col_idx == 6:
                             cell.alignment = Alignment(horizontal="right", vertical="center")
                             cell.number_format = '#,##0.000'
-                        elif col_idx in [1, 2, 8]:
+                        elif col_idx in [1, 2, 9]:
                             cell.alignment = Alignment(horizontal="left", vertical="center")
+                        elif col_idx == 8:
+                            cell.alignment = Alignment(horizontal="right", vertical="center")
+                            cell.number_format = '#,##0'
                         else:
                             cell.alignment = Alignment(horizontal="center", vertical="center")
 
@@ -164,7 +168,8 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
         ws.column_dimensions["E"].width = 20
         ws.column_dimensions["F"].width = 12
         ws.column_dimensions["G"].width = 8
-        ws.column_dimensions["H"].width = 20
+        ws.column_dimensions["H"].width = 14
+        ws.column_dimensions["I"].width = 20
 
         buf = io.BytesIO()
         wb.save(buf)
@@ -220,6 +225,9 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
         
         def clt(v):
             return f"{int(round(v)):,}".replace(",", ".")
+        
+        def clp(v):
+            return f"{float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
         def build_elements():
             styles = getSampleStyleSheet()
@@ -239,8 +247,8 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
 
             elems.append(Spacer(1, 3 * mm))
 
-            header = ["Artículo", "Nombre", "Fecha", "N° OT", "Tipo", "Cant", "UM", "Proceso"]
-            col_widths = [20 * mm, 40 * mm, 18 * mm, 15 * mm, 25 * mm, 16 * mm, 12 * mm, 25 * mm]
+            header = ["Artículo", "Nombre", "Fecha", "N° OT", "Tipo", "Cant", "UM", "Precio", "Proceso"]
+            col_widths = [18 * mm, 35 * mm, 16 * mm, 13 * mm, 22 * mm, 14 * mm, 10 * mm, 16 * mm, 22 * mm]
 
             if not data:
                 elems.append(Spacer(1, 20 * mm))
@@ -263,6 +271,7 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
                         Paragraph("", cell_style),
                         Paragraph(clt(enc_subtotal), ParagraphStyle("RightBold", parent=right_style, fontSize=7, bold=True)),
                         Paragraph("", center_style),
+                        Paragraph("", center_style),
                         Paragraph("", cell_style),
                     ])
 
@@ -281,6 +290,7 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
                                 Paragraph(mov["tipo"] or "", cell_style),
                                 Paragraph(clq(mov["cantidad"]), right_style),
                                 Paragraph(mov["um"], center_style),
+                                Paragraph(clp(mov["precio"]), right_style),
                                 Paragraph(mov["proceso"] or "", cell_style),
                             ])
                             total_general += mov["cantidad"]
@@ -299,6 +309,7 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
                         Paragraph("", cell_style),
                         Paragraph("", right_style),
                         Paragraph("", center_style),
+                        Paragraph("", center_style),
                         Paragraph("", cell_style),
                     ])
                     
@@ -314,6 +325,7 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
                                 Paragraph(mov["tipo"] or "", cell_style),
                                 Paragraph(clq(mov["cantidad"]), right_style),
                                 Paragraph(mov["um"], center_style),
+                                Paragraph(clp(mov["precio"]), right_style),
                                 Paragraph(mov["proceso"] or "", cell_style),
                             ])
                             total_general += mov["cantidad"]
@@ -335,7 +347,10 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
                 ("ALIGN", (0, 0), (0, -1), "CENTER"),
                 ("ALIGN", (1, 0), (1, -1), "LEFT"),
                 ("ALIGN", (2, 0), (4, -1), "CENTER"),
+                ("ALIGN", (5, 0), (5, -1), "RIGHT"),
                 ("ALIGN", (6, 0), (6, -1), "CENTER"),
+                ("ALIGN", (7, 0), (7, -1), "RIGHT"),
+                ("ALIGN", (8, 0), (8, -1), "LEFT"),
             ]
             
             for i in range(1, len(table_data)):

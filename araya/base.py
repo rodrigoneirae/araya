@@ -150,5 +150,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
     BASE_DIR / "theme" / "static",
 ]
+if not DEBUG:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage",
+        },
+    }
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'

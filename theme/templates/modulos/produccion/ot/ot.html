@@ -6,8 +6,9 @@
     .tabulator .tabulator-header { background-color: rgb(var(--aq-surface-2)); color: rgb(var(--aq-text)); }
     .tabulator .tabulator-row:hover { background-color: rgb(var(--aq-surface-2)); }
     .tabulator .tabulator-row:nth-child(even) { background-color: rgb(var(--aq-bg)); }
-    .tabulator .tabulator-footer .tabulator-calcs-holder { background: rgb(var(--aq-primary-soft)) !important; font-weight: 700 !important; border-top: 2px solid rgb(var(--aq-primary)) !important; }
-    .tabulator .tabulator-footer .tabulator-calcs-holder .tabulator-row { background: rgb(var(--aq-primary-soft)) !important; display: table-row !important; width: 100% !important; }
+    .tabulator .tabulator-footer { flex-wrap: wrap !important; }
+    .tabulator .tabulator-footer .tabulator-calcs-holder { background: rgb(var(--aq-primary-soft)) !important; font-weight: 700 !important; border-top: 2px solid rgb(var(--aq-primary)) !important; display: block !important; width: 100% !important; flex: none !important; }
+    .tabulator .tabulator-footer .tabulator-calcs-holder .tabulator-row { background: rgb(var(--aq-primary-soft)) !important; display: flex !important; width: 100% !important; }
     .tabulator .tabulator-footer .tabulator-calcs-holder .tabulator-cell { color: rgb(var(--aq-text)) !important; font-weight: 700 !important; border-right: 1px solid rgb(var(--aq-border)) !important; overflow: visible !important; white-space: nowrap !important; }
     .tabulator .tabulator-footer .tabulator-calcs-holder .tabulator-cell:last-child { border-right: none !important; }
     .tabulator .tabulator-footer .tabulator-calcs-holder .tabulator-cell:first-child { color: rgb(var(--aq-primary)) !important; }

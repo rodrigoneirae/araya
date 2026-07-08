@@ -471,6 +471,9 @@
   .table-cell {
     display: table-cell;
   }
+  .table-row {
+    display: table-row;
+  }
   .\!h-\[34px\] {
     height: 34px !important;
   }

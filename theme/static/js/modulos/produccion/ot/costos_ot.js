@@ -121,12 +121,12 @@ function cargarTablaCostos() {
         function fmtNum(n) {
             return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
         }
-        tbody.innerHTML += `<tr class="bg-aq-surface-2 font-semibold text-xs border-t-2 border-aq-border">
-            <td colspan="5" class="px-2 py-1.5 text-aq-text">Totales</td>
-            <td class="px-2 py-1.5 text-aq-text text-right">${fmtNum(totCant)}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right">${fmtNum(totPUnit)}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right">${fmtNum(totNeto)}</td>
-            <td class="px-2 py-1.5 text-aq-text text-right">${fmtNum(totTotal)}</td>
+        tbody.innerHTML += `<tr class="bg-aq-primary-soft font-bold text-xs border-t-2 border-aq-primary">
+            <td colspan="5" class="px-2 py-1.5 text-aq-primary">Totales</td>
+            <td class="px-2 py-1.5 text-aq-text text-right font-bold">${fmtNum(totCant)}</td>
+            <td class="px-2 py-1.5 text-aq-text text-right font-bold">${fmtNum(totPUnit)}</td>
+            <td class="px-2 py-1.5 text-aq-text text-right font-bold">${fmtNum(totNeto)}</td>
+            <td class="px-2 py-1.5 text-aq-text text-right font-bold">${fmtNum(totTotal)}</td>
         </tr>`;
     })
     .catch(err => console.error('Error:', err));

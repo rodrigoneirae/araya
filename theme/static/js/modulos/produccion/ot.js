@@ -911,14 +911,14 @@ function renderizarDetalleOt() {
     });
 
     const trTotal = document.createElement('tr');
-    trTotal.className = 'bg-aq-surface-2 font-semibold text-xs border-t-2 border-aq-border';
+    trTotal.className = 'bg-aq-primary-soft font-bold text-xs border-t-2 border-aq-primary';
     trTotal.innerHTML = `
-        <td colspan="5" class="px-1 py-1.5 text-aq-text text-left">Totales</td>
-        <td class="px-1 py-1.5 text-aq-text text-right">${totalCant}</td>
+        <td colspan="5" class="px-1 py-1.5 text-aq-primary text-left">Totales</td>
+        <td class="px-1 py-1.5 text-aq-text text-right font-bold">${totalCant}</td>
         <td class="px-1 py-1.5 text-aq-text"></td>
-        <td class="px-1 py-1.5 text-aq-text text-right">${totalCantTotal}</td>
+        <td class="px-1 py-1.5 text-aq-text text-right font-bold">${totalCantTotal}</td>
         <td class="px-1 py-1.5 text-aq-text"></td>
-        <td class="px-1 py-1.5 text-aq-text text-right">${totalPUnit.toFixed(0)}</td>
+        <td class="px-1 py-1.5 text-aq-text text-right font-bold">${totalPUnit.toFixed(0)}</td>
         <td class="px-1 py-1.5 text-aq-text"></td>
     `;
     tbody.appendChild(trTotal);

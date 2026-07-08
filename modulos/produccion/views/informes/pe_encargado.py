@@ -78,7 +78,7 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
             cod_art = m.codigo.codigo if m.codigo else ""
             nom_art = m.codigo.descr if m.codigo else ""
             um_art = m.codigo.um if m.codigo else ""
-            numero_ot = m.numero if m.numero else ""
+            numero_ot = int(m.numero) if m.numero else ""
             fecha = m.fecha.strftime("%d-%m-%Y") if m.fecha else ""
             tipo_doc = docs_map.get(int(m.tipo.cod), "") if m.tipo else ""
             proceso_cod = int(m.proceso) if m.proceso else 0

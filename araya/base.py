@@ -154,6 +154,11 @@ if not DEBUG:
     from django.contrib.staticfiles.storage import ManifestStaticFilesStorage
     class NonStrictManifestStorage(ManifestStaticFilesStorage):
         manifest_strict = False
+        def hashed_name(self, name, *args, **kwargs):
+            try:
+                return super().hashed_name(name, *args, **kwargs)
+            except ValueError:
+                return name
     STORAGES = {
         "staticfiles": {
             "BACKEND": f"{__name__}.NonStrictManifestStorage",

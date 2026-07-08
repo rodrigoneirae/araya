@@ -151,9 +151,12 @@ STATICFILES_DIRS = [
     BASE_DIR / "theme" / "static",
 ]
 if not DEBUG:
+    from django.contrib.staticfiles.storage import ManifestStaticFilesStorage
+    class NonStrictManifestStorage(ManifestStaticFilesStorage):
+        manifest_strict = False
     STORAGES = {
         "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage",
+            "BACKEND": f"{__name__}.NonStrictManifestStorage",
         },
     }
 MEDIA_URL = 'media/'

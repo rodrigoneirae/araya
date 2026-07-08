@@ -98,8 +98,14 @@ function cargarTablaCostos() {
             tbody.innerHTML = '<tr><td colspan="9" class="text-center text-aq-muted text-sm py-8">Sin datos para el rango seleccionado</td></tr>';
             return;
         }
-        tbody.innerHTML = data.data.map(row => {
+        const rows = data.data;
+        let totCant = 0, totPUnit = 0, totNeto = 0, totTotal = 0;
+        tbody.innerHTML = rows.map(row => {
             const bg = row.linea === 0 ? 'bg-aq-surface-2 font-semibold' : '';
+            totCant += parseFloat(String(row.cantidad).replace(/\./g, '')) || 0;
+            totPUnit += parseFloat(String(row.punit).replace(/\./g, '')) || 0;
+            totNeto += parseFloat(String(row.neto).replace(/\./g, '')) || 0;
+            totTotal += parseFloat(String(row.total).replace(/\./g, '')) || 0;
             return `<tr class="hover:bg-aq-surface-2 text-xs ${bg}">
                 <td class="px-2 py-1.5 whitespace-nowrap">${row.ot}</td>
                 <td class="px-2 py-1.5 whitespace-nowrap">${row.fecha}</td>
@@ -112,6 +118,16 @@ function cargarTablaCostos() {
                 <td class="px-2 py-1.5 text-right whitespace-nowrap">${row.total}</td>
             </tr>`;
         }).join('');
+        function fmtNum(n) {
+            return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+        tbody.innerHTML += `<tr class="bg-aq-surface-2 font-semibold text-xs border-t-2 border-aq-border">
+            <td colspan="5" class="px-2 py-1.5 text-aq-text">Totales</td>
+            <td class="px-2 py-1.5 text-aq-text text-right">${fmtNum(totCant)}</td>
+            <td class="px-2 py-1.5 text-aq-text text-right">${fmtNum(totPUnit)}</td>
+            <td class="px-2 py-1.5 text-aq-text text-right">${fmtNum(totNeto)}</td>
+            <td class="px-2 py-1.5 text-aq-text text-right">${fmtNum(totTotal)}</td>
+        </tr>`;
     })
     .catch(err => console.error('Error:', err));
 }

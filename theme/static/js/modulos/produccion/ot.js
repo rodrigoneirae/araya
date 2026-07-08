@@ -854,7 +854,7 @@ function renderizarDetalleOt() {
     tbody.innerHTML = '';
 
     if (detallesOt.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" class="px-3 py-4 text-center text-aq-text">Sin artículos agregados</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="px-3 py-4 text-center text-aq-text">Sin artículos agregados</td></tr>';
         document.getElementById('resumenEncargado').textContent = '-';
         document.getElementById('resumenProceso').textContent = '-';
         document.getElementById('resumenEstado').textContent = '-';
@@ -863,6 +863,8 @@ function renderizarDetalleOt() {
     }
 
     let totalCant = 0;
+    let totalCantTotal = 0;
+    let totalPUnit = 0;
 
     detallesOt.forEach((d, index) => {
         const tr = document.createElement('tr');
@@ -874,6 +876,8 @@ function renderizarDetalleOt() {
         }
 
         totalCant += d.cantidad || 0;
+        totalCantTotal += d.canttotal || 0;
+        totalPUnit += d.punit || 0;
 
         tr.innerHTML = `
             <td class="px-1 py-1 text-aq-text">${d.docref || ''}</td>
@@ -892,6 +896,19 @@ function renderizarDetalleOt() {
         `;
         tbody.appendChild(tr);
     });
+
+    const trTotal = document.createElement('tr');
+    trTotal.className = 'bg-aq-surface-2 font-semibold text-xs border-t-2 border-aq-border';
+    trTotal.innerHTML = `
+        <td colspan="5" class="px-1 py-1.5 text-aq-text text-left">Totales</td>
+        <td class="px-1 py-1.5 text-aq-text text-right">${totalCant}</td>
+        <td class="px-1 py-1.5 text-aq-text"></td>
+        <td class="px-1 py-1.5 text-aq-text text-right">${totalCantTotal}</td>
+        <td class="px-1 py-1.5 text-aq-text"></td>
+        <td class="px-1 py-1.5 text-aq-text text-right">${totalPUnit.toFixed(0)}</td>
+        <td class="px-1 py-1.5 text-aq-text"></td>
+    `;
+    tbody.appendChild(trTotal);
 
     const encargado = document.getElementById('otEncargado');
     const encargadoText = encargado && encargado.selectedIndex > 0 ? encargado.options[encargado.selectedIndex].textContent : '-';

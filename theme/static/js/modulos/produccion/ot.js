@@ -973,7 +973,7 @@ function guardarOt() {
 
     mostrarModalConfirm({titulo: 'Guardar OT', mensaje: '¿Está seguro de guardar esta Orden de Trabajo?\n\nLos artículos referenciados serán marcados como Cerrados.', tipo: 'confirm', onConfirm: function() {
         buscarXHROt('nuevo', {
-            numero: '',
+            numero: numero,
             fecha: fecha,
             encargado: encargado,
             proceso: proceso,

@@ -500,71 +500,6 @@ function renderizarDetallesPE() {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-aq-surface-2';
         tr.dataset.index = index;
-
-        const isEditing = det._editing === true;
-
-        if (isEditing) {
-            const optionsEncargado = document.getElementById('peEncargado').options;
-            let optionsHtml = '';
-            for (let i = 0; i < optionsEncargado.length; i++) {
-                const opt = optionsEncargado[i];
-                const selected = det.codencargado && String(det.codencargado) === String(opt.value) ? 'selected' : '';
-                optionsHtml += `<option value="${opt.value}" ${selected}>${opt.text}</option>`;
-            }
-
-            tr.innerHTML = `
-                <td class="px-1 py-1 text-xs">
-                    <input type="text" id="edit-codigo-${index}" value="${det.codigo || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs" readonly>
-                </td>
-                <td class="px-1 py-1 text-xs">
-                    <select id="edit-bodega-${index}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">
-                        ${document.getElementById('peArtBodega').innerHTML}
-                    </select>
-                </td>
-                <td class="px-1 py-1 text-xs">
-                    <input type="number" id="edit-cantidad-${index}" value="${det.cantidad || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs text-right" step="any">
-                </td>
-                <td class="px-1 py-1 text-xs">
-                    <input type="text" id="edit-um-${index}" value="${det.um || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs" readonly>
-                </td>
-                <td class="px-1 py-1 text-xs">${det.nombre || ''}</td>
-                <td class="px-1 py-1 text-xs">
-                    <input type="number" id="edit-punit-${index}" value="${det.punit || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs text-right" step="any">
-                </td>
-                <td class="px-1 py-1 text-xs">
-                    <input type="date" id="edit-fecha-${index}" value="${det.fecha || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">
-                </td>
-                <td class="px-1 py-1 text-xs">
-                    <select id="edit-encargado-${index}" class="edit-encargado-select w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">
-                        ${optionsHtml}
-                    </select>
-                </td>
-                <td class="px-1 py-1 text-xs">
-                    <span class="px-1.5 py-0.5 rounded text-xs ${det.estado === 'Cerrado' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
-                        ${det.estado || 'Abierto'}
-                    </span>
-                </td>
-                <td class="px-1 py-1 text-center whitespace-nowrap">
-                    <button type="button" onclick="guardarEditDetallePE(${index})" class="text-green-500 hover:text-green-700 text-xs mr-1" title="Guardar">
-                        <i class='bx bx-check'></i>
-                    </button>
-                    <button type="button" onclick="cancelarEditDetallePE(${index})" class="text-gray-500 hover:text-gray-700 text-xs" title="Cancelar">
-                        <i class='bx bx-x'></i>
-                    </button>
-                </td>
-            `;
-            const bodegaSelect = tr.querySelector(`#edit-bodega-${index}`);
-            if (bodegaSelect && det.bodega) {
-                bodegaSelect.value = det.bodega;
-            }
-            const encargadoSelect = tr.querySelector(`#edit-encargado-${index}`);
-            if (encargadoSelect && typeof jQuery !== 'undefined') {
-                jQuery(encargadoSelect).select2({ width: '100%', language: 'es' });
-                if (det.codencargado) {
-                    jQuery(encargadoSelect).val(String(det.codencargado)).trigger('change');
-                }
-            }
-        } else {
             let nombreEncargado = '';
             const selectEncargado = document.getElementById('peEncargado');
             if (selectEncargado && selectEncargado.options.length > 0 && det.codencargado) {
@@ -595,37 +530,11 @@ function renderizarDetallesPE() {
                     </span>
                 </td>
                 <td class="px-1 py-1.5 text-aq-text whitespace-nowrap">
-                    ${isEditing ? '<button type="button" onclick="guardarEditDetallePE(' + index + ')" class="text-green-500 hover:text-green-700 text-xs mr-1" title="Guardar"><i class="bx bx-check"></i></button><button type="button" onclick="cancelarEditDetallePE(' + index + ')" class="text-gray-500 hover:text-gray-700 text-xs" title="Cancelar"><i class="bx bx-x"></i></button>' : (modoEdicionPE ? '<button type="button" onclick="editarDetallePE(' + index + ')" class="text-blue-500 hover:text-blue-700 text-xs mr-1" title="Editar"><i class="bx bx-edit"></i></button><button type="button" onclick="eliminarDetallePE(' + index + ')" class="text-red-500 hover:text-red-700 text-xs" title="Eliminar"><i class="bx bx-trash"></i></button>' : '<span class="text-aq-muted text-xs">-</span>')}
+                    ${modoEdicionPE ? '<button type="button" onclick="abrirModalEditarDetallePE(' + index + ')" class="text-blue-500 hover:text-blue-700 text-xs mr-1" title="Editar"><i class="bx bx-edit"></i></button><button type="button" onclick="eliminarDetallePE(' + index + ')" class="text-red-500 hover:text-red-700 text-xs" title="Eliminar"><i class="bx bx-trash"></i></button>' : '<span class="text-aq-muted text-xs">-</span>'}
                 </td>
             `;
-        }
         tbody.appendChild(tr);
     });
-}
-
-function editarDetallePE(index) {
-    detallesPE[index]._editing = true;
-    renderizarDetallesPE();
-}
-
-function guardarEditDetallePE(index) {
-    const det = detallesPE[index];
-    det.bodega = document.getElementById(`edit-bodega-${index}`).value;
-    det.cantidad = parseFloat(document.getElementById(`edit-cantidad-${index}`).value) || 0;
-    det.punit = parseFloat(document.getElementById(`edit-punit-${index}`).value) || 0;
-    det.fecha = document.getElementById(`edit-fecha-${index}`).value;
-    const encargadoSelect = document.getElementById(`edit-encargado-${index}`);
-    if (encargadoSelect) {
-        det.codencargado = encargadoSelect.value;
-    }
-    delete det._editing;
-    renderizarDetallesPE();
-    actualizarResumenPE();
-}
-
-function cancelarEditDetallePE(index) {
-    delete detallesPE[index]._editing;
-    renderizarDetallesPE();
 }
 
 function actualizarResumenPE() {
@@ -642,6 +551,90 @@ function actualizarResumenPE() {
 
     document.getElementById('resumenOT').parentElement.classList.add('flex', 'items-center', 'gap-1');
     document.getElementById('resumenProceso').parentElement.classList.add('flex', 'items-center', 'gap-1');
+}
+
+let indiceEditarDetallePE = null;
+
+function cerrarModalEditarDetallePE() {
+    document.getElementById('modalEditarDetallePE').classList.add('hidden');
+    indiceEditarDetallePE = null;
+}
+
+function abrirModalEditarDetallePE(index) {
+    indiceEditarDetallePE = index;
+    const d = detallesPE[index];
+
+    document.getElementById('editPECod').value = d.codigo || '';
+    document.getElementById('editPENombre').value = d.nombre || '';
+    document.getElementById('editPECant').value = d.cantidad || 0;
+    document.getElementById('editPEPUnit').value = d.punit || 0;
+    document.getElementById('editPEUM').value = d.um || '';
+
+    const bodegaSel = document.getElementById('editPEBodega');
+    bodegaSel.innerHTML = document.getElementById('peArtBodega').innerHTML;
+    bodegaSel.value = d.bodega || '';
+
+    const encargadoSel = document.getElementById('editPEEncargado');
+    encargadoSel.innerHTML = document.getElementById('peEncargado').innerHTML;
+    if (d.codencargado) {
+        encargadoSel.value = d.codencargado;
+    }
+
+    document.getElementById('editPEEstado').value = d.estado || 'Abierto';
+
+    var fechaVal = d.fecha || '';
+    if (fechaVal) {
+        var match = fechaVal.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+            fechaVal = match[1] + '-' + match[2] + '-' + match[3];
+        } else {
+            match = fechaVal.match(/^(\d{2})-(\d{2})-(\d{4})/);
+            if (match) {
+                fechaVal = match[3] + '-' + match[2] + '-' + match[1];
+            }
+        }
+    }
+    document.getElementById('editPEFecha').value = fechaVal;
+
+    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+        jQuery(bodegaSel).select2({ language: 'es', width: '100%', placeholder: 'Seleccionar...', allowClear: true });
+        jQuery(encargadoSel).select2({ language: 'es', width: '100%', placeholder: 'Seleccionar...', allowClear: true });
+    }
+
+    document.getElementById('modalEditarDetallePE').classList.remove('hidden');
+}
+
+function guardarEditarDetallePE() {
+    if (indiceEditarDetallePE === null) return;
+    const i = indiceEditarDetallePE;
+    const d = detallesPE[i];
+
+    const cantidad = parseFloat(document.getElementById('editPECant').value) || 0;
+    if (cantidad <= 0) {
+        Toastify({text: 'La cantidad debe ser mayor a 0', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+
+    d.cantidad = cantidad;
+    d.punit = parseFloat(document.getElementById('editPEPUnit').value) || 0;
+    d.bodega = document.getElementById('editPEBodega').value;
+    d.estado = document.getElementById('editPEEstado').value;
+
+    const encargadoSel = document.getElementById('editPEEncargado');
+    d.codencargado = encargadoSel.value;
+
+    var fechaVal = document.getElementById('editPEFecha').value || '';
+    d.fecha = fechaVal;
+
+    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+        jQuery('#editPEBodega').select2('destroy');
+        jQuery('#editPEEncargado').select2('destroy');
+    }
+
+    cerrarModalEditarDetallePE();
+    renderizarDetallesPE();
+    actualizarResumenPE();
+    Toastify({text: 'Detalle actualizado', style: {background: '#4caf50'}}).showToast();
 }
 
 function cambiarTabPE(tab) {

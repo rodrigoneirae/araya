@@ -332,7 +332,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     punit=float(det.get("punit", 0)),
                     neto=neto,
                     total=float(det.get("total", 0)),
-                    estado=estado,
+                    estado=det.get("estado", estado),
                     bodega=float(det.get("bodega")) if det.get("bodega") else None,
                     proceso=det.get("proceso"),
                     peso=float(det.get("peso", 0)) if det.get("peso") else None,

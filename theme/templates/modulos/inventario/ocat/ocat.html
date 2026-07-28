@@ -220,6 +220,70 @@
     </div>
 </div>
 
+<div id="modalEditarDetalle" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-aq-surface rounded-xl p-4 sm:p-6 w-full max-w-2xl border border-aq-border shadow-xl max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-semibold text-aq-text mb-4">Editar Detalle de Artículo</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
+                <input type="text" id="editArtCod" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-gray-100 text-aq-text" readonly>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
+                <input type="text" id="editArtNombre" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-gray-100 text-aq-text" readonly>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-aq-text mb-1">Cantidad</label>
+                <input type="number" id="editArtCant" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-aq-text mb-1">Precio Unitario</label>
+                <input type="number" id="editArtPUnit" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-aq-text mb-1">UM</label>
+                <input type="text" id="editArtUM" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-gray-100 text-aq-text" readonly>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-aq-text mb-1">Bodega</label>
+                <select id="editArtBodega" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text"></select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-aq-text mb-1">Peso</label>
+                <input type="number" id="editArtPeso" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-aq-text mb-1">Fecha</label>
+                <input type="date" id="editArtFecha" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-aq-text mb-1">Categoría</label>
+                <select id="editArtCategoria" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text"></select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-aq-text mb-1">Tratamiento</label>
+                <select id="editArtTratamiento" class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text"></select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-aq-text mb-1">Estado</label>
+                <select id="editArtEstado" data-no-select2 class="w-full px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text">
+                    <option value="Abierto">Abierto</option>
+                    <option value="Cerrado">Cerrado</option>
+                    <option value="Terminado">Terminado</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex justify-end mt-4 gap-2">
+            <button onclick="cerrarModalEditarDetalle()" class="px-4 py-2 rounded-lg border border-aq-border text-aq-text hover:bg-aq-surface-2">
+                Cancelar
+            </button>
+            <button onclick="guardarEditarDetalle()" class="px-4 py-2 rounded-lg bg-aq-primary text-white hover:opacity-85">
+                Guardar
+            </button>
+        </div>
+    </div>
+</div>
+
 <div id="modalCUP" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
     <div class="bg-aq-surface  p-4 sm:p-6 w-full max-w-md border border-aq-border">
         <h3 class="text-lg font-semibold text-aq-text mb-4">Modificar CUP</h3>

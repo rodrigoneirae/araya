@@ -437,6 +437,7 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
                     estado_detalle = "Cerrado"
                 else:
                     estado_detalle = "Abierto"
+                estado_detalle = det.get("estado", estado_detalle)
 
                 det_codencargado = det.get("codencargado")
                 detalle_encargado = float(det_codencargado) if det_codencargado else codencargado

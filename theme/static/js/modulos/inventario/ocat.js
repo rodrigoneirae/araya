@@ -585,6 +585,7 @@ const totalEncabezado = parseFloat(document.getElementById('ocatTotal').value) |
             <td class="px-1 py-1 text-aq-text text-right">${d.cup || 0}</td>
             <td class="px-1 py-1 text-center">
                 ${modoEdicionOcat ? `
+                <button onclick="abrirModalEditarDetalle(${index})" class="text-blue-500 hover:text-blue-700 mr-1" title="Editar"><i class="bx bx-edit-alt"></i></button>
                 <button onclick="abrirModalCUP(${index})" class="text-green-500 hover:text-green-700 mr-1" title="CUP"><i class="bx bx-dollar"></i></button>
                 <button onclick="eliminarArticuloOcat(${index})" class="text-red-500 hover:text-red-700" title="Eliminar"><i class="bx bx-trash"></i></button>
                 ` : ''}
@@ -927,6 +928,103 @@ function actualizarDireccionSucursal() {
 }
 
 let indiceCUP = null;
+
+let indiceEditarDetalle = null;
+
+function cerrarModalEditarDetalle() {
+    document.getElementById('modalEditarDetalle').classList.add('hidden');
+    indiceEditarDetalle = null;
+}
+
+function abrirModalEditarDetalle(index) {
+    indiceEditarDetalle = index;
+    const d = detallesOcat[index];
+
+    document.getElementById('editArtCod').value = d.codigo || '';
+    document.getElementById('editArtNombre').value = d.nombre || '';
+    document.getElementById('editArtCant').value = d.cantidad || 0;
+    document.getElementById('editArtPUnit').value = d.punit || 0;
+    document.getElementById('editArtUM').value = d.um || '';
+
+    const bodegaSel = document.getElementById('editArtBodega');
+    bodegaSel.innerHTML = document.getElementById('ocatArtBodega').innerHTML;
+    bodegaSel.value = d.bodega || '';
+
+    const catSel = document.getElementById('editArtCategoria');
+    catSel.innerHTML = document.getElementById('ocatArtCategoria').innerHTML;
+    catSel.value = d.categoria || '';
+
+    const tratSel = document.getElementById('editArtTratamiento');
+    tratSel.innerHTML = document.getElementById('ocatArtTratamiento').innerHTML;
+    tratSel.value = d.tratamiento || '';
+
+    document.getElementById('editArtPeso').value = d.peso || 0;
+
+    document.getElementById('editArtEstado').value = d.estado || 'Abierto';
+
+    var fechaVal = d.fecha || '';
+    if (fechaVal) {
+        var match = fechaVal.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+            fechaVal = match[1] + '-' + match[2] + '-' + match[3];
+        } else {
+            match = fechaVal.match(/^(\d{2})-(\d{2})-(\d{4})/);
+            if (match) {
+                fechaVal = match[3] + '-' + match[2] + '-' + match[1];
+            }
+        }
+    }
+    document.getElementById('editArtFecha').value = fechaVal;
+
+    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+        jQuery(bodegaSel).select2({ language: 'es', width: '100%', placeholder: 'Seleccionar...', allowClear: true });
+        jQuery(catSel).select2({ language: 'es', width: '100%', placeholder: 'Seleccionar...', allowClear: true });
+        jQuery(tratSel).select2({ language: 'es', width: '100%', placeholder: 'Seleccionar...', allowClear: true });
+    }
+
+    document.getElementById('modalEditarDetalle').classList.remove('hidden');
+}
+
+function guardarEditarDetalle() {
+    if (indiceEditarDetalle === null) return;
+    const i = indiceEditarDetalle;
+
+    const cantidad = parseFloat(document.getElementById('editArtCant').value) || 0;
+    const punit = parseFloat(document.getElementById('editArtPUnit').value) || 0;
+
+    if (cantidad <= 0) {
+        Toastify({text: 'La cantidad debe ser mayor a 0', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+
+    detallesOcat[i].cantidad = cantidad;
+    detallesOcat[i].punit = punit;
+    detallesOcat[i].bodega = document.getElementById('editArtBodega').value;
+    detallesOcat[i].peso = parseFloat(document.getElementById('editArtPeso').value) || 0;
+    detallesOcat[i].categoria = document.getElementById('editArtCategoria').value || null;
+    const catOpt = document.getElementById('editArtCategoria').selectedOptions[0];
+    detallesOcat[i].categoria_nombre = catOpt && catOpt.value ? (catOpt.text.split(' - ')[1] || '') : '';
+    detallesOcat[i].tratamiento = document.getElementById('editArtTratamiento').value || null;
+    const tratOpt = document.getElementById('editArtTratamiento').selectedOptions[0];
+    detallesOcat[i].tratamiento_nombre = tratOpt && tratOpt.value ? (tratOpt.text.split(' - ')[1] || '') : '';
+
+    detallesOcat[i].estado = document.getElementById('editArtEstado').value;
+
+    detallesOcat[i].fecha = document.getElementById('editArtFecha').value || '';
+    detallesOcat[i].subtotal = cantidad * punit;
+    detallesOcat[i].total = cantidad * punit;
+
+    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+        jQuery('#editArtBodega').select2('destroy');
+        jQuery('#editArtCategoria').select2('destroy');
+        jQuery('#editArtTratamiento').select2('destroy');
+    }
+
+    cerrarModalEditarDetalle();
+    renderizarDetalleOcat();
+    calcularTotalesOcat();
+    Toastify({text: 'Detalle actualizado', style: {background: '#4caf50'}}).showToast();
+}
 
 function cerrarModalCUP() {
     document.getElementById('modalCUP').classList.add('hidden');

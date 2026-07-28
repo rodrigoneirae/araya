@@ -27,6 +27,8 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
         action = request.POST.get("action", "")
         if action == "listar_encargados":
             return self._listar_encargados()
+        elif action == "info_encargado":
+            return self._info_encargado(request)
         elif action == "generar_pdf":
             return self._generar_pdf(request)
         elif action == "generar_excel":
@@ -103,6 +105,75 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
 
         return data
 
+    def _info_encargado(self, request: HttpRequest) -> JsonResponse:
+        fecha_inicio = request.POST.get("fecha_inicio", "").strip()
+        fecha_fin = request.POST.get("fecha_fin", "").strip()
+        encargado_cod = request.POST.get("encargado", "").strip()
+
+        data = self._get_datos(fecha_inicio, fecha_fin, encargado_cod if encargado_cod else None)
+
+        filas = []
+        total_general = 0
+
+        if encargado_cod:
+            enc_data = list(data.values())[0] if data else None
+            if enc_data:
+                for art_cod, art_data in sorted(enc_data["articulos"].items()):
+                    for mov in art_data["movimientos"]:
+                        totalizado = mov["cantidad"] * mov["precio"]
+                        total_general += totalizado
+                        filas.append({
+                            "articulo": art_cod,
+                            "nombre": art_data["nombre"],
+                            "fecha": mov["fecha"],
+                            "ot": str(mov["ot"]) if mov["ot"] else "",
+                            "tipo": mov["tipo"] or "",
+                            "cantidad": mov["cantidad"],
+                            "um": mov["um"],
+                            "precio": mov["precio"],
+                            "totalizado": totalizado,
+                            "proceso": mov["proceso"] or "",
+                            "encargado": enc_data["nombre"],
+                        })
+        else:
+            for enc_cod, enc_data in sorted(data.items()):
+                enc_subtotal = 0
+                for art_cod, art_data in sorted(enc_data["articulos"].items()):
+                    for mov in art_data["movimientos"]:
+                        totalizado = mov["cantidad"] * mov["precio"]
+                        total_general += totalizado
+                        enc_subtotal += totalizado
+                        filas.append({
+                            "articulo": art_cod,
+                            "nombre": art_data["nombre"],
+                            "fecha": mov["fecha"],
+                            "ot": str(mov["ot"]) if mov["ot"] else "",
+                            "tipo": mov["tipo"] or "",
+                            "cantidad": mov["cantidad"],
+                            "um": mov["um"],
+                            "precio": mov["precio"],
+                            "totalizado": totalizado,
+                            "proceso": mov["proceso"] or "",
+                            "encargado": enc_data["nombre"],
+                        })
+                if enc_subtotal > 0:
+                    filas.append({
+                        "articulo": "",
+                        "nombre": "Total Encargado",
+                        "fecha": "",
+                        "ot": "",
+                        "tipo": "",
+                        "cantidad": 0,
+                        "um": "",
+                        "precio": 0,
+                        "totalizado": enc_subtotal,
+                        "proceso": "",
+                        "encargado": "",
+                        "_subtotal": True,
+                    })
+
+        return JsonResponse({"success": True, "data": filas, "total_general": total_general})
+
     def _generar_excel(self, request: HttpRequest) -> HttpResponse:
         from openpyxl import Workbook
         from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
@@ -127,7 +198,7 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
             bottom=Side(style="thin", color="d1d5db"),
         )
 
-        headers = ["Artículo", "Nombre", "Fecha", "N° OT", "Tipo", "Cant", "UM", "Precio", "Proceso"]
+        headers = ["Artículo", "Nombre", "Fecha", "N° OT", "Tipo", "Cant", "UM", "Precio", "Totalizado", "Proceso"]
         ws.append(headers)
         for col_idx in range(1, len(headers) + 1):
             cell = ws.cell(row=1, column=col_idx)
@@ -140,26 +211,39 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
             val = float(v)
             return f"{int(round(val)):,}".replace(",", ".") if val == int(val) else f"{val:,.3f}".replace(",", ".")
 
+        total_general = 0
         enc_data = list(data.values())[0] if data else None
 
         if enc_data and isinstance(enc_data, dict):
             for art_cod, art_data in sorted(enc_data["articulos"].items()):
                 for mov in art_data["movimientos"]:
-                    ws.append([art_cod, art_data["nombre"], mov["fecha"], mov["ot"], mov["tipo"], mov["cantidad"], mov["um"], mov["precio"], mov["proceso"]])
+                    totalizado = mov["cantidad"] * mov["precio"]
+                    total_general += totalizado
+                    ws.append([art_cod, art_data["nombre"], mov["fecha"], mov["ot"], mov["tipo"], mov["cantidad"], mov["um"], mov["precio"], totalizado, mov["proceso"]])
                     row_num = ws.max_row
-                    for col_idx in range(1, 10):
+                    for col_idx in range(1, 11):
                         cell = ws.cell(row=row_num, column=col_idx)
                         cell.border = thin_border
                         if col_idx == 6:
                             cell.alignment = Alignment(horizontal="right", vertical="center")
                             cell.number_format = '#,##0.000'
-                        elif col_idx in [1, 2, 9]:
+                        elif col_idx in [1, 2, 10]:
                             cell.alignment = Alignment(horizontal="left", vertical="center")
-                        elif col_idx == 8:
+                        elif col_idx in [8, 9]:
                             cell.alignment = Alignment(horizontal="right", vertical="center")
                             cell.number_format = '#,##0'
                         else:
                             cell.alignment = Alignment(horizontal="center", vertical="center")
+
+            if total_general:
+                ws.append([])
+                total_row = ws.max_row
+                ws.cell(row=total_row, column=1, value="Total General").font = Font(name="Calibri", bold=True, size=10)
+                ws.cell(row=total_row, column=1).border = thin_border
+                ws.cell(row=total_row, column=9, value=round(total_general)).font = Font(name="Calibri", bold=True, size=10)
+                ws.cell(row=total_row, column=9).alignment = Alignment(horizontal="right", vertical="center")
+                ws.cell(row=total_row, column=9).number_format = '#,##0'
+                ws.cell(row=total_row, column=9).border = thin_border
 
         ws.column_dimensions["A"].width = 14
         ws.column_dimensions["B"].width = 35
@@ -169,7 +253,8 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
         ws.column_dimensions["F"].width = 12
         ws.column_dimensions["G"].width = 8
         ws.column_dimensions["H"].width = 14
-        ws.column_dimensions["I"].width = 20
+        ws.column_dimensions["I"].width = 16
+        ws.column_dimensions["J"].width = 20
 
         buf = io.BytesIO()
         wb.save(buf)
@@ -247,8 +332,8 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
 
             elems.append(Spacer(1, 3 * mm))
 
-            header = ["Artículo", "Nombre", "Fecha", "N° OT", "Tipo", "Cant", "UM", "Precio", "Proceso"]
-            col_widths = [18 * mm, 35 * mm, 16 * mm, 13 * mm, 22 * mm, 14 * mm, 10 * mm, 16 * mm, 22 * mm]
+            header = ["Artículo", "Nombre", "Fecha", "N° OT", "Tipo", "Cant", "UM", "Precio", "Totalizado", "Proceso"]
+            col_widths = [16 * mm, 30 * mm, 14 * mm, 12 * mm, 18 * mm, 12 * mm, 8 * mm, 14 * mm, 16 * mm, 18 * mm]
 
             if not data:
                 elems.append(Spacer(1, 20 * mm))
@@ -269,9 +354,10 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
                         Paragraph("", center_style),
                         Paragraph("", center_style),
                         Paragraph("", cell_style),
+                        Paragraph("", right_style),
+                        Paragraph("", center_style),
+                        Paragraph("", center_style),
                         Paragraph(clt(enc_subtotal), ParagraphStyle("RightBold", parent=right_style, fontSize=7, bold=True)),
-                        Paragraph("", center_style),
-                        Paragraph("", center_style),
                         Paragraph("", cell_style),
                     ])
 
@@ -282,6 +368,7 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
                         if not art_data["movimientos"]:
                             continue
                         for mov in art_data["movimientos"]:
+                            totalizado = mov["cantidad"] * mov["precio"]
                             table_data.append([
                                 Paragraph(str(art_cod), center_style),
                                 Paragraph(art_data["nombre"], cell_style),
@@ -291,10 +378,11 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
                                 Paragraph(clq(mov["cantidad"]), right_style),
                                 Paragraph(mov["um"], center_style),
                                 Paragraph(clp(mov["precio"]), right_style),
+                                Paragraph(clp(totalizado), right_style),
                                 Paragraph(mov["proceso"] or "", cell_style),
                             ])
-                            total_general += mov["cantidad"]
-                            enc_subtotal += mov["cantidad"]
+                            total_general += totalizado
+                            enc_subtotal += totalizado
                 add_subtotal()
             else:
                 for enc_cod, enc_data in sorted(data.items()):
@@ -310,6 +398,7 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
                         Paragraph("", right_style),
                         Paragraph("", center_style),
                         Paragraph("", center_style),
+                        Paragraph("", right_style),
                         Paragraph("", cell_style),
                     ])
                     
@@ -317,6 +406,7 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
                         if not art_data["movimientos"]:
                             continue
                         for mov in art_data["movimientos"]:
+                            totalizado = mov["cantidad"] * mov["precio"]
                             table_data.append([
                                 Paragraph(str(art_cod), center_style),
                                 Paragraph(art_data["nombre"], cell_style),
@@ -326,10 +416,11 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
                                 Paragraph(clq(mov["cantidad"]), right_style),
                                 Paragraph(mov["um"], center_style),
                                 Paragraph(clp(mov["precio"]), right_style),
+                                Paragraph(clp(totalizado), right_style),
                                 Paragraph(mov["proceso"] or "", cell_style),
                             ])
-                            total_general += mov["cantidad"]
-                            enc_subtotal += mov["cantidad"]
+                            total_general += totalizado
+                            enc_subtotal += totalizado
                     
                     add_subtotal()
 
@@ -350,7 +441,8 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
                 ("ALIGN", (5, 0), (5, -1), "RIGHT"),
                 ("ALIGN", (6, 0), (6, -1), "CENTER"),
                 ("ALIGN", (7, 0), (7, -1), "RIGHT"),
-                ("ALIGN", (8, 0), (8, -1), "LEFT"),
+                ("ALIGN", (8, 0), (8, -1), "RIGHT"),
+                ("ALIGN", (9, 0), (9, -1), "LEFT"),
             ]
             
             for i in range(1, len(table_data)):
@@ -370,7 +462,7 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
             elems.append(Spacer(1, 5 * mm))
 
             resumen_data = [[
-                Paragraph(f'<b>Total General</b>  {clt(total_general)}', ParagraphStyle("Resumen", parent=styles["Normal"], fontSize=8, leading=11, alignment=1)),
+                Paragraph(f'<b>Total General</b>  {clp(total_general)}', ParagraphStyle("Resumen", parent=styles["Normal"], fontSize=8, leading=11, alignment=1)),
             ]]
             resumen_tbl = Table(resumen_data, colWidths=[200 * mm], hAlign="RIGHT")
             resumen_tbl.setStyle(TableStyle([

@@ -249,6 +249,19 @@ function cargarDatosIniciales() {
         }
     });
 
+    buscarXHROt('listar_clientes', {}, function(data) {
+        const select = document.getElementById('otRut');
+        if (select && data.clientes) {
+            select.innerHTML = '<option value="">--- Seleccionar ---</option>';
+            data.clientes.forEach(c => {
+                const option = document.createElement('option');
+                option.value = c.rut;
+                option.textContent = c.rut + ' - ' + c.nombre;
+                select.appendChild(option);
+            });
+        }
+    });
+
     buscarXHROt('listar_procesos', {}, function(data) {
         const select = document.getElementById('otProceso');
         if (select && data.procesos) {
@@ -480,6 +493,8 @@ function nuevaOt() {
     document.getElementById('otEncargado').dispatchEvent(new Event('change', { bubbles: true }));
     document.getElementById('otProceso').value = '';
     document.getElementById('otNumero').value = '';
+    document.getElementById('otRut').value = '';
+    document.getElementById('otGlosa').value = '';
     document.getElementById('tab-detalle').classList.add('hidden');
     document.getElementById('contenido-detalle').classList.add('hidden');
     document.getElementById('tab-encabezado').classList.add('active');
@@ -499,7 +514,7 @@ function nuevaOt() {
 }
 
 function setCamposOtEditable(editable) {
-    const inputs = ['otNumero', 'otFecha', 'otEncargado', 'otProceso'];
+    const inputs = ['otNumero', 'otFecha', 'otEncargado', 'otProceso', 'otRut', 'otGlosa'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -961,6 +976,8 @@ function guardarOt() {
     const proceso = document.getElementById('otProceso').value;
     const estado = document.getElementById('otEstado').value;
     const fecha = document.getElementById('otFecha').value;
+    const rut = document.getElementById('otRut').value;
+    const glosa = document.getElementById('otGlosa').value;
 
     if (!encargado) {
         Toastify({text: 'Debe ingresar un encargado', style: {background: '#f44336'}}).showToast();
@@ -978,6 +995,8 @@ function guardarOt() {
             encargado: encargado,
             proceso: proceso,
             estado: estado,
+            rut: rut,
+            glosa: glosa,
             detalles: JSON.stringify(detallesOt)
         }, function(data) {
             if (data.success) {
@@ -1098,6 +1117,9 @@ function cargarOt(numero) {
 
             document.getElementById('otEstado').value = data.data.estado || 'Abierto';
             document.getElementById('otEstado').dispatchEvent(new Event('change', { bubbles: true }));
+
+            document.getElementById('otRut').value = data.data.rut || '';
+            document.getElementById('otGlosa').value = data.data.glosa || '';
 
             detallesOt = (data.data.detalles || []).map(d => ({
                 codigo: d.codigo || '',

@@ -20,6 +20,7 @@ from modulos.maestros.models.procesos import Procesos
 from modulos.maestros.models.articulos import Articulos
 from modulos.maestros.models.bodegas import Bodegas
 from modulos.maestros.models.docs import Docs
+from modulos.maestros.models.prov_cliente import Provclientes
 from django.conf import settings
 import os
 from datetime import datetime
@@ -45,6 +46,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
             "eliminar": lambda d: self._eliminar_ot(d.get("numero")),
             "siguiente_numero": lambda _: self._siguiente_numero(),
             "listar_encargados": lambda _: self._listar_encargados(),
+            "listar_clientes": lambda _: self._listar_clientes(),
             "listar_procesos": lambda _: self._listar_procesos(),
             "listar_ot": lambda _: self._listar_ot(),
             "buscar_articulo": lambda d: self._buscar_articulo(d.get("codigo")),
@@ -82,6 +84,10 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                 movimiento.estado = data.get("estado")
             if data.get("fecha"):
                 movimiento.fecha = data.get("fecha")
+            if data.get("rut") is not None:
+                movimiento.rut = data.get("rut")
+            if data.get("glosa") is not None:
+                movimiento.glosa = data.get("glosa")
             movimiento.usr = self.request.user.username if self.request.user.is_authenticated else ""
             movimiento.timeuser = timezone.now()
             movimiento.save()
@@ -103,6 +109,10 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
     def _listar_encargados(self) -> JsonResponse:
         empleados = Empleados.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"encargados": list(empleados)})
+
+    def _listar_clientes(self) -> JsonResponse:
+        clientes = Provclientes.objects.values("rut", "nombre").filter(tipo__in=["Cliente", "Ambos"]).order_by("nombre")
+        return JsonResponse({"clientes": list(clientes)})
 
     def _listar_procesos(self) -> JsonResponse:
         procesos = Procesos.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
@@ -283,6 +293,8 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                     "proceso": str(encabezado.proceso) if encabezado.proceso else "",
                     "proceso_nombre": proceso_nombre,
                     "estado": encabezado.estado or "",
+                    "rut": encabezado.rut or "",
+                    "glosa": encabezado.glosa or "",
                     "detalles": detalles,
                     "pe_relacionados": pe_relacionados,
                     "vc_relacionados": vc_relacionados,
@@ -453,6 +465,8 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                 codencargado=codencargado,
                 proceso=proceso,
                 estado=estado,
+                rut=data.get("rut", ""),
+                glosa=data.get("glosa", ""),
                 tipodocref=tipodocref_cod,
                 usr=usr,
                 timeuser=time_user,

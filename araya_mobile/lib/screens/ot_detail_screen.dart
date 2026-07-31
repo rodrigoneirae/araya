@@ -135,7 +135,65 @@ class _OTDetailScreenState extends State<OTDetailScreen> with WidgetsBindingObse
                                 : ArayaColors.lightMuted)))
                     : _buildContent(theme, cs, isDark),
       ),
+      bottomNavigationBar: _ot == null ? null : _buildActionBar(isDark),
     );
+  }
+
+  Widget _buildActionBar(bool isDark) {
+    final ot = _ot!;
+    return SafeArea(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? ArayaColors.darkSurface : ArayaColors.lightSurface,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? ArayaColors.darkBorder : ArayaColors.lightBorder,
+            ),
+          ),
+        ),
+        child: ot.estado == 'Abierto'
+            ? Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back),
+                      label: const Text('Volver'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _openRegistroForm,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Crear Registro'),
+                    ),
+                  ),
+                ],
+              )
+            : OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Volver'),
+              ),
+      ),
+    );
+  }
+
+  Future<void> _openRegistroForm() async {
+    final ot = _ot;
+    if (ot == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RegistroFormScreen(
+          apiService: widget.apiService,
+          ordenTrabajoDetalle: ot,
+        ),
+      ),
+    );
+    _fetch();
   }
 
   Widget _buildContent(ThemeData theme, ColorScheme cs, bool isDark) {
@@ -187,6 +245,10 @@ class _OTDetailScreenState extends State<OTDetailScreen> with WidgetsBindingObse
                     const Divider(),
                     const SizedBox(height: 8),
                     _infoRow(Icons.calendar_today, 'Fecha', _formatFecha(ot.fecha), isDark),
+                    if (ot.clienteNombre != null && ot.clienteNombre!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      _infoRow(Icons.business, 'Cliente', ot.clienteNombre!, isDark),
+                    ],
                     if (ot.encargado != null) ...[
                       const SizedBox(height: 8),
                       _infoRow(Icons.person, 'Encargado', ot.encargado!.nombre, isDark),
@@ -197,7 +259,7 @@ class _OTDetailScreenState extends State<OTDetailScreen> with WidgetsBindingObse
                     ],
                     if (ot.glosa != null && ot.glosa!.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      _infoRow(Icons.note, 'Glosa', ot.glosa!, isDark),
+                      _infoRow(Icons.note, 'Referencia', ot.glosa!, isDark),
                     ],
                   ],
                 ),
@@ -223,12 +285,27 @@ class _OTDetailScreenState extends State<OTDetailScreen> with WidgetsBindingObse
                           ),
                         ),
                         const Spacer(),
-                        Text(
-                          'Total: ${ot.stats.totalCantidad.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Total: ${ot.stats.totalCantidad.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                              ),
+                            ),
+                            if (ot.stats.totalPendiente > 0)
+                              Text(
+                                'Pendiente: ${ot.stats.totalPendiente.toStringAsFixed(ot.stats.totalPendiente == ot.stats.totalPendiente.roundToDouble() ? 0 : 2)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ),
@@ -330,28 +407,6 @@ class _OTDetailScreenState extends State<OTDetailScreen> with WidgetsBindingObse
               ),
             ],
             const SizedBox(height: 16),
-            if (ot.estado == 'Abierto')
-              OutlinedButton.icon(
-                onPressed: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => RegistroFormScreen(
-                        apiService: widget.apiService,
-                        ordenTrabajoDetalle: ot,
-                      ),
-                    ),
-                  );
-                  _fetch();
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Crear Registro'),
-              ),
-            if (ot.estado == 'Abierto') const SizedBox(height: 8),
-            FilledButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.check),
-              label: const Text('Cerrar'),
-            ),
           ],
         ),
       ),
@@ -618,6 +673,29 @@ class _OTDetailScreenState extends State<OTDetailScreen> with WidgetsBindingObse
                     color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
                   ),
                 ),
+                if (d.docref == null) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        d.pendiente > 0 ? Icons.schedule : Icons.check_circle_outline,
+                        size: 13,
+                        color: d.pendiente > 0 ? Colors.orange : Colors.green,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        d.pendiente > 0
+                            ? 'Pendiente: ${d.pendiente.toStringAsFixed(d.pendiente == d.pendiente.roundToDouble() ? 0 : 2)}'
+                            : 'Completo',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: d.pendiente > 0 ? Colors.orange : Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

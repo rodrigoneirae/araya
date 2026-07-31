@@ -270,6 +270,31 @@ class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver
                                                 ),
                                               ],
                                             ),
+                                            if (ot.clienteNombre != null && ot.clienteNombre!.isNotEmpty) ...[
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.business, size: 14,
+                                                      color: isDark
+                                                          ? ArayaColors.darkMuted
+                                                          : ArayaColors.lightMuted),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      ot.clienteNombre!,
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        color: isDark
+                                                            ? ArayaColors.darkMuted
+                                                            : ArayaColors.lightMuted,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                             if (ot.procesoNombre != null) ...[
                                               const SizedBox(height: 4),
                                               Row(

@@ -22,6 +22,7 @@ class OTDetalle {
   final double cantidad;
   final double punit;
   final double neto;
+  final double? docref;
   final double pendiente;
 
   OTDetalle({
@@ -32,6 +33,7 @@ class OTDetalle {
     required this.cantidad,
     required this.punit,
     required this.neto,
+    this.docref,
     this.pendiente = 0,
   });
 
@@ -44,6 +46,7 @@ class OTDetalle {
       cantidad: (json['cantidad'] as num?)?.toDouble() ?? 0,
       punit: (json['punit'] as num?)?.toDouble() ?? 0,
       neto: (json['neto'] as num?)?.toDouble() ?? 0,
+      docref: (json['docref'] as num?)?.toDouble(),
       pendiente: (json['pendiente'] as num?)?.toDouble() ?? 0,
     );
   }
@@ -76,6 +79,8 @@ class OrdenTrabajo {
   final String? encargadoNombre;
   final double? proceso;
   final String? procesoNombre;
+  final String? rut;
+  final String? clienteNombre;
   final String estado;
   final int totalDetalle;
   final double totalCantidad;
@@ -89,6 +94,8 @@ class OrdenTrabajo {
     this.encargadoNombre,
     this.proceso,
     this.procesoNombre,
+    this.rut,
+    this.clienteNombre,
     required this.estado,
     required this.totalDetalle,
     required this.totalCantidad,
@@ -104,6 +111,8 @@ class OrdenTrabajo {
       encargadoNombre: json['encargado_nombre'] as String?,
       proceso: (json['proceso'] as num?)?.toDouble(),
       procesoNombre: json['proceso_nombre'] as String?,
+      rut: json['rut'] as String?,
+      clienteNombre: json['cliente_nombre'] as String?,
       estado: json['estado'] as String? ?? 'Abierto',
       totalDetalle: json['total_detalle'] as int? ?? 0,
       totalCantidad: (json['total_cantidad'] as num?)?.toDouble() ?? 0,
@@ -155,6 +164,8 @@ class OrdenTrabajoDetalle {
   final Empleado? encargado;
   final double? proceso;
   final String? procesoNombre;
+  final String? rut;
+  final String? clienteNombre;
   final String estado;
   final String? glosa;
   final List<OTDetalle> detalles;
@@ -169,6 +180,8 @@ class OrdenTrabajoDetalle {
     this.encargado,
     this.proceso,
     this.procesoNombre,
+    this.rut,
+    this.clienteNombre,
     required this.estado,
     this.glosa,
     required this.detalles,
@@ -187,6 +200,8 @@ class OrdenTrabajoDetalle {
           : null,
       proceso: (json['proceso'] as num?)?.toDouble(),
       procesoNombre: json['proceso_nombre'] as String?,
+      rut: json['rut'] as String?,
+      clienteNombre: json['cliente_nombre'] as String?,
       estado: json['estado'] as String? ?? 'Abierto',
       glosa: json['glosa'] as String?,
       detalles: (json['detalles'] as List<dynamic>?)

@@ -4,6 +4,7 @@ ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
     "0.0.0.0",
+    "192.168.2.14",
     "araya-dev.rodrigoneira.cl",
 ]
 INSTALLED_APPS += ["django_browser_reload","tailwind","theme"]

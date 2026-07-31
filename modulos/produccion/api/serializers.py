@@ -3,7 +3,39 @@ from django.db.models import Sum
 from modulos.inventario.models.movs import Movs
 from modulos.maestros.models.empleados import Empleados
 from modulos.maestros.models.procesos import Procesos
-from modulos.registros.models import RegistroArticuloCabecera, RegistroArticuloDetalle
+from modulos.maestros.models.prov_cliente import Provclientes
+
+
+def get_cliente_nombre(rut):
+    if not rut:
+        return None
+    cliente = Provclientes.objects.filter(rut=rut).first()
+    return cliente.nombre if cliente else None
+
+
+def get_ot_cliente_nombre(obj):
+    if obj.rut:
+        nombre = get_cliente_nombre(obj.rut)
+        if nombre:
+            return nombre
+    refs = Movs.objects.filter(
+        numero=obj.numero,
+        tipo__cod=8,
+        linea__gt=0,
+        docref__isnull=False,
+        tipodocref__isnull=False,
+    ).values_list('docref', 'tipodocref')
+    for docref, tipodocref in refs:
+        if not docref or not tipodocref:
+            continue
+        ref = Movs.objects.filter(
+            numero=docref, tipo__cod=tipodocref, linea=0
+        ).first()
+        if ref and ref.rut:
+            nombre = get_cliente_nombre(ref.rut)
+            if nombre:
+                return nombre
+    return None
 
 
 class EmpleadoSimpleSerializer(serializers.ModelSerializer):
@@ -26,9 +58,12 @@ class OTDettaleSerializer(serializers.Serializer):
     cantidad = serializers.FloatField(allow_null=True)
     punit = serializers.FloatField(allow_null=True)
     neto = serializers.FloatField(allow_null=True)
+    docref = serializers.FloatField(allow_null=True)
     pendiente = serializers.SerializerMethodField()
 
     def get_pendiente(self, obj):
+        if obj.docref:
+            return 0
         from modulos.inventario.models.movs import Movs
         registrado = Movs.objects.filter(
             numero=obj.numero,
@@ -70,6 +105,8 @@ class OTListSerializer(serializers.Serializer):
     encargado_nombre = serializers.SerializerMethodField()
     proceso = serializers.FloatField(allow_null=True)
     proceso_nombre = serializers.SerializerMethodField()
+    rut = serializers.CharField(allow_null=True, default=None)
+    cliente_nombre = serializers.SerializerMethodField()
     estado = serializers.CharField()
     total_detalle = serializers.SerializerMethodField()
     total_cantidad = serializers.SerializerMethodField()
@@ -85,6 +122,9 @@ class OTListSerializer(serializers.Serializer):
                 pass
         return None
 
+    def get_cliente_nombre(self, obj):
+        return get_ot_cliente_nombre(obj)
+
     def get_proceso_nombre(self, obj):
         if obj.proceso:
             try:
@@ -99,7 +139,9 @@ class OTListSerializer(serializers.Serializer):
         return detalles.count()
 
     def get_total_cantidad(self, obj):
-        detalles = Movs.objects.filter(numero=obj.numero, tipo__cod=8, linea__gt=0)
+        detalles = Movs.objects.filter(
+            numero=obj.numero, tipo__cod=8, linea__gt=0, docref__isnull=True
+        )
         return sum(d.cantidad or 0 for d in detalles)
 
     def get_registrado_cantidad(self, obj):
@@ -124,6 +166,8 @@ class OTDetailSerializer(serializers.Serializer):
     encargado = serializers.SerializerMethodField()
     proceso = serializers.FloatField(allow_null=True)
     proceso_nombre = serializers.SerializerMethodField()
+    rut = serializers.CharField(allow_null=True, default=None)
+    cliente_nombre = serializers.SerializerMethodField()
     estado = serializers.CharField()
     glosa = serializers.CharField(allow_blank=True, allow_null=True)
     detalles = serializers.SerializerMethodField()
@@ -139,6 +183,9 @@ class OTDetailSerializer(serializers.Serializer):
             except Empleados.DoesNotExist:
                 pass
         return None
+
+    def get_cliente_nombre(self, obj):
+        return get_ot_cliente_nombre(obj)
 
     def get_proceso_nombre(self, obj):
         if obj.proceso:
@@ -172,7 +219,7 @@ class OTDetailSerializer(serializers.Serializer):
         total_cantidad = sum(d.cantidad or 0 for d in detalles)
         total_pendiente = 0
         for d in detalles:
-            if not d.codigo:
+            if not d.codigo or d.docref:
                 continue
             registrado = Movs.objects.filter(
                 numero=obj.numero,

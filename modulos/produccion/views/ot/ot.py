@@ -111,7 +111,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
         return JsonResponse({"encargados": list(empleados)})
 
     def _listar_clientes(self) -> JsonResponse:
-        clientes = Provclientes.objects.values("rut", "nombre").filter(tipo__in=["Cliente", "Ambos"]).order_by("nombre")
+        clientes = Provclientes.objects.values("rut", "nombre").order_by("nombre")
         return JsonResponse({"clientes": list(clientes)})
 
     def _cliente_nombre(self, rut) -> str:

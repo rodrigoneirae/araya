@@ -493,7 +493,14 @@ function nuevaOt() {
     document.getElementById('otEncargado').dispatchEvent(new Event('change', { bubbles: true }));
     document.getElementById('otProceso').value = '';
     document.getElementById('otNumero').value = '';
-    document.getElementById('otRut').value = '';
+    const rutReset = document.getElementById('otRut');
+    if (rutReset) {
+        if (typeof jQuery !== 'undefined' && jQuery(rutReset).data('select2')) {
+            jQuery(rutReset).val('').trigger('change');
+        } else {
+            rutReset.value = '';
+        }
+    }
     document.getElementById('otGlosa').value = '';
     document.getElementById('tab-detalle').classList.add('hidden');
     document.getElementById('contenido-detalle').classList.add('hidden');
@@ -1125,7 +1132,6 @@ function cargarOt(numero) {
                 let foundRut = false;
                 for (let i = 0; i < rutSelect.options.length; i++) {
                     if (String(rutSelect.options[i].value) === String(rutCliente)) {
-                        rutSelect.selectedIndex = i;
                         foundRut = true;
                         break;
                     }
@@ -1135,9 +1141,12 @@ function cargarOt(numero) {
                     option.value = rutCliente;
                     option.textContent = clienteNombre ? rutCliente + ' - ' + clienteNombre : rutCliente;
                     rutSelect.appendChild(option);
+                }
+                if (typeof jQuery !== 'undefined' && jQuery(rutSelect).data('select2')) {
+                    jQuery(rutSelect).val(rutCliente).trigger('change');
+                } else {
                     rutSelect.value = rutCliente;
                 }
-                rutSelect.value = rutCliente;
             }
             document.getElementById('otGlosa').value = data.data.glosa || '';
 

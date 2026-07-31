@@ -425,9 +425,18 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
             from datetime import datetime
             for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
                 try:
-                    return datetime.strptime(str(val), fmt)
+                    fecha = datetime.strptime(str(val), fmt)
                 except ValueError:
                     continue
+                if fecha.hour == 0 and fecha.minute == 0 and fecha.second == 0:
+                    ahora = timezone.now()
+                    fecha = fecha.replace(
+                        hour=ahora.hour,
+                        minute=ahora.minute,
+                        second=ahora.second,
+                        microsecond=ahora.microsecond,
+                    )
+                return fecha
             if fallback:
                 return timezone.now()
             return None

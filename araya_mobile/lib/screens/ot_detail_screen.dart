@@ -86,9 +86,11 @@ class _OTDetailScreenState extends State<OTDetailScreen> with WidgetsBindingObse
   String _formatFecha(DateTime dt) {
     final dia = dt.day.toString().padLeft(2, '0');
     final mes = dt.month.toString().padLeft(2, '0');
+    final base = '$dia/$mes/${dt.year}';
+    if (dt.hour == 0 && dt.minute == 0) return base;
     final hora = dt.hour.toString().padLeft(2, '0');
     final min = dt.minute.toString().padLeft(2, '0');
-    return '$dia/$mes/${dt.year} $hora:$min';
+    return '$base $hora:$min';
   }
 
   Color _estadoColor(String estado) {

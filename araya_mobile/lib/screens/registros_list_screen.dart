@@ -97,9 +97,11 @@ class _RegistrosListScreenState extends State<RegistrosListScreen> {
       final dt = DateTime.parse(iso);
       final dia = dt.day.toString().padLeft(2, '0');
       final mes = dt.month.toString().padLeft(2, '0');
+      final base = '$dia/$mes/${dt.year}';
+      if (dt.hour == 0 && dt.minute == 0) return base;
       final hora = dt.hour.toString().padLeft(2, '0');
       final min = dt.minute.toString().padLeft(2, '0');
-      return '$dia/$mes/${dt.year} $hora:$min';
+      return '$base $hora:$min';
     } catch (_) {
       return iso;
     }

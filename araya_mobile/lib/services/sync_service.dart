@@ -129,6 +129,7 @@ class SyncService {
             final synced = registro.copyWith(
               serverId: serverRegistro.id,
               folio: serverRegistro.folio,
+              estado: serverRegistro.estado,
               syncStatus: SyncStatus.synced,
               serverVersion: DateTime.now().toIso8601String(),
             );
@@ -253,6 +254,7 @@ class SyncService {
           saved = saved.copyWith(
             serverId: serverRegistro.id,
             folio: serverRegistro.folio,
+            estado: serverRegistro.estado,
             syncStatus: SyncStatus.synced,
             serverVersion: DateTime.now().toIso8601String(),
           );

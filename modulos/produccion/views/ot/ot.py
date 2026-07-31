@@ -114,6 +114,12 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
         clientes = Provclientes.objects.values("rut", "nombre").filter(tipo__in=["Cliente", "Ambos"]).order_by("nombre")
         return JsonResponse({"clientes": list(clientes)})
 
+    def _cliente_nombre(self, rut) -> str:
+        if not rut:
+            return ""
+        cliente = Provclientes.objects.filter(rut=rut).first()
+        return cliente.nombre if cliente else ""
+
     def _listar_procesos(self) -> JsonResponse:
         procesos = Procesos.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"procesos": list(procesos)})
@@ -283,6 +289,22 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                     "encargado": str(int(m.codencargado)) if m.codencargado else "",
                 })
 
+            rut_cliente = encabezado.rut or ""
+            cliente_nombre = self._cliente_nombre(rut_cliente)
+            if not cliente_nombre:
+                for d in detalles:
+                    docref = d.get("docref")
+                    tipodocref = d.get("tipodocref")
+                    if not docref or not tipodocref:
+                        continue
+                    ref = Movs.objects.filter(numero=docref, tipo__cod=tipodocref, linea=0).first()
+                    if ref and ref.rut:
+                        nombre = self._cliente_nombre(ref.rut)
+                        if nombre:
+                            rut_cliente = ref.rut
+                            cliente_nombre = nombre
+                            break
+
             return JsonResponse({
                 "success": True,
                 "data": {
@@ -293,7 +315,8 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                     "proceso": str(encabezado.proceso) if encabezado.proceso else "",
                     "proceso_nombre": proceso_nombre,
                     "estado": encabezado.estado or "",
-                    "rut": encabezado.rut or "",
+                    "rut": rut_cliente,
+                    "cliente_nombre": cliente_nombre,
                     "glosa": encabezado.glosa or "",
                     "detalles": detalles,
                     "pe_relacionados": pe_relacionados,

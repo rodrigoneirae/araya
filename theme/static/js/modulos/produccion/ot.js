@@ -1118,7 +1118,27 @@ function cargarOt(numero) {
             document.getElementById('otEstado').value = data.data.estado || 'Abierto';
             document.getElementById('otEstado').dispatchEvent(new Event('change', { bubbles: true }));
 
-            document.getElementById('otRut').value = data.data.rut || '';
+            const rutCliente = data.data.rut || '';
+            const clienteNombre = data.data.cliente_nombre || '';
+            const rutSelect = document.getElementById('otRut');
+            if (rutSelect) {
+                let foundRut = false;
+                for (let i = 0; i < rutSelect.options.length; i++) {
+                    if (String(rutSelect.options[i].value) === String(rutCliente)) {
+                        rutSelect.selectedIndex = i;
+                        foundRut = true;
+                        break;
+                    }
+                }
+                if (rutCliente && !foundRut) {
+                    const option = document.createElement('option');
+                    option.value = rutCliente;
+                    option.textContent = clienteNombre ? rutCliente + ' - ' + clienteNombre : rutCliente;
+                    rutSelect.appendChild(option);
+                    rutSelect.value = rutCliente;
+                }
+                rutSelect.value = rutCliente;
+            }
             document.getElementById('otGlosa').value = data.data.glosa || '';
 
             detallesOt = (data.data.detalles || []).map(d => ({

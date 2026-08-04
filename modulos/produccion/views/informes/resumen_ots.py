@@ -27,6 +27,8 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
         action = request.POST.get("action", "")
         if action == "listar_ots":
             return self._listar_ots(request)
+        elif action == "listar_encargados":
+            return self._listar_encargados()
         elif action == "cargar_subformularios":
             return self._cargar_subformularios(request)
         elif action == "buscar_ot_por_numero":
@@ -38,6 +40,10 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
         elif action == "generar_excel":
             return self._generar_excel(request)
         return JsonResponse({"success": False})
+
+    def _listar_encargados(self) -> JsonResponse:
+        empleados = Empleados.objects.values("cod", "nombre").order_by("nombre")
+        return JsonResponse({"encargados": list(empleados)})
 
     def _get_fecha_params(self, request):
         fecha_inicio = request.POST.get("fecha_inicio", "").strip()
@@ -122,6 +128,7 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                     "rut": m.rut or "",
                     "canttotal": m.canttotal or 0,
                     "tipodocref": m.tipodocref or "",
+                    "codencargado": m.codencargado or "",
                 })
             return rows
 
@@ -141,6 +148,8 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                     "nombre": m.codigo.descr if m.codigo else "",
                     "cantidad": cantidad,
                     "um": m.codigo.um if m.codigo else "",
+                    "fecha": m.fecha.strftime("%Y-%m-%d") if m.fecha else "",
+                    "codencargado": m.codencargado or "",
                 })
             return rows
 
@@ -160,6 +169,8 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                     "nombre": m.codigo.descr if m.codigo else "",
                     "cantidad": cantidad,
                     "um": m.codigo.um if m.codigo else "",
+                    "fecha": m.fecha.strftime("%Y-%m-%d") if m.fecha else "",
+                    "codencargado": m.codencargado or "",
                 })
             return rows
 

@@ -6,6 +6,27 @@
     .tabulator .tabulator-header { background-color: rgb(var(--aq-surface-2)); color: rgb(var(--aq-text)); }
     .tabulator .tabulator-row:hover { background-color: rgb(var(--aq-surface-2)); }
     .tabulator .tabulator-row:nth-child(even) { background-color: rgb(var(--aq-bg)); }
+    .tabulator .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.tabulator-calcs,
+    .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.tabulator-calcs.tabulator-calcs-top,
+    .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.tabulator-calcs.tabulator-calcs-bottom {
+        background-color: rgb(var(--aq-surface-2)) !important;
+        color: rgb(var(--aq-text)) !important;
+        font-weight: 700 !important;
+        border-top: 2px solid rgb(var(--aq-primary)) !important;
+    }
+    .tabulator .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.tabulator-calcs .tabulator-cell {
+        color: rgb(var(--aq-text)) !important;
+    }
+    .tabulator .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.tabulator-calcs .tabulator-cell:first-child {
+        color: rgb(var(--aq-primary)) !important;
+    }
+    .tabulator .tabulator-footer .tabulator-calcs-holder,
+    .tabulator .tabulator-footer .tabulator-calcs-holder .tabulator-row,
+    .tabulator .tabulator-header .tabulator-calcs-holder,
+    .tabulator .tabulator-header .tabulator-calcs-holder .tabulator-row {
+        background-color: rgb(var(--aq-surface-2)) !important;
+        color: rgb(var(--aq-text)) !important;
+    }
 </style>
 {% endblock extra_css %}
 {% block content %}

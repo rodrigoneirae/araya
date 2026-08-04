@@ -148,6 +148,25 @@
 }
 
 /* ============================================
+   CALCS (footer Totales / Subtotal por grupo)
+   ============================================ */
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.tabulator-calcs {
+    background-color: rgb(var(--aq-surface-2)) !important;
+    color: rgb(var(--aq-text)) !important;
+    font-weight: 700;
+    border-top: 2px solid rgb(var(--aq-primary)) !important;
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.tabulator-calcs .tabulator-cell {
+    color: rgb(var(--aq-text)) !important;
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.tabulator-calcs .tabulator-cell:first-child {
+    color: rgb(var(--aq-primary)) !important;
+}
+
+/* ============================================
    FOOTER
    ============================================ */
 

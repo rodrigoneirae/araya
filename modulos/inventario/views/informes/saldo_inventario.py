@@ -58,7 +58,7 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": False, "message": "Artículo no encontrado"})
 
     def _listar_articulos(self) -> JsonResponse:
-        articulos = Articulos.objects.values("codigo", "descr", "um").order_by("descr")[:100]
+        articulos = Articulos.objects.values("codigo", "descr", "um").order_by("descr")
         return JsonResponse({"articulos": list(articulos)})
 
     def _listar_tipos(self) -> JsonResponse:

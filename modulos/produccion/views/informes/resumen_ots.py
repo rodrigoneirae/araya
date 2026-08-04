@@ -218,7 +218,7 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
             except ValueError:
                 pass
 
-        qs = qs.order_by("numero")
+        qs = qs.order_by("fecha", "numero")
 
         return qs
 
@@ -228,6 +228,7 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
 
         qs = self._get_datos(request)
         procesos_map = {p["cod"]: p["nombre"] for p in Procesos.objects.values("cod", "nombre")}
+        empleados_map = {e["cod"]: e["nombre"] for e in Empleados.objects.values("cod", "nombre")}
 
         wb = Workbook()
         ws = wb.active
@@ -243,7 +244,7 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
             bottom=Side(style="thin", color="d1d5db"),
         )
 
-        headers = ["N° OT", "Proceso", "Fecha", "Cantidad"]
+        headers = ["N° OT", "Proceso", "Encargado", "Fecha", "Cantidad"]
         ws.append(headers)
         for col_idx in range(1, len(headers) + 1):
             cell = ws.cell(row=1, column=col_idx)
@@ -252,45 +253,74 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
             cell.alignment = hdr_align
             cell.border = thin_border
 
+        current_fecha = None
         current_ot = None
         ot_subtotal = 0
+        fecha_subtotal = 0
+
+        def emit_subtotal_ot():
+            nonlocal ot_subtotal
+            if ot_subtotal > 0:
+                ws.append(["", "Subtotal OT", "", "", ot_subtotal])
+                row_num = ws.max_row
+                for col_idx in range(1, 6):
+                    cell = ws.cell(row=row_num, column=col_idx)
+                    cell.border = thin_border
+                    cell.font = Font(bold=True)
+                ot_subtotal = 0
+
+        def emit_subtotal_fecha():
+            nonlocal fecha_subtotal
+            if fecha_subtotal > 0:
+                ws.append(["", "", "", "Subtotal Fecha", fecha_subtotal])
+                row_num = ws.max_row
+                for col_idx in range(1, 6):
+                    cell = ws.cell(row=row_num, column=col_idx)
+                    cell.border = thin_border
+                    cell.font = Font(bold=True)
+                cell = ws.cell(row=row_num, column=4)
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+                fecha_subtotal = 0
 
         for m in qs.iterator():
             numero = int(m.numero) if m.numero else 0
             if numero == 0:
                 continue
-            
-            if current_ot is not None and numero != current_ot:
-                ws.append(["", "Subtotal OT", "", ot_subtotal])
-                row_num = ws.max_row
-                for col_idx in range(1, 5):
-                    cell = ws.cell(row=row_num, column=col_idx)
-                    cell.border = thin_border
-                    cell.font = Font(bold=True)
-                ot_subtotal = 0
-            
-            current_ot = numero
-            
+
+            fecha_key = m.fecha.strftime("%Y-%m-%d") if m.fecha else ""
             proceso_val = int(m.proceso) if m.proceso else 0
+            enc_val = int(m.codencargado) if m.codencargado else 0
             cantidad = m.cantidad if m.cantidad else 0
-            
-            ws.append([numero, procesos_map.get(proceso_val, ""), m.fecha.strftime("%d-%m-%Y") if m.fecha else "", cantidad])
+
+            if current_fecha is not None and fecha_key != current_fecha:
+                emit_subtotal_ot()
+                emit_subtotal_fecha()
+
+            if current_ot is not None and numero != current_ot:
+                emit_subtotal_ot()
+
+            current_fecha = fecha_key
+            current_ot = numero
+
+            ws.append([
+                numero,
+                procesos_map.get(proc_val, ""),
+                empleados_map.get(enc_val, ""),
+                m.fecha.strftime("%d-%m-%Y") if m.fecha else "",
+                cantidad,
+            ])
             ot_subtotal += cantidad
-        
-        if ot_subtotal > 0:
-            ws.append(["", "Subtotal OT", "", ot_subtotal])
-            row_num = ws.max_row
-            for col_idx in range(1, 5):
-                cell = ws.cell(row=row_num, column=col_idx)
-                cell.border = thin_border
-                cell.font = Font(bold=True)
+            fecha_subtotal += cantidad
+
+        emit_subtotal_ot()
+        emit_subtotal_fecha()
 
         row_num = ws.max_row
         for r in range(2, row_num + 1):
-            for col_idx in range(1, 5):
+            for col_idx in range(1, 6):
                 cell = ws.cell(row=r, column=col_idx)
                 cell.border = thin_border
-                if col_idx == 4 and ws.cell(row=r, column=1).value:
+                if col_idx == 5 and ws.cell(row=r, column=1).value:
                     cell.alignment = Alignment(horizontal="right", vertical="center")
                     cell.number_format = '#,##0.000'
                 elif col_idx == 1 and ws.cell(row=r, column=1).value:
@@ -300,8 +330,9 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
 
         ws.column_dimensions["A"].width = 12
         ws.column_dimensions["B"].width = 25
-        ws.column_dimensions["C"].width = 12
-        ws.column_dimensions["D"].width = 15
+        ws.column_dimensions["C"].width = 28
+        ws.column_dimensions["D"].width = 18
+        ws.column_dimensions["E"].width = 15
 
         buf = io.BytesIO()
         wb.save(buf)
@@ -338,10 +369,10 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
             header = ["Artículo", "Nombre", "Cantidad", "UM"]
             col_widths = [30 * mm, 80 * mm, 40 * mm, 30 * mm]
         else:
-            qs = Movs.objects.select_related("tipo").filter(tipo__cod__in=[6], linea=1)
+            qs = Movs.objects.select_related("tipo").filter(tipo__cod__in=[8]).exclude(linea=0)
             titulo = "Resumen de Órdenes de Trabajo"
-            header = ["N° OT", "Proceso", "Fecha", "Cantidad"]
-            col_widths = [25 * mm, 60 * mm, 30 * mm, 35 * mm]
+            header = ["N° OT", "Proceso", "Encargado", "Fecha", "Cantidad"]
+            col_widths = [20 * mm, 45 * mm, 35 * mm, 25 * mm, 30 * mm]
 
         if fi:
             qs = qs.filter(fecha__gte=fi)
@@ -353,8 +384,9 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
             except ValueError:
                 pass
 
-        qs = qs.order_by("numero")
+        qs = qs.order_by("fecha", "numero")
         procesos_map = {p["cod"]: p["nombre"] for p in Procesos.objects.values("cod", "nombre")}
+        empleados_map = {e["cod"]: e["nombre"] for e in Empleados.objects.values("cod", "nombre")}
 
         now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
 
@@ -391,43 +423,68 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
             total_general = 0
 
             if not es_res_pe:
+                current_fecha = None
                 current_ot = None
                 ot_subtotal = 0
+                fecha_subtotal = 0
+
+                def emit_subtotal_ot():
+                    nonlocal ot_subtotal
+                    if ot_subtotal > 0:
+                        table_data.append([
+                            Paragraph("", center_style),
+                            Paragraph("<b>Subtotal OT</b>", bold_style),
+                            Paragraph("", cell_style),
+                            Paragraph("", center_style),
+                            Paragraph(clt(ot_subtotal), right_style),
+                        ])
+                        ot_subtotal = 0
+
+                def emit_subtotal_fecha():
+                    nonlocal fecha_subtotal
+                    if fecha_subtotal > 0:
+                        table_data.append([
+                            Paragraph("", center_style),
+                            Paragraph("", cell_style),
+                            Paragraph("<b>Subtotal Fecha</b>", bold_style),
+                            Paragraph("", right_style),
+                            Paragraph(clt(fecha_subtotal), right_style),
+                        ])
+                        fecha_subtotal = 0
 
                 for m in qs.iterator():
                     numero = int(m.numero) if m.numero else 0
                     if numero == 0:
                         continue
 
-                    if current_ot is not None and numero != current_ot:
-                        table_data.append([
-                            Paragraph("", center_style),
-                            Paragraph("<b>Subtotal OT</b>", bold_style),
-                            Paragraph("", center_style),
-                            Paragraph(clt(ot_subtotal), right_style),
-                        ])
-                        ot_subtotal = 0
-
-                    current_ot = numero
-                    cantidad = m.cantidad if m.cantidad else 0
+                    fecha_key = m.fecha.strftime("%Y-%m-%d") if m.fecha else ""
                     proceso_val = int(m.proceso) if m.proceso else 0
+                    enc_val = int(m.codencargado) if m.codencargado else 0
+                    cantidad = m.cantidad if m.cantidad else 0
+
+                    if current_fecha is not None and fecha_key != current_fecha:
+                        emit_subtotal_ot()
+                        emit_subtotal_fecha()
+
+                    if current_ot is not None and numero != current_ot:
+                        emit_subtotal_ot()
+
+                    current_fecha = fecha_key
+                    current_ot = numero
 
                     table_data.append([
                         Paragraph(str(numero), center_style),
                         Paragraph(procesos_map.get(proceso_val, ""), cell_style),
+                        Paragraph(empleados_map.get(enc_val, ""), cell_style),
                         Paragraph(m.fecha.strftime("%d-%m-%Y") if m.fecha else "", center_style),
                         Paragraph(clq(cantidad), right_style),
                     ])
                     total_general += cantidad
                     ot_subtotal += cantidad
-                
-                if ot_subtotal > 0:
-                    table_data.append([
-                        Paragraph("", center_style),
-                        Paragraph("<b>Subtotal OT</b>", bold_style),
-                        Paragraph("", center_style),
-                        Paragraph(clt(ot_subtotal), right_style),
-                    ])
+                    fecha_subtotal += cantidad
+
+                emit_subtotal_ot()
+                emit_subtotal_fecha()
             else:
                 for m in qs.iterator():
                     numero = int(m.numero) if m.numero else 0
@@ -458,7 +515,7 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
             ]
             
             for i in range(1, len(table_data)):
-                row_text = str(table_data[i][1]) if len(table_data[i]) > 1 else ""
+                row_text = " ".join(str(c) for c in table_data[i])
                 if "Subtotal" in row_text:
                     style_cmds.extend([
                         ("BACKGROUND", (0, i), (-1, i), colors.HexColor("#e5e7eb")),

@@ -658,100 +658,88 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
             elems.append(Spacer(1, 3 * mm))
 
             header = ["Código", "Nombre", "UM", "Saldo", "P.Unitario", "Costo"]
-            col_widths = [24 * mm, 72 * mm, 14 * mm, 24 * mm, 24 * mm, 24 * mm]
+            col_widths = [24 * mm, 70 * mm, 14 * mm, 22 * mm, 22 * mm, 28 * mm]
 
-            tipo_actual = None
-            sub_total_saldo = 0
-            sub_total_costo = 0
-            sub_count = 0
-            table_data = None
+            section_style = ParagraphStyle(
+                "SectionTitle", parent=styles["Normal"], fontSize=9, leading=11,
+                textColor=colors.white, fontName="Helvetica-Bold",
+                backColor=colors.HexColor("#374151"),
+                borderPadding=4, spaceBefore=2, spaceAfter=2,
+            )
+            center_section = ParagraphStyle(
+                "CenterSection", parent=section_style, alignment=0,
+            )
+            sub_style = ParagraphStyle(
+                "Subtotal", parent=styles["Normal"], fontSize=7, leading=9,
+                textColor=colors.HexColor("#1f2937"), fontName="Helvetica-Bold",
+                backColor=colors.HexColor("#e5e7eb"),
+            )
+            sub_right_style = ParagraphStyle("Rsub", parent=sub_style, alignment=2)
+
             total_saldo = 0
             total_costo = 0
 
-            section_bg = colors.HexColor("#374151")
-            section_fg = colors.white
-            section_style = ParagraphStyle(
-                "SectionTitle", parent=styles["Normal"], fontSize=8, leading=10,
-                textColor=section_fg, fontName="Helvetica-Bold",
-            )
-            center_section = ParagraphStyle(
-                "CenterSection", parent=section_style, alignment=1,
-            )
+            if not data:
+                elems.append(Paragraph("Sin datos para los filtros seleccionados.", cell_style))
+            else:
+                tipo_actual = None
+                rows_tipo: list[list] = []
+                tipos_vistos: list[tuple[str, list[list]]] = []
 
-            def flush_subtotal():
-                nonlocal sub_total_saldo, sub_total_costo, sub_count
-                if sub_count > 0:
-                    sub_style = ParagraphStyle(
-                        "Subtotal", parent=styles["Normal"], fontSize=7, leading=9,
-                        textColor=colors.HexColor("#4b5563"), fontName="Helvetica-Bold",
-                    )
-                    rs = ParagraphStyle("Rsub", parent=sub_style, alignment=2)
+                for r in data:
+                    if r["tipo_nombre"] != tipo_actual:
+                        if rows_tipo:
+                            tipos_vistos.append((tipo_actual, rows_tipo))
+                        tipo_actual = r["tipo_nombre"]
+                        rows_tipo = []
+                    rows_tipo.append(r)
+                    total_saldo += r["saldo"]
+                    total_costo += r["costo"]
+                if rows_tipo:
+                    tipos_vistos.append((tipo_actual, rows_tipo))
+
+                for tipo_nombre, rows in tipos_vistos:
+                    table_data = [
+                        [Paragraph(f"▸ {tipo_nombre}", center_section), "", "", "", "", ""],
+                        [Paragraph(h, ParagraphStyle("H", parent=styles["Normal"], fontSize=7, fontName="Helvetica-Bold", textColor=colors.white)) for h in header],
+                    ]
+                    sub_saldo = 0
+                    sub_costo = 0
+                    for r in rows:
+                        sub_saldo += r["saldo"]
+                        sub_costo += r["costo"]
+                        table_data.append([
+                            Paragraph(str(r["codigo"]), center_style),
+                            Paragraph(str(r["nombre"]), cell_style),
+                            Paragraph(str(r["um"]), center_style),
+                            Paragraph(f"<b>{clq(r['saldo'])}</b>", right_style),
+                            Paragraph(cl(r["ultimo_precio"]), right_style),
+                            Paragraph(cl(r["costo"]), right_style),
+                        ])
                     table_data.append([
-                        Paragraph("<b>Subtotal</b>", sub_style),
-                        Paragraph("", sub_style),
-                        Paragraph("", sub_style),
-                        Paragraph(f"<b>{clq(sub_total_saldo)}</b>", rs),
-                        Paragraph("", sub_style),
-                        Paragraph(f"<b>{cl(sub_total_costo)}</b>", rs),
+                        Paragraph("<b>Subtotal</b>", sub_style), "", "",
+                        Paragraph(f"<b>{clq(sub_saldo)}</b>", sub_right_style), "",
+                        Paragraph(f"<b>{cl(sub_costo)}</b>", sub_right_style),
                     ])
-                    sub_total_saldo = 0
-                    sub_total_costo = 0
-                    sub_count = 0
 
-            def start_section(name):
-                nonlocal table_data
-                table_data = []
-
-            def end_section():
-                if table_data and len(table_data) > 0:
-                    nonlocal sub_total_saldo, sub_total_costo, sub_count
-                    flush_subtotal()
                     tbl = Table(table_data, colWidths=col_widths, repeatRows=1)
                     tbl.setStyle(TableStyle([
-                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2937")),
-                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("SPAN", (0, 0), (5, 0)),
+                        ("BACKGROUND", (0, 0), (5, 0), colors.HexColor("#374151")),
+                        ("BACKGROUND", (0, 1), (5, 1), colors.HexColor("#1f2937")),
+                        ("TEXTCOLOR", (0, 1), (5, 1), colors.white),
+                        ("FONTNAME", (0, 1), (5, 1), "Helvetica-Bold"),
                         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                         ("FONTSIZE", (0, 0), (-1, -1), 7),
-                        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
-                        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
+                        ("GRID", (0, 1), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
+                        ("ROWBACKGROUNDS", (0, 2), (-1, -2), [colors.white, colors.HexColor("#f9fafb")]),
+                        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#e5e7eb")),
                         ("TOPPADDING", (0, 0), (-1, -1), 4),
                         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-                        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+                        ("ALIGN", (0, 1), (5, 1), "CENTER"),
                     ]))
                     elems.append(tbl)
-                    elems.append(Spacer(1, 3 * mm))
-
-            for r in data:
-                if r["tipo_nombre"] != tipo_actual:
-                    end_section()
-                    tipo_actual = r["tipo_nombre"]
-                    table_data = [[
-                        Paragraph(f"▸ {tipo_actual}", center_section),
-                        Paragraph("", section_style), Paragraph("", section_style),
-                        Paragraph("", section_style), Paragraph("", section_style),
-                        Paragraph("", section_style),
-                    ]]
-                    sub_total_saldo = 0
-                    sub_total_costo = 0
-                    sub_count = 0
-
-                sub_count += 1
-                if len(table_data) == 1:
-                    table_data.append(header)
-                table_data.append([
-                    Paragraph(str(r["codigo"]), center_style),
-                    Paragraph(str(r["nombre"]), cell_style),
-                    Paragraph(str(r["um"]), center_style),
-                    Paragraph(f"<b>{clq(r['saldo'])}</b>", right_style),
-                    Paragraph(cl(r["ultimo_precio"]), right_style),
-                    Paragraph(cl(r["costo"]), right_style),
-                ])
-                sub_total_saldo += r["saldo"]
-                sub_total_costo += r["costo"]
-                total_saldo += r["saldo"]
-                total_costo += r["costo"]
-            end_section()
+                    elems.append(Spacer(1, 4 * mm))
 
             elems.append(Spacer(1, 5 * mm))
 

@@ -224,7 +224,7 @@ function initSubTabulators(callback) {
         groupHeader: function(value, count, data) {
             const parts = (value || '').split('-');
             const fmt = parts.length === 3 ? parts.reverse().join('-') : (value || 'Sin fecha');
-            return `<span style="font-weight:600">Fecha: ${fmt}</span> <span style="opacity:.7;margin-left:8px">(${count} ítem${count===1?'':'s'})</span>`;
+            return `<span style="font-weight:700">Fecha: ${fmt}</span> <span style="margin-left:8px;color:rgb(var(--aq-muted))">(${count} ítem${count===1?'':'s'})</span>`;
         },
         groupBottomCalc: undefined,
     });
@@ -235,7 +235,7 @@ function initSubTabulators(callback) {
         groupHeader: function(value, count, data) {
             const parts = (value || '').split('-');
             const fmt = parts.length === 3 ? parts.reverse().join('-') : (value || 'Sin fecha');
-            return `<span style="font-weight:600">Fecha: ${fmt}</span> <span style="opacity:.7;margin-left:8px">(${count} ítem${count===1?'':'s'})</span>`;
+            return `<span style="font-weight:700">Fecha: ${fmt}</span> <span style="margin-left:8px;color:rgb(var(--aq-muted))">(${count} ítem${count===1?'':'s'})</span>`;
         },
         groupBottomCalc: undefined,
     });

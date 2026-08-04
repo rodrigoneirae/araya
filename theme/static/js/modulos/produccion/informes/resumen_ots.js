@@ -98,13 +98,14 @@ function abrirModalOT() {
         abrirModalBusqueda({
             titulo: 'Buscar Orden de Trabajo',
             columnas: [
-                { title: 'N° OT', field: 'numero', width: 100 },
-                { title: 'Fecha', field: 'fecha', width: 120 },
+                { title: 'N° OT', field: 'numero', width: 80 },
+                { title: 'Fecha', field: 'fecha', width: 110 },
+                { title: 'Encargado', field: 'encargado' },
                 { title: 'Proceso', field: 'proceso' },
-                { title: 'Encargado', field: 'encargado', width: 150 },
+                { title: 'Estado', field: 'estado', width: 90 },
             ],
             data: ots,
-            filtroCampos: ['numero', 'fecha', 'proceso', 'encargado'],
+            filtroCampos: ['numero', 'encargado', 'proceso', 'estado'],
             onSelect: function(row) {
                 document.getElementById('ot_numero').value = row.numero;
                 document.getElementById('ot_fecha').value = row.fecha;

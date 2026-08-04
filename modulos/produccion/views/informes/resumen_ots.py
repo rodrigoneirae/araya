@@ -17,6 +17,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from modulos.inventario.models.movs import Movs
 from modulos.maestros.models.empleados import Empleados
 from modulos.maestros.models.procesos import Procesos
+from modulos.maestros.models.articulos import Articulos
 
 
 class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
@@ -59,53 +60,53 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
 
     def _listar_ots(self, request: HttpRequest) -> JsonResponse:
         try:
-            qs = Movs.objects.select_related("tipo").filter(tipo__cod__in=[6], linea=1).exclude(numero__isnull=True).exclude(numero=0)
-            
-            qs = qs.order_by("-numero").values("numero", "fecha", "proceso", "codencargado").distinct()
-            
+            qs = Movs.objects.filter(linea=0, tipo=8).values(
+                "numero", "fecha", "codencargado", "proceso", "estado"
+            ).order_by("-numero")
+
             procesos_map = {p["cod"]: p["nombre"] for p in Procesos.objects.values("cod", "nombre")}
             empleados_map = {e["cod"]: e["nombre"] for e in Empleados.objects.values("cod", "nombre")}
-            
+
             ot_list = []
             for m in qs:
                 numero = int(m["numero"]) if m["numero"] else 0
                 if numero == 0:
                     continue
-                
+
                 proc_val = int(m["proceso"]) if m["proceso"] else 0
                 enc_val = int(m["codencargado"]) if m["codencargado"] else 0
-                
+
                 ot_list.append({
                     "numero": numero,
                     "fecha": m["fecha"].strftime("%d-%m-%Y") if m["fecha"] else "",
                     "proceso": procesos_map.get(proc_val, ""),
                     "encargado": empleados_map.get(enc_val, ""),
+                    "estado": m["estado"] or "",
                 })
-            
+
             return JsonResponse({"ots": ot_list})
         except Exception as e:
             return JsonResponse({"ots": [], "error": str(e)})
 
     def _cargar_subformularios(self, request: HttpRequest) -> JsonResponse:
         ot_num = request.POST.get("ot", "").strip()
-        
+
         if not ot_num:
             return JsonResponse({"detalle_ot": [], "vale_consumo": [], "parte_entrada": [], "error": "sin ot"})
-        
+
         try:
             ot_val = float(ot_num)
         except ValueError:
             return JsonResponse({"detalle_ot": [], "vale_consumo": [], "parte_entrada": [], "error": "invalid ot"})
-        
+
         def get_detalle_ot():
             qs = Movs.objects.select_related("codigo").filter(
-                tipo__cod__in=[6],
-                numero=ot_val,
-                linea=1
-            )
+                tipo__cod__in=[8],
+                numero=ot_val
+            ).exclude(linea=0)
             rows = []
             for m in qs.iterator():
-                cantidad = m.cantidad if m.cantidad else 0
+                cantidad = abs(m.cantidad) if m.cantidad else 0
                 if cantidad == 0:
                     continue
                 rows.append({
@@ -113,9 +114,17 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                     "nombre": m.codigo.descr if m.codigo else "",
                     "cantidad": cantidad,
                     "um": m.codigo.um if m.codigo else "",
+                    "punit": m.punit or 0,
+                    "bodega": str(m.bodega) if m.bodega else "",
+                    "fecha": m.fecha.strftime("%Y-%m-%d") if m.fecha else "",
+                    "estado": m.estado or "",
+                    "docref": m.docref or "",
+                    "rut": m.rut or "",
+                    "canttotal": m.canttotal or 0,
+                    "tipodocref": m.tipodocref or "",
                 })
             return rows
-        
+
         def get_vale_consumo():
             qs = Movs.objects.select_related("codigo").filter(
                 tipo__cod__in=[10],
@@ -124,7 +133,7 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
             )
             rows = []
             for m in qs.iterator():
-                cantidad = m.cantidad if m.cantidad else 0
+                cantidad = abs(m.cantidad) if m.cantidad else 0
                 if cantidad == 0:
                     continue
                 rows.append({
@@ -134,7 +143,7 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                     "um": m.codigo.um if m.codigo else "",
                 })
             return rows
-        
+
         def get_parte_entrada():
             qs = Movs.objects.select_related("codigo").filter(
                 tipo__cod__in=[6],
@@ -143,7 +152,7 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
             )
             rows = []
             for m in qs.iterator():
-                cantidad = m.cantidad if m.cantidad else 0
+                cantidad = abs(m.cantidad) if m.cantidad else 0
                 if cantidad == 0:
                     continue
                 rows.append({
@@ -153,7 +162,7 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                     "um": m.codigo.um if m.codigo else "",
                 })
             return rows
-        
+
         return JsonResponse({
             "detalle_ot": get_detalle_ot(),
             "vale_consumo": get_vale_consumo(),
@@ -162,40 +171,43 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
 
     def _buscar_ot_por_numero(self, request: HttpRequest) -> JsonResponse:
         ot_num = request.POST.get("ot", "").strip()
-        
+
         if not ot_num:
             return JsonResponse({"found": False})
-        
+
         try:
             ot_val = float(ot_num)
         except ValueError:
             return JsonResponse({"found": False})
-        
-        qs = Movs.objects.filter(tipo__cod__in=[6], numero=ot_val, linea=1).first()
-        
+
+        qs = Movs.objects.filter(tipo=8, numero=ot_val, linea=0).first()
+
         if not qs:
             return JsonResponse({"found": False})
-        
+
         procesos_map = {p["cod"]: p["nombre"] for p in Procesos.objects.values("cod", "nombre")}
         empleados_map = {e["cod"]: e["nombre"] for e in Empleados.objects.values("cod", "nombre")}
-        
+
         proc_nom = procesos_map.get(int(qs.proceso), "") if qs.proceso else ""
         enc_nom = empleados_map.get(int(qs.codencargado), "") if qs.codencargado else ""
-        
+
         return JsonResponse({
             "found": True,
             "numero": int(qs.numero) if qs.numero else 0,
             "fecha": qs.fecha.strftime("%d-%m-%Y") if qs.fecha else "",
             "encargado": enc_nom,
             "proceso": proc_nom,
+            "estado": qs.estado or "",
+            "glosa": qs.glosa or "",
+            "rut": qs.rut or "",
         })
 
     def _get_datos(self, request: HttpRequest):
         fi, ff = self._get_fecha_params(request)
         ot_num = request.POST.get("ot", "").strip()
-        
-        qs = Movs.objects.select_related("tipo").filter(tipo__cod__in=[6], linea=1).exclude(numero__isnull=True).exclude(numero=0)
-        
+
+        qs = Movs.objects.select_related("tipo").filter(tipo__cod__in=[8]).exclude(linea=0).exclude(numero__isnull=True).exclude(numero=0)
+
         if fi:
             qs = qs.filter(fecha__gte=fi)
         if ff:
@@ -205,9 +217,9 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                 qs = qs.filter(numero=float(ot_num))
             except ValueError:
                 pass
-        
+
         qs = qs.order_by("numero")
-        
+
         return qs
 
     def _generar_excel(self, request: HttpRequest) -> HttpResponse:
@@ -536,14 +548,16 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                 tipo__cod__in=[tipo_cod],
                 numero=ot_val
             )
-            if linea_filter == "eq1":
-                qs = qs.filter(linea=1)
-            elif linea_filter == "gt":
+            if linea_filter == "gt":
                 qs = qs.filter(linea__gt=0)
-            
+            elif linea_filter == "ex0":
+                qs = qs.exclude(linea=0)
+            elif linea_filter == "eq1":
+                qs = qs.filter(linea=1)
+
             rows = []
             for m in qs.iterator():
-                cantidad = m.cantidad if m.cantidad else 0
+                cantidad = abs(m.cantidad) if m.cantidad else 0
                 if cantidad == 0:
                     continue
                 rows.append({
@@ -554,14 +568,14 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                 })
             return rows
 
-        detalle_ot = get_data(6, "eq1")
+        detalle_ot = get_data(8, "ex0")
         vale_consumo = get_data(10, "gt")
         parte_entrada = get_data(6, "gt")
 
         procesos_map = {p["cod"]: p["nombre"] for p in Procesos.objects.values("cod", "nombre")}
         empleados_map = {e["cod"]: e["nombre"] for e in Empleados.objects.values("cod", "nombre")}
 
-        ot_info = Movs.objects.filter(tipo__cod__in=[6], numero=ot_val, linea=1).first()
+        ot_info = Movs.objects.filter(tipo=8, numero=ot_val, linea=0).first()
         proc_nom = procesos_map.get(int(ot_info.proceso), "") if ot_info and ot_info.proceso else ""
         enc_nom = empleados_map.get(int(ot_info.codencargado), "") if ot_info and ot_info.codencargado else ""
         fecha_str = ot_info.fecha.strftime("%d-%m-%Y") if ot_info and ot_info.fecha else ""
@@ -631,9 +645,9 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                 elems.append(tbl)
                 elems.append(Spacer(1, 5 * mm))
 
-            add_section("Detalle de Orden de Trabajo (Tipo 6 - Linea 1)", detalle_ot)
-            add_section("Vale de Consumo (Tipo 10)", vale_consumo)
-            add_section("Parte de Entrada (Tipo 6 - Linea > 0)", parte_entrada)
+            add_section("Detalle de Orden de Trabajo", detalle_ot)
+            add_section("Vale de Consumo", vale_consumo)
+            add_section("Parte de Entrada", parte_entrada)
 
             return elems
 

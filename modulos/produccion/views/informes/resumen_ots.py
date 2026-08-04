@@ -684,7 +684,7 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                 if not s:
                     return ""
                 parts = s.split('-')
-                return parts.reverse()[0] if len(parts) == 3 else s
+                return "-".join(reversed(parts)) if len(parts) == 3 else s
 
             def add_section(title, data):
                 nonlocal elems

@@ -88,8 +88,14 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
         if fc:
             base_qs = base_qs.filter(fecha__lte=fc.replace(hour=23, minute=59, second=59))
 
+        tipo_nombre_filtro = None
         if tipo_art_id:
-            base_qs = base_qs.filter(codigo__tipo_articulo__id=tipo_art_id)
+            tipo_obj = TipoArticulo.objects.filter(id=tipo_art_id).first()
+            if tipo_obj:
+                tipo_nombre_filtro = tipo_obj.nombre
+                base_qs = base_qs.filter(codigo__tipo=tipo_nombre_filtro)
+            else:
+                base_qs = base_qs.none()
 
         base_qs = base_qs.distinct().order_by("codigo", "fecha")
 
@@ -99,8 +105,7 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
                 continue
             cod = m.codigo.codigo
             if cod not in data:
-                ta = m.codigo.tipo_articulo
-                tipo_nombre = ta.nombre if ta else (m.codigo.tipo.strip() or "Sin tipo")
+                tipo_nombre = (m.codigo.tipo or "").strip() or "Sin tipo"
                 data[cod] = {
                     "nombre": m.codigo.descr or "",
                     "um": m.codigo.um or "",

@@ -633,6 +633,8 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                     "nombre": m.codigo.descr if m.codigo else "",
                     "cantidad": cantidad,
                     "um": m.codigo.um if m.codigo else "",
+                    "fecha": m.fecha.strftime("%Y-%m-%d") if m.fecha else "",
+                    "codencargado": m.codencargado or "",
                 })
             return rows
 
@@ -675,8 +677,14 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
 
             elems.append(Spacer(1, 4 * mm))
 
-            header = ["Artículo", "Nombre", "Cantidad", "UM"]
-            col_widths = [25 * mm, 70 * mm, 35 * mm, 20 * mm]
+            header = ["Artículo", "Nombre", "Fecha", "Cantidad", "UM", "Encargado"]
+            col_widths = [20 * mm, 48 * mm, 22 * mm, 22 * mm, 16 * mm, 38 * mm]
+
+            def fmt_fecha(s):
+                if not s:
+                    return ""
+                parts = s.split('-')
+                return parts.reverse()[0] if len(parts) == 3 else s
 
             def add_section(title, data):
                 nonlocal elems
@@ -685,17 +693,59 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                     elems.append(Paragraph("Sin datos", cell_style))
                     elems.append(Spacer(1, 3 * mm))
                     return
-                
+
+                rows_sorted = sorted(data, key=lambda r: (r["fecha"] or "", r["codigo"] or ""))
+
                 table_data = [header]
-                for row in data:
+                current_fecha = None
+                fecha_subtotal = 0
+                total_seccion = 0
+
+                def emit_subtotal_fecha():
+                    nonlocal fecha_subtotal
+                    if fecha_subtotal > 0:
+                        table_data.append([
+                            Paragraph("", center_style),
+                            Paragraph("", cell_style),
+                            Paragraph("<b>Subtotal Fecha</b>", bold_style),
+                            Paragraph(clq(fecha_subtotal), right_style),
+                            Paragraph("", center_style),
+                            Paragraph("", cell_style),
+                        ])
+                        fecha_subtotal = 0
+
+                for row in rows_sorted:
+                    if current_fecha is not None and row["fecha"] != current_fecha:
+                        emit_subtotal_fecha()
+
+                    current_fecha = row["fecha"]
+                    enc_val = int(row["codencargado"]) if row["codencargado"] else 0
+                    enc_nombre = empleados_map.get(enc_val, "") if enc_val else ""
+
                     table_data.append([
                         Paragraph(str(row["codigo"]), center_style),
                         Paragraph(row["nombre"], cell_style),
+                        Paragraph(fmt_fecha(row["fecha"]), center_style),
                         Paragraph(clq(row["cantidad"]), right_style),
                         Paragraph(row["um"], center_style),
+                        Paragraph(enc_nombre, cell_style),
                     ])
-                
-                tbl = Table(table_data, colWidths=col_widths)
+                    fecha_subtotal += row["cantidad"]
+                    total_seccion += row["cantidad"]
+
+                emit_subtotal_fecha()
+
+                if total_seccion > 0:
+                    table_data.append([
+                        Paragraph("", center_style),
+                        Paragraph("<b>Total Sección</b>", bold_style),
+                        Paragraph("", center_style),
+                        Paragraph(clq(total_seccion), right_style),
+                        Paragraph("", center_style),
+                        Paragraph("", cell_style),
+                    ])
+
+                tbl = Table(table_data, colWidths=col_widths, repeatRows=1)
                 style_cmds = [
                     ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#374151")),
                     ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -707,8 +757,15 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
                 ]
                 for i in range(1, len(table_data)):
-                    bg = colors.white if i % 2 == 1 else colors.HexColor("#f9fafb")
-                    style_cmds.append(("BACKGROUND", (0, i), (-1, i), bg))
+                    row_text = " ".join(str(c) for c in table_data[i])
+                    if "Subtotal" in row_text or "Total Sección" in row_text:
+                        style_cmds.extend([
+                            ("BACKGROUND", (0, i), (-1, i), colors.HexColor("#e5e7eb")),
+                            ("FONTNAME", (0, i), (-1, i), "Helvetica-Bold"),
+                        ])
+                    else:
+                        bg = colors.white if i % 2 == 1 else colors.HexColor("#f9fafb")
+                        style_cmds.append(("BACKGROUND", (0, i), (-1, i), bg))
                 tbl.setStyle(TableStyle(style_cmds))
                 elems.append(tbl)
                 elems.append(Spacer(1, 5 * mm))

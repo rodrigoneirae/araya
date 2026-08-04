@@ -209,6 +209,20 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                     d["um"] = ""
                 d["cantidad"] = abs(d["cantidad"]) if d.get("cantidad") else 0
 
+            pe_refs = [(idx, d) for idx, d in enumerate(detalles) if d.get("tipodocref") == 6 and d.get("docref") and d.get("codigo")]
+            for _, d in pe_refs:
+                art = Articulos.objects.filter(codigo=d["codigo"]).first()
+                if not art:
+                    d["movsId"] = None
+                    continue
+                pe_ids = list(Movs.objects.filter(
+                    tipo_id=6,
+                    numero=float(d["docref"]),
+                    codigo=art,
+                    canttotal=d.get("canttotal"),
+                ).values_list("id", flat=True))
+                d["movsId"] = pe_ids[0] if len(pe_ids) == 1 else None
+
             fecha = ""
             if encabezado.fecha:
                 fecha = encabezado.fecha.strftime("%Y-%m-%d")
@@ -606,6 +620,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                 punit = m.codigo.precio
 
             resultado.append({
+                "id": m.id,
                 "numero": m.numero,
                 "fecha": m.fecha.strftime("%Y-%m-%d") if m.fecha else "",
                 "rut": m.rut or "",

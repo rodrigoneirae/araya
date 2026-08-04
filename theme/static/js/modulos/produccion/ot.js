@@ -170,7 +170,9 @@ function initSubTabulators(callback) {
     const colDef = [
         { title: 'Artículo', field: 'codigo', width: 80,
             bottomCalc: function() { return 'Totales'; },
-            bottomCalcFormatter: function(cell) { return cell.getValue(); }
+            bottomCalcFormatter: function(cell) { return cell.getValue(); },
+            groupBottomCalc: function() { return 'Subtotal'; },
+            groupBottomCalcFormatter: function(cell) { return cell.getValue(); }
         },
         { title: 'Nombre', field: 'nombre', widthGrow: 2 },
         { title: 'Fecha', field: 'fecha', width: 90, hozAlign: 'center',
@@ -218,10 +220,24 @@ function initSubTabulators(callback) {
     tabSubValeConsumo = new Tabulator('#tablaSubValeConsumo', {
         columns: colDef, data: [], layout: 'fitColumns', minHeight: '100px',
         placeholder: 'Sin datos', tableBuilt: onBuilt,
+        groupBy: 'fecha',
+        groupHeader: function(value, count, data) {
+            const parts = (value || '').split('-');
+            const fmt = parts.length === 3 ? parts.reverse().join('-') : (value || 'Sin fecha');
+            return `<span style="font-weight:600">Fecha: ${fmt}</span> <span style="opacity:.7;margin-left:8px">(${count} ítem${count===1?'':'s'})</span>`;
+        },
+        groupBottomCalc: undefined,
     });
     tabSubParteEntrada = new Tabulator('#tablaSubParteEntrada', {
         columns: colDef, data: [], layout: 'fitColumns', minHeight: '100px',
         placeholder: 'Sin datos', tableBuilt: onBuilt,
+        groupBy: 'fecha',
+        groupHeader: function(value, count, data) {
+            const parts = (value || '').split('-');
+            const fmt = parts.length === 3 ? parts.reverse().join('-') : (value || 'Sin fecha');
+            return `<span style="font-weight:600">Fecha: ${fmt}</span> <span style="opacity:.7;margin-left:8px">(${count} ítem${count===1?'':'s'})</span>`;
+        },
+        groupBottomCalc: undefined,
     });
     tabSubDetalleOT.on("rowClick", function(e, row) { abrirModalEditarSubitemRow(row); });
     tabSubValeConsumo.on("rowClick", function(e, row) { abrirModalEditarSubitemRow(row); });
@@ -422,14 +438,11 @@ function abrirModalPEUnico() {
             return;
         }
         const dataPE = docs.map(d => ({ ...d, numeroDoc: d.numero }));
-        const preselectedPE = dataPE.filter(d => {
-            const key = (d.codigo || '') + '|' + (d.numero || '');
-            return detallesOt.some(item => (item.codigo || '') + '|' + (item.docref || '') === key && item.tipo === '6');
-        });
+        const preselectedPE = dataPE.filter(d => detallesOt.some(item => item.movsId === d.id && item.tipo === '6'));
         abrirModalBusqueda({
             titulo: 'Seleccionar Artículos de PE',
             multiSelect: true,
-            preselectedKeys: ['codigo', 'numero'],
+            preselectedKeys: ['id'],
             preselected: preselectedPE,
             columnas: [
                 { title: 'N° PE', field: 'numero', width: 80 },
@@ -442,8 +455,7 @@ function abrirModalPEUnico() {
             data: dataPE,
             filtroCampos: ['numero', 'codigo', 'nombre'],
             onSelect: function(row) {
-                const key = (row.codigo || '') + '|' + (row.numero || '');
-                const yaExiste = detallesOt.some(d => (d.codigo || '') + '|' + (d.docref || '') === key);
+                const yaExiste = detallesOt.some(d => d.movsId === row.id);
                 if (yaExiste) {
                     Toastify({text: 'Artículo ya agregado', style: {background: '#f44336'}}).showToast();
                     return;
@@ -462,13 +474,13 @@ function abrirModalPEUnico() {
                     tipo: '6',
                     rut: row.rut || '',
                     canttotal: row.cantidad || 0,
+                    movsId: row.id,
                 });
                 renderizarDetalleOt();
                 Toastify({text: 'Artículo de PE agregado', style: {background: '#4caf50'}}).showToast();
             },
             onDeselect: function(row) {
-                const key = (row.codigo || '') + '|' + (row.numero || '');
-                const idx = detallesOt.findIndex(d => (d.codigo || '') + '|' + (d.docref || '') === key);
+                const idx = detallesOt.findIndex(d => d.movsId === row.id);
                 if (idx !== -1) {
                     detallesOt.splice(idx, 1);
                     renderizarDetalleOt();
@@ -824,14 +836,11 @@ function abrirListaPE() {
             return;
         }
         const dataPE = docs.map(d => ({ ...d, numeroDoc: d.numero }));
-        const preselectedPE = dataPE.filter(d => {
-            const key = (d.codigo || '') + '|' + (d.numero || '');
-            return detallesOt.some(item => (item.codigo || '') + '|' + (item.docref || '') === key && item.tipo === '6');
-        });
+        const preselectedPE = dataPE.filter(d => detallesOt.some(item => item.movsId === d.id && item.tipo === '6'));
         abrirModalBusqueda({
             titulo: 'Seleccionar Artículos de PE',
             multiSelect: true,
-            preselectedKeys: ['codigo', 'numero'],
+            preselectedKeys: ['id'],
             preselected: preselectedPE,
             ancho: 'xl',
             columnas: [
@@ -845,8 +854,7 @@ function abrirListaPE() {
             data: dataPE,
             filtroCampos: ['numero', 'codigo', 'nombre'],
             onSelect: function(row) {
-                const key = (row.codigo || '') + '|' + (row.numero || '');
-                const yaExiste = detallesOt.some(d => (d.codigo || '') + '|' + (d.docref || '') === key);
+                const yaExiste = detallesOt.some(d => d.movsId === row.id);
                 if (yaExiste) {
                     Toastify({text: 'Artículo ya agregado', style: {background: '#f44336'}}).showToast();
                     return;
@@ -866,13 +874,13 @@ function abrirListaPE() {
                     tipo: '6',
                     rut: row.rut || '',
                     canttotal: row.cantidad || 0,
+                    movsId: row.id,
                 });
                 renderizarDetalleOt();
                 Toastify({text: 'Artículo de PE agregado', style: {background: '#4caf50'}}).showToast();
             },
             onDeselect: function(row) {
-                const key = (row.codigo || '') + '|' + (row.numero || '');
-                const idx = detallesOt.findIndex(d => (d.codigo || '') + '|' + (d.docref || '') === key);
+                const idx = detallesOt.findIndex(d => d.movsId === row.id);
                 if (idx !== -1) {
                     detallesOt.splice(idx, 1);
                     renderizarDetalleOt();
@@ -1163,6 +1171,7 @@ function cargarOt(numero) {
                 tipo: d.tipodocref || '',
                 rut: d.rut || '',
                 canttotal: d.canttotal || 0,
+                movsId: d.movsId || null,
             }));
             renderizarDetalleOt();
 

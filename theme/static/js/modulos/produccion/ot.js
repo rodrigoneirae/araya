@@ -573,7 +573,22 @@ function setCamposOtEditable(editable) {
 function editarOt() {
     const estado = document.getElementById('otEstado').value;
     if (estado === 'Cerrado' || estado === 'Terminado') {
-        Toastify({text: 'Documento cerrado. Imposible realizar cambios.', style: {background: '#f44336'}}).showToast();
+        mostrarModalConfirm({
+            titulo: 'Reabrir OT',
+            mensaje: 'La OT está cerrada. ¿Desea reabrirla para poder editarla? Los documentos referenciados volverán a quedar Abiertos.',
+            tipo: 'confirm',
+            onConfirm: function() {
+                const numero = document.getElementById('otNumero').value;
+                buscarXHROt('reabrir', {numero: numero}, function(data) {
+                    if (data.success) {
+                        Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                        cargarOt(numero, function() { editarOt(); });
+                    } else {
+                        Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                    }
+                });
+            }
+        });
         return;
     }
     setCamposOtEditable(true);
@@ -1086,7 +1101,7 @@ function cambiarTabOt(tab) {
     document.getElementById('contenido-' + tab).classList.remove('hidden');
 }
 
-function cargarOt(numero) {
+function cargarOt(numero, despuesCargar) {
     document.getElementById('inputOR').value = '';
     document.getElementById('inputPE').value = '';
     buscarXHROt('buscar', {numero: numero}, function(data) {
@@ -1201,8 +1216,16 @@ function cargarOt(numero) {
             if (data.data.estado === 'Cerrado' || data.data.estado === 'Terminado') {
                 setCamposOtEditable(false);
                 document.getElementById('btnGuardarOt').classList.add('hidden');
-                document.getElementById('btnEditarOt').classList.add('hidden');
-                Toastify({text: 'Documento cerrado. Solo lectura.', style: {background: '#f44336'}}).showToast();
+                document.getElementById('btnEditarOt').innerHTML = '<i class="bx bx-revision text-xl"></i>';
+                document.getElementById('btnEditarOt').title = 'Reabrir OT';
+                Toastify({text: 'Documento cerrado. Use Reabrir para editarlo.', style: {background: '#f39c12'}}).showToast();
+            } else {
+                document.getElementById('btnEditarOt').innerHTML = '<i class="bx bx-edit text-xl"></i>';
+                document.getElementById('btnEditarOt').title = 'Editar';
+            }
+
+            if (typeof despuesCargar === 'function') {
+                despuesCargar();
             }
         } else {
             Toastify({text: data.message, style: {background: '#f44336'}}).showToast();

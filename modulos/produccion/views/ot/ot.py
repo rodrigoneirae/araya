@@ -43,6 +43,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
             "nuevo": self._guardar_ot,
             "editar_estado": self._editar_estado,
             "actualizar": self._actualizar_ot,
+            "reabrir": lambda d: self._reabrir_ot(d.get("numero")),
             "buscar": lambda d: self._buscar_ot(d.get("numero")),
             "eliminar": lambda d: self._eliminar_ot(d.get("numero")),
             "siguiente_numero": lambda _: self._siguiente_numero(),
@@ -104,6 +105,34 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                 return JsonResponse({"success": False, "message": "Número de OT requerido"})
             Movs.objects.filter(numero=float(numero), tipo=8, linea=0).update(estado=estado)
             return JsonResponse({"success": True, "message": "Estado actualizado correctamente", "numero": numero})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _reabrir_ot(self, numero) -> JsonResponse:
+        try:
+            if not numero:
+                return JsonResponse({"success": False, "message": "Número de OT requerido"})
+            numero = float(numero)
+            encabezado = Movs.objects.filter(numero=numero, tipo=8, linea=0).first()
+            if not encabezado:
+                return JsonResponse({"success": False, "message": "OT no encontrada"})
+
+            with transaction.atomic():
+                for m in Movs.objects.filter(numero=numero, tipo=8, linea__gt=0):
+                    if m.docref and m.tipodocref and m.codigo:
+                        Movs.objects.filter(
+                            tipo__cod=int(float(m.tipodocref)),
+                            linea__gt=0,
+                            numero=float(m.docref),
+                            codigo__codigo=m.codigo.codigo,
+                        ).update(estado="Abierto")
+
+                encabezado.estado = "Abierto"
+                encabezado.usr = self.request.user.username if self.request.user.is_authenticated else ""
+                encabezado.timeuser = timezone.now()
+                encabezado.save()
+
+            return JsonResponse({"success": True, "message": f"OT {int(numero)} reabierta correctamente", "numero": int(numero)})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 

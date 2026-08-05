@@ -651,6 +651,21 @@ function imprimirOt() {
     });
 }
 
+function buscarProductoOt() {
+    const cod = document.getElementById('otProdCod').value.trim();
+    if (!cod) return;
+    buscarXHROt('buscar_articulo', {codigo: cod}, function(data) {
+        if (data.success) {
+            document.getElementById('otProdCod').value = data.data.cod;
+            document.getElementById('otProdNombre').value = data.data.nombre;
+            document.getElementById('otProdUM').value = data.data.um;
+            window.productoPrc = data.data.precio || null;
+        } else {
+            Toastify({text: data.message || 'Artículo no encontrado', style: {background: '#f44336'}}).showToast();
+        }
+    });
+}
+
 function abrirListaProductos() {
     buscarXHROt('listar_articulos', {}, function(data) {
         const articulos = (data.articulos || []).map(a => ({
@@ -1171,6 +1186,7 @@ function cargarOt(numero) {
                 tipo: d.tipodocref || '',
                 rut: d.rut || '',
                 canttotal: d.canttotal || 0,
+                linea: d.linea || null,
                 movsId: d.movsId || null,
             }));
             renderizarDetalleOt();

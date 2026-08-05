@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import Q
 from typing import Any
 import json
@@ -370,7 +371,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                 qs = Movs.objects.select_related("codigo", "tipo").filter(
                     tipo__cod__in=[8],
                     numero=ot_val,
-                    linea=1
+                    linea__gt=0
                 )
                 return [build_row(m) for m in qs if m.cantidad and m.cantidad != 0]
 
@@ -479,99 +480,127 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
             return None
 
         try:
-            numero_existente = data.get("numero", "")
-            if numero_existente:
-                numero = float(numero_existente)
-                Movs.objects.filter(numero=numero, tipo=8).delete()
-            else:
-                ultimo = Movs.objects.filter(tipo=8, linea=0).order_by("-numero").first()
-                numero = (ultimo.numero + 1) if ultimo else 1
+            with transaction.atomic():
+                numero_existente = data.get("numero", "")
 
-            codencargado = float(data.get("encargado", 0)) if data.get("encargado") else None
-            proceso = float(data.get("proceso", 0)) if data.get("proceso") else None
-            fecha = parse_fecha(data.get("fecha"))
-            estado = data.get("estado", "Abierto")
-
-            detalles_raw = data.get("detalles", "[]")
-            detalles = json.loads(detalles_raw) if isinstance(detalles_raw, str) else detalles_raw
-
-            cerrar_docs_raw = data.get("cerrar_docs", "{}")
-            cerrar_docs = json.loads(cerrar_docs_raw) if isinstance(cerrar_docs_raw, str) else cerrar_docs_raw
-
-            usr = self.request.user.username if self.request.user.is_authenticated else ""
-            time_user = timezone.now()
-            tipo = Docs.objects.get(cod=8)
-            tipodocref_cod = 7 if Docs.objects.filter(cod=7).exists() else None
-
-            Movs.objects.create(
-                numero=numero,
-                tipo=tipo,
-                linea=0,
-                fecha=fecha,
-                codencargado=codencargado,
-                proceso=proceso,
-                estado=estado,
-                rut=data.get("rut", ""),
-                glosa=data.get("glosa", ""),
-                tipodocref=tipodocref_cod,
-                usr=usr,
-                timeuser=time_user,
-            )
-
-
-            for i, det in enumerate(detalles, start=1):
-                codigo_art = None
-                if det.get("codigo"):
-                    codigo_art = Articulos.objects.filter(codigo=det.get("codigo")).first()
-                det_tipo = det.get("tipo")
-                if det_tipo and str(det_tipo).strip():
-                    try:
-                        det_tipodocref = int(float(det_tipo))
-                    except (ValueError, TypeError):
-                        det_tipodocref = None
+                referencias_previas = set()
+                if numero_existente:
+                    numero = float(numero_existente)
+                    for m in Movs.objects.filter(numero=numero, tipo=8, linea__gt=0):
+                        if m.docref and m.tipodocref and m.codigo:
+                            referencias_previas.add((
+                                int(float(m.tipodocref)),
+                                float(m.docref),
+                                m.codigo.codigo,
+                            ))
+                    Movs.objects.filter(numero=numero, tipo=8).delete()
                 else:
-                    det_tipodocref = None
-                det_fecha = parse_fecha(det.get("fecha")) if det.get("fecha") else fecha
+                    ultimo = Movs.objects.filter(tipo=8, linea=0).order_by("-numero").first()
+                    numero = (ultimo.numero + 1) if ultimo else 1
+
+                codencargado = float(data.get("encargado", 0)) if data.get("encargado") else None
+                proceso = float(data.get("proceso", 0)) if data.get("proceso") else None
+                fecha = parse_fecha(data.get("fecha"))
+                estado = data.get("estado", "Abierto")
+
+                detalles_raw = data.get("detalles", "[]")
+                detalles = json.loads(detalles_raw) if isinstance(detalles_raw, str) else detalles_raw
+
+                cerrar_docs_raw = data.get("cerrar_docs", "{}")
+                cerrar_docs = json.loads(cerrar_docs_raw) if isinstance(cerrar_docs_raw, str) else cerrar_docs_raw
+
+                usr = self.request.user.username if self.request.user.is_authenticated else ""
+                time_user = timezone.now()
+                tipo = Docs.objects.get(cod=8)
+                tipodocref_cod = 7 if Docs.objects.filter(cod=7).exists() else None
+
                 Movs.objects.create(
                     numero=numero,
                     tipo=tipo,
-                    linea=1,
-                    fecha=det_fecha,
+                    linea=0,
+                    fecha=fecha,
                     codencargado=codencargado,
                     proceso=proceso,
-                    codigo=codigo_art,
-                    cantidad=float(det.get("cantidad", 0)),
-                    punit=float(det["punit"]) if det.get("punit") not in (None, "", 0) else None,
-                    estado=det.get("estado", "Abierto"),
-                    bodega=float(det.get("bodega")) if det.get("bodega") else 1,
-                    docref=float(det.get("docref")) if det.get("docref") else None,
-                    tipodocref=det_tipodocref,
+                    estado=estado,
+                    rut=data.get("rut", ""),
+                    glosa=data.get("glosa", ""),
+                    tipodocref=tipodocref_cod,
                     usr=usr,
                     timeuser=time_user,
                 )
 
-            for det in detalles:
-                codigo = det.get("codigo")
-                docref = det.get("docref")
-                tipo_doc = det.get("tipo")
-                
-                if not codigo or not docref:
-                    continue
-                
-                tipo_cod = int(float(tipo_doc)) if tipo_doc else 7
-                
-                Movs.objects.filter(
-                    tipo__cod=tipo_cod,
-                    linea__gt=0,
-                    numero=float(docref),
-                    codigo__codigo=codigo
-                ).update(estado="Cerrado")
 
-            return JsonResponse({
-                "success": True,
-                "message": f"OT {int(numero)} guardada correctamente",
-                "numero": int(numero),
-            })
+                for i, det in enumerate(detalles, start=1):
+                    codigo_art = None
+                    if det.get("codigo"):
+                        codigo_art = Articulos.objects.filter(codigo=det.get("codigo")).first()
+                    det_tipo = det.get("tipo")
+                    if det_tipo and str(det_tipo).strip():
+                        try:
+                            det_tipodocref = int(float(det_tipo))
+                        except (ValueError, TypeError):
+                            det_tipodocref = None
+                    else:
+                        det_tipodocref = None
+                    det_fecha = parse_fecha(det.get("fecha")) if det.get("fecha") else fecha
+                    Movs.objects.create(
+                        numero=numero,
+                        tipo=tipo,
+                        linea=i,
+                        fecha=det_fecha,
+                        codencargado=codencargado,
+                        proceso=proceso,
+                        codigo=codigo_art,
+                        cantidad=float(det.get("cantidad", 0)),
+                        punit=float(det["punit"]) if det.get("punit") not in (None, "", 0) else None,
+                        estado=det.get("estado", "Abierto"),
+                        bodega=float(det.get("bodega")) if det.get("bodega") else 1,
+                        docref=float(det.get("docref")) if det.get("docref") else None,
+                        tipodocref=det_tipodocref,
+                        usr=usr,
+                        timeuser=time_user,
+                    )
+
+                for det in detalles:
+                    codigo = det.get("codigo")
+                    docref = det.get("docref")
+                    tipo_doc = det.get("tipo")
+                    
+                    if not codigo or not docref:
+                        continue
+                    
+                    tipo_cod = int(float(tipo_doc)) if tipo_doc else 7
+                    
+                    Movs.objects.filter(
+                        tipo__cod=tipo_cod,
+                        linea__gt=0,
+                        numero=float(docref),
+                        codigo__codigo=codigo
+                    ).update(estado="Cerrado")
+
+                referencias_nuevas = set()
+                for det in detalles:
+                    codigo = det.get("codigo")
+                    docref = det.get("docref")
+                    tipo_doc = det.get("tipo")
+                    if not codigo or not docref:
+                        continue
+                    tipo_cod = int(float(tipo_doc)) if tipo_doc else 7
+                    referencias_nuevas.add((tipo_cod, float(docref), codigo))
+
+                for tipo_cod, docref, codigo in referencias_previas - referencias_nuevas:
+                    Movs.objects.filter(
+                        tipo__cod=tipo_cod,
+                        linea__gt=0,
+                        numero=docref,
+                        codigo__codigo=codigo
+                    ).update(estado="Abierto")
+
+                return JsonResponse({
+                    "success": True,
+                    "message": f"OT {int(numero)} guardada correctamente",
+                    "numero": int(numero),
+                })
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 

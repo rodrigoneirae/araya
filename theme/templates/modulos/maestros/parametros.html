@@ -1,19 +1,26 @@
 {% extends 'plantilla/base/base.html' %}
-{% load static  %}
+{% load static %}
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="bg-aq-surface border border-aq-border rounded-xl shadow-lg">
-        <div class="p-4 border-b border-aq-border">
-            <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-aq-text">Parámetros del Sistema</h1>
-                <a href="{% url 'home' %}" class="w-10 h-10 flex items-center justify-center  bg-gray-500 text-white hover:bg-gray-600" title="Salir">
-                    <i class='bx bx-exit text-lg'></i>
-                </a>
-            </div>
+<style>
+    #parametrosNav {
+        flex-wrap: wrap;
+    }
+    #parametrosNav .tab-btn {
+        flex: 1 1 auto;
+        min-width: 7rem;
+    }
+</style>
+<div class="w-full max-w-4xl mx-auto px-2 sm:px-4">
+    <div class="bg-aq-surface border border-aq-border rounded-xl p-4 sm:p-6 shadow-lg">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+            <h1 class="text-xl sm:text-2xl font-bold text-aq-text">Parámetros del Sistema</h1>
+            <a href="{% url 'home' %}" class="w-10 h-10 flex items-center justify-center bg-gray-500 text-white hover:bg-gray-600" title="Salir">
+                <i class='bx bx-exit text-lg'></i>
+            </a>
         </div>
 
-        <div class="border-b border-aq-border">
-            <nav class="flex -mb-px overflow-x-auto" aria-label="Tabs">
+        <div class="border-b border-aq-border mb-6">
+            <nav id="parametrosNav" class="flex -mb-px" aria-label="Tabs">
                 <button onclick="cambiarTab('bodegas')" id="tab-bodegas" class="tab-btn active">
                     <i class='bx bx-building'></i>
                     <span>Bodegas</span>
@@ -38,279 +45,343 @@
                     <i class='bx bx-truck'></i>
                     <span>Transportistas</span>
                 </button>
+                <button onclick="cambiarTab('clasificaciones')" id="tab-clasificaciones" class="tab-btn">
+                    <i class='bx bx-category'></i>
+                    <span>Clasificaciones</span>
+                </button>
+                <button onclick="cambiarTab('tratamientos')" id="tab-tratamientos" class="tab-btn">
+                    <i class='bx bx-recycle'></i>
+                    <span>Tratamientos</span>
+                </button>
             </nav>
         </div>
 
-        <div class="p-6">
-            <div id="contenido-bodegas" class="tab-content">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-aq-text">Bodegas</h2>
-                    <div class="flex items-center gap-2">
-                        {% include 'components/action_buttons.html' with entity='Bodega' gender='a' suffix_ids=True show_salir=False %}
-                    </div>
-                </div>
-
-<form id="bodegaForm" class="space-y-4">
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <div class="flex gap-3 flex-1">
-                            <div class="flex-1">
-                                <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
-                                <div class="flex gap-2">
-                                    <input type="number" id="bodegaCod" class="flex-1 px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
-                                    <button type="button" onclick="abrirListaBodegas()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
-                                        <i class='bx bx-search'></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="w-24">
-                                <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
-                                <div class="h-[42px] flex items-center justify-center bg-aq-surface  ">
-                                    <input type="checkbox" id="bodegaEstado" class="w-5 h-5 cursor-pointer" style="accent-color: rgb(74 124 89);">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
-                            <input type="text" id="bodegaNombre" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre de la bodega">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-aq-text mb-1">Glosa / Descripción</label>
-                        <input type="text" id="bodegaGlosa" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Descripción adicional">
-                    </div>
-                </form>
+        <div id="contenido-bodegas" class="tab-content">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+                <h2 class="text-lg sm:text-xl font-semibold text-aq-text">Bodegas</h2>
+                {% include 'components/action_buttons.html' with entity='Bodega' gender='a' suffix_ids=True show_salir=False %}
             </div>
 
-            <div id="contenido-documentos" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-aq-text">Documentos</h2>
-                    {% include 'components/action_buttons.html' with entity='Doc' gender='a' suffix_ids=True show_salir=False %}
-                </div>
-
-                <form id="docForm" class="space-y-4">
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <div class="flex gap-3 flex-1">
-                            <div class="flex-1">
-                                <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
-                                <div class="flex gap-2">
-                                    <input type="number" id="docCod" class="flex-1 px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
-                                    <button type="button" onclick="abrirListaDocs()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
-                                        <i class='bx bx-search'></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="w-24">
-                                <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
-                                <div class="h-[42px] flex items-center justify-center bg-aq-surface ">
-                                    <input type="checkbox" id="docEstado" class="w-5 h-5 cursor-pointer" style="accent-color: rgb(74 124 89);">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
-                            <input type="text" id="docNombre" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre del documento">
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-aq-text mb-1">Signo</label>
-                            <select id="docSigno" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text">
-                                <option value="">--- Seleccionar Signo ---</option>
-                                <option value="1">1 - Aumenta Stock</option>
-                                <option value="0">0 - No Mueve Stock</option>
-                                <option value="-1">-1 - Disminuye Stock</option>
-                            </select>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <div id="contenido-procesos" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-aq-text">Procesos</h2>
-                    {% include 'components/action_buttons.html' with entity='Proceso' suffix_ids=True show_salir=False %}
-                </div>
-
-                <form id="procesoForm" class="space-y-4">
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <div class="flex gap-3 flex-1">
-                            <div class="flex-1">
-                                <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
-                                <div class="flex gap-2">
-                                    <input type="number" id="procesoCod" class="flex-1 px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
-                                    <button type="button" onclick="abrirListaProcesos()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
-                                        <i class='bx bx-search'></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="w-24">
-                                <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
-                                <div class="h-[42px] flex items-center justify-center bg-aq-surface  ">
-                                    <input type="checkbox" id="procesoEstado" class="w-5 h-5 cursor-pointer" style="accent-color: rgb(74 124 89);">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
-                            <input type="text" id="procesoNombre" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre del proceso">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-aq-text mb-1">Glosa / Descripción</label>
-                        <input type="text" id="procesoGlosa" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Descripción adicional">
-                    </div>
-                </form>
-            </div>
-
-            <div id="contenido-empleados" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-aq-text">Empleados</h2>
-                    {% include 'components/action_buttons.html' with entity='Empleado' suffix_ids=True show_salir=False %}
-                </div>
-
-                <form id="empleadoForm" class="space-y-4">
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <div class="flex gap-3 flex-1">
-                            <div class="flex-1">
-                                <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
-                                <div class="flex gap-2">
-                                    <input type="number" id="empleadoCod" class="flex-1 px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
-                                    <button type="button" onclick="abrirListaEmpleados()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
-                                        <i class='bx bx-search'></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="w-24">
-                                <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
-                                <div class="h-[42px] flex items-center justify-center bg-aq-surface  ">
-                                    <input type="checkbox" id="empleadoEstado" class="w-5 h-5 cursor-pointer" style="accent-color: rgb(74 124 89);">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
-                            <input type="text" id="empleadoNombre" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre del empleado">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-aq-text mb-1">Glosa / Descripción</label>
-                        <input type="text" id="empleadoGlosa" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Descripción adicional">
-                    </div>
-                </form>
-            </div>
-
-<div id="contenido-condpago" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-aq-text">Condiciones de Pago</h2>
-                    {% include 'components/action_buttons.html' with entity='Cpago' suffix_ids=True show_salir=False %}
-                </div>
-
-                <form id="cpagoForm" class="space-y-4">
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <div class="flex gap-3 flex-1">
-                            <div class="flex-1">
-                                <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
-                                <div class="flex gap-2">
-                                    <input type="number" id="cpagoCod" class="flex-1 px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Código">
-                                    <button type="button" onclick="abrirListaCpagos()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
-                                        <i class='bx bx-search'></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="w-24">
-                                <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
-                                <div class="h-[42px] flex items-center justify-center bg-aq-surface ">
-                                    <input type="checkbox" id="cpagoEstado" class="w-5 h-5 cursor-pointer" style="accent-color: rgb(74 124 89);">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-aq-text mb-1">Descripción</label>
-                            <input type="text" id="cpagoDescr" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Descripción">
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-aq-text mb-1">Días</label>
-                            <input type="number" id="cpagoDias" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Días">
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-aq-text mb-1">Glosa / Notas</label>
-                            <input type="text" id="cpagoGlosa" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Notas">
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <div id="contenido-transportistas" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-aq-text">Transportistas</h2>
-                    {% include 'components/action_buttons.html' with entity='Transportista' suffix_ids=True show_salir=False %}
-                </div>
-
-                <form id="transportistaForm" class="space-y-4">
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <div class="flex gap-3 flex-1">
-                            <div class="flex-1">
-                                <label class="block text-sm font-medium text-aq-text mb-1">RUT</label>
-                                <div class="flex gap-2">
-                                    <input type="text" id="transportistaRut" class="flex-1 px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="RUT">
-                                    <button type="button" onclick="abrirListaTransportistas()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
-                                        <i class='bx bx-search'></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="w-24">
-                                <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
-                                <div class="h-[42px] flex items-center justify-center bg-aq-surface  ">
-                                    <input type="checkbox" id="transportistaEstado" class="w-5 h-5 cursor-pointer" style="accent-color: rgb(74 124 89);">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
-                            <input type="text" id="transportistaNombre" class="w-full px-3 py-2  border border-aq-border bg-aq-surface text-aq-text" placeholder="Nombre del transportista">
-                        </div>
-                    </div>
-                </form>
-
-<div class="mt-6">
-                    <div class="flex justify-between items-center mb-3">
-                        <h3 class="text-lg font-medium text-aq-text">Patentes</h3>
+            <form id="bodegaForm" class="space-y-4">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
                         <div class="flex gap-2">
-                            <button type="button" id="btnAgregarPatente" onclick="abrirModalPatente()" class="px-3 py-1.5  bg-aq-primary text-white text-sm hover:opacity-85 flex items-center gap-1">
-                                <i class="bx bx-plus"></i> Agregar
+                            <input type="number" id="bodegaCod" class="flex-1 min-w-0 px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Código">
+                            <button type="button" onclick="abrirListaBodegas()" class="px-3 py-2 bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                <i class='bx bx-search'></i>
                             </button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead class="bg-aq-surface-2">
-                                <tr>
-                                    <th class="px-3 py-2 text-left text-aq-text font-semibold">Patente</th>
-                                    <th class="px-3 py-2 text-right text-aq-text font-semibold w-20">Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaPatentes" class="divide-y divide-aq-border">
-                                <tr>
-                                    <td colspan="2" class="px-3 py-4 text-center text-aq-muted">Seleccione un transportista para ver sus patentes</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="w-24 shrink-0">
+                        <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                        <div class="h-[42px] flex items-center justify-center bg-aq-surface-2 border border-aq-border">
+                            <input type="checkbox" id="bodegaEstado" class="w-5 h-5 cursor-pointer">
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
+                        <input type="text" id="bodegaNombre" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Nombre de la bodega">
                     </div>
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Glosa / Descripción</label>
+                    <input type="text" id="bodegaGlosa" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Descripción adicional">
+                </div>
+            </form>
+        </div>
 
+        <div id="contenido-documentos" class="tab-content hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+                <h2 class="text-lg sm:text-xl font-semibold text-aq-text">Documentos</h2>
+                {% include 'components/action_buttons.html' with entity='Doc' gender='a' suffix_ids=True show_salir=False %}
             </div>
+
+            <form id="docForm" class="space-y-4">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="docCod" class="flex-1 min-w-0 px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Código">
+                            <button type="button" onclick="abrirListaDocs()" class="px-3 py-2 bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                <i class='bx bx-search'></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="w-24 shrink-0">
+                        <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                        <div class="h-[42px] flex items-center justify-center bg-aq-surface-2 border border-aq-border">
+                            <input type="checkbox" id="docEstado" class="w-5 h-5 cursor-pointer">
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
+                        <input type="text" id="docNombre" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Nombre del documento">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Signo</label>
+                        <select id="docSigno" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
+                            <option value="">--- Seleccionar Signo ---</option>
+                            <option value="1">1 - Aumenta Stock</option>
+                            <option value="0">0 - No Mueve Stock</option>
+                            <option value="-1">-1 - Disminuye Stock</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div id="contenido-procesos" class="tab-content hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+                <h2 class="text-lg sm:text-xl font-semibold text-aq-text">Procesos</h2>
+                {% include 'components/action_buttons.html' with entity='Proceso' suffix_ids=True show_salir=False %}
+            </div>
+
+            <form id="procesoForm" class="space-y-4">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="procesoCod" class="flex-1 min-w-0 px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Código">
+                            <button type="button" onclick="abrirListaProcesos()" class="px-3 py-2 bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                <i class='bx bx-search'></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="w-24 shrink-0">
+                        <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                        <div class="h-[42px] flex items-center justify-center bg-aq-surface-2 border border-aq-border">
+                            <input type="checkbox" id="procesoEstado" class="w-5 h-5 cursor-pointer">
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
+                        <input type="text" id="procesoNombre" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Nombre del proceso">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Glosa / Descripción</label>
+                    <input type="text" id="procesoGlosa" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Descripción adicional">
+                </div>
+            </form>
+        </div>
+
+        <div id="contenido-empleados" class="tab-content hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+                <h2 class="text-lg sm:text-xl font-semibold text-aq-text">Empleados</h2>
+                {% include 'components/action_buttons.html' with entity='Empleado' suffix_ids=True show_salir=False %}
+            </div>
+
+            <form id="empleadoForm" class="space-y-4">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="empleadoCod" class="flex-1 min-w-0 px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Código">
+                            <button type="button" onclick="abrirListaEmpleados()" class="px-3 py-2 bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                <i class='bx bx-search'></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="w-24 shrink-0">
+                        <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                        <div class="h-[42px] flex items-center justify-center bg-aq-surface-2 border border-aq-border">
+                            <input type="checkbox" id="empleadoEstado" class="w-5 h-5 cursor-pointer">
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
+                        <input type="text" id="empleadoNombre" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Nombre del empleado">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Glosa / Descripción</label>
+                    <input type="text" id="empleadoGlosa" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Descripción adicional">
+                </div>
+            </form>
+        </div>
+
+        <div id="contenido-condpago" class="tab-content hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+                <h2 class="text-lg sm:text-xl font-semibold text-aq-text">Condiciones de Pago</h2>
+                {% include 'components/action_buttons.html' with entity='Cpago' suffix_ids=True show_salir=False %}
+            </div>
+
+            <form id="cpagoForm" class="space-y-4">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="cpagoCod" class="flex-1 min-w-0 px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Código">
+                            <button type="button" onclick="abrirListaCpagos()" class="px-3 py-2 bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                <i class='bx bx-search'></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="w-24 shrink-0">
+                        <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                        <div class="h-[42px] flex items-center justify-center bg-aq-surface-2 border border-aq-border">
+                            <input type="checkbox" id="cpagoEstado" class="w-5 h-5 cursor-pointer">
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Descripción</label>
+                        <input type="text" id="cpagoDescr" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Descripción">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Días</label>
+                        <input type="number" id="cpagoDias" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Días">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Glosa / Notas</label>
+                        <input type="text" id="cpagoGlosa" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Notas">
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div id="contenido-transportistas" class="tab-content hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+                <h2 class="text-lg sm:text-xl font-semibold text-aq-text">Transportistas</h2>
+                {% include 'components/action_buttons.html' with entity='Transportista' suffix_ids=True show_salir=False %}
+            </div>
+
+            <form id="transportistaForm" class="space-y-4">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">RUT</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="transportistaRut" class="flex-1 min-w-0 px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="RUT">
+                            <button type="button" onclick="abrirListaTransportistas()" class="px-3 py-2 bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                <i class='bx bx-search'></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="w-24 shrink-0">
+                        <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                        <div class="h-[42px] flex items-center justify-center bg-aq-surface-2 border border-aq-border">
+                            <input type="checkbox" id="transportistaEstado" class="w-5 h-5 cursor-pointer">
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Nombre</label>
+                        <input type="text" id="transportistaNombre" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Nombre del transportista">
+                    </div>
+                </div>
+            </form>
+
+            <div class="mt-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-base sm:text-lg font-medium text-aq-text">Patentes</h3>
+                    <button type="button" id="btnAgregarPatente" onclick="abrirModalPatente()" class="px-3 py-1.5 bg-aq-primary text-white text-sm hover:opacity-85 flex items-center gap-1">
+                        <i class="bx bx-plus"></i> Agregar
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-aq-text border border-aq-border">
+                        <thead class="bg-aq-surface-2 text-xs uppercase">
+                            <tr>
+                                <th class="px-3 py-2 text-left font-semibold">Patente</th>
+                                <th class="px-3 py-2 text-right font-semibold w-20">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaPatentes" class="divide-y divide-aq-border">
+                            <tr>
+                                <td colspan="2" class="px-3 py-4 text-center text-aq-muted">Seleccione un transportista para ver sus patentes</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="contenido-clasificaciones" class="tab-content hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+                <h2 class="text-lg sm:text-xl font-semibold text-aq-text">Clasificaciones</h2>
+                {% include 'components/action_buttons.html' with entity='Clasificacion' gender='a' suffix_ids=True show_salir=False %}
+            </div>
+
+            <form id="clasificacionForm" class="space-y-4">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Código</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="clasificacionCod" class="flex-1 min-w-0 px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Código">
+                            <button type="button" onclick="abrirListaClasificaciones()" class="px-3 py-2 bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                <i class='bx bx-search'></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="w-24 shrink-0">
+                        <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                        <div class="h-[42px] flex items-center justify-center bg-aq-surface-2 border border-aq-border">
+                            <input type="checkbox" id="clasificacionEstado" class="w-5 h-5 cursor-pointer">
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Descripción</label>
+                        <input type="text" id="clasificacionDescripcion" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Descripción de la clasificación">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Tratamiento asignado</label>
+                    <select id="clasificacionTratamiento" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
+                        <option value="">--- Seleccionar Tratamiento ---</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <div id="contenido-tratamientos" class="tab-content hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+                <h2 class="text-lg sm:text-xl font-semibold text-aq-text">Tratamientos</h2>
+                {% include 'components/action_buttons.html' with entity='Tratamiento' suffix_ids=True show_salir=False %}
+            </div>
+
+            <form id="tratamientoForm" class="space-y-4">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Código LER</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="tratamientoCod" class="flex-1 min-w-0 px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Código LER">
+                            <button type="button" onclick="abrirListaTratamientos()" class="px-3 py-2 bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                <i class='bx bx-search'></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="w-24 shrink-0">
+                        <label class="block text-sm font-medium text-aq-text mb-1 text-center">Activo</label>
+                        <div class="h-[42px] flex items-center justify-center bg-aq-surface-2 border border-aq-border">
+                            <input type="checkbox" id="tratamientoEstado" class="w-5 h-5 cursor-pointer">
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Descripción</label>
+                        <input type="text" id="tratamientoDescripcion" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Descripción del tratamiento">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-aq-text mb-1">Código ARA</label>
+                        <input type="text" id="tratamientoCodigoAra" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Código ARA">
+                    </div>
+                </div>
+            </form>
+        </div>
+
+    </div>
 </div>
 
 <div id="modalPatente" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-aq-surface  p-4 sm:p-6 w-full max-w-sm border border-aq-border">
+    <div class="bg-aq-surface border border-aq-border rounded-xl p-6 shadow-xl w-full max-w-sm">
         <h3 class="text-lg font-semibold text-aq-text mb-4">Agregar Patente</h3>
         <div class="mb-4">
             <label class="block text-sm font-medium text-aq-text mb-1">Patente</label>
-            <input type="text" id="patenteInput" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text uppercase" placeholder="Ingrese patente" maxlength="8">
+            <input type="text" id="patenteInput" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text uppercase" placeholder="Ingrese patente" maxlength="8">
         </div>
         <div class="flex justify-end gap-2">
-            <button onclick="cerrarModalPatente()" class="px-4 py-2  border border-aq-border text-aq-text hover:bg-aq-surface-2">
+            <button onclick="cerrarModalPatente()" class="px-4 py-2 border border-aq-border text-aq-text rounded-lg hover:bg-aq-surface-2">
                 Cancelar
             </button>
-            <button onclick="confirmarAgregarPatente()" class="px-4 py-2  bg-aq-primary text-white hover:opacity-85">
+            <button onclick="confirmarAgregarPatente()" class="px-4 py-2 bg-aq-primary text-white rounded-lg hover:bg-aq-primary/90">
                 Agregar
             </button>
         </div>

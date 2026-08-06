@@ -10,6 +10,15 @@ class Articulos(models.Model):
     tipo_articulo = models.ForeignKey('TipoArticulo', on_delete=models.SET_NULL, null=True, blank=True, db_column='TipoArticuloId', related_name='articulos')
     precio = models.IntegerField(db_column='Precio', blank=True, null=True)  # Field name made lowercase.
     cup = models.FloatField(db_column='CUP', blank=True, null=True)  # Field name made lowercase.
+    peso = models.FloatField(db_column='Peso', blank=True, null=True)
+    categoria = models.ForeignKey(
+        'Clasificacion',
+        db_column='Categoria',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='articulos'
+    )
     feculen = models.CharField(db_column='FECULEN', max_length=255, blank=True, null=True)  # Field name made lowercase.
     feculsa = models.CharField(db_column='FECULSA', max_length=255, blank=True, null=True)  # Field name made lowercase.
     mermac = models.CharField(db_column='MERMAC', max_length=255, blank=True, null=True)  # Field name made lowercase.

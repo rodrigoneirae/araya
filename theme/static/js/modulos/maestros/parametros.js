@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', function() {
     addEnterAndBlur('empleadoCod', buscarPorCodigoEmpleado);
     addEnterAndBlur('cpagoCod', buscarPorCodigoCpago);
     addEnterAndBlur('transportistaRut', buscarPorRutTransportista);
+    addEnterAndBlur('clasificacionCod', buscarPorCodigoClasificacion);
+    addEnterAndBlur('tratamientoCod', buscarPorCodigoTratamiento);
+    cargarTratamientosOptions();
 });
 
 function buscarXHRBodega(action, datos, callback) {
@@ -1572,4 +1575,549 @@ function cambiarTab(tab) {
     document.getElementById('tab-' + tab).classList.add('active');
     document.querySelectorAll('.tab-content').forEach(contenido => contenido.classList.add('hidden'));
     document.getElementById('contenido-' + tab).classList.remove('hidden');
+}
+
+// ==================== CLASIFICACIONES ====================
+let modoEdicionClasificacion = false;
+let modoNuevoClasificacion = false;
+let estadoOriginalClasificacion = 'Activo';
+
+function buscarXHRClasificacion(action, datos, callback) {
+    const formData = new FormData();
+    formData.append('action', action);
+    for (let key in datos) { formData.append(key, datos[key]); }
+    fetch(urlParametros, {
+        method: 'POST',
+        body: formData,
+        headers: {'X-CSRFToken': csrfToken}
+    })
+    .then(res => res.json())
+    .then(callback)
+    .catch(err => console.error('Error:', err));
+}
+
+function cargarTratamientosOptions() {
+    buscarXHRClasificacion('listar_tratamientos_options', {}, function(data) {
+        const select = document.getElementById('clasificacionTratamiento');
+        if (!select) return;
+        select.innerHTML = '<option value="">--- Seleccionar Tratamiento ---</option>';
+        (data.tratamientos || []).forEach(t => {
+            const option = document.createElement('option');
+            option.value = t.codigo_ler;
+            option.textContent = t.codigo_ler + ' - ' + t.descripcion;
+            select.appendChild(option);
+        });
+        refrescarSelect2Parametros('clasificacionTratamiento');
+    });
+}
+
+function refrescarSelect2Parametros(id) {
+    if (typeof jQuery === 'undefined' || !jQuery.fn.select2) return;
+    var $el = jQuery('#' + id);
+    if ($el.data('select2')) {
+        $el.select2('destroy');
+        $el.removeData('select2');
+    }
+    if (typeof initSelect2 === 'function') {
+        initSelect2(document.getElementById(id).parentElement);
+    }
+}
+
+function seleccionarTratamientoEnSelect(id, value) {
+    if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery('#' + id).data('select2')) {
+        jQuery('#' + id).val(value).trigger('change');
+    } else {
+        document.getElementById(id).value = value;
+    }
+}
+
+function buscarPorCodigoClasificacion() {
+    const cod = document.getElementById('clasificacionCod').value.trim();
+    if (!cod) { return; }
+    modoNuevoClasificacion = false;
+    document.getElementById('btnNuevoClasificacion').innerHTML = '<i class="bx bx-plus text-xl"></i>';
+    document.getElementById('btnNuevoClasificacion').title = 'Nueva';
+
+    buscarXHRClasificacion('buscar_clasificacion', {codigo: cod}, function(data) {
+        if (data.success && data.data) {
+            document.getElementById('clasificacionCod').value = data.data.codigo;
+            document.getElementById('clasificacionDescripcion').value = data.data.descripcion || '';
+            seleccionarTratamientoEnSelect('clasificacionTratamiento', data.data.tratamiento || '');
+            document.getElementById('clasificacionEstado').checked = data.data.estado === 'Activo';
+            estadoOriginalClasificacion = data.data.estado || 'Activo';
+            setCamposClasificacionDisabled(true);
+            document.getElementById('btnGuardarClasificacion').classList.add('hidden');
+            document.getElementById('btnEditarClasificacion').classList.remove('hidden');
+            actualizarBtnEliminarClasificacion();
+            modoEdicionClasificacion = false;
+            resetBtnEditarClasificacion();
+        } else {
+            document.getElementById('clasificacionForm').reset();
+            document.getElementById('clasificacionCod').value = cod;
+            document.getElementById('clasificacionEstado').checked = true;
+            estadoOriginalClasificacion = 'Activo';
+            setCamposClasificacionDisabled(false);
+            document.getElementById('btnGuardarClasificacion').classList.remove('hidden');
+            document.getElementById('btnEditarClasificacion').classList.add('hidden');
+            document.getElementById('btnEliminarClasificacion').classList.add('hidden');
+            modoEdicionClasificacion = false;
+            resetBtnEditarClasificacion();
+        }
+    });
+}
+
+function setCamposClasificacionDisabled(disabled) {
+    ['clasificacionDescripcion'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = disabled;
+    });
+    const sel = document.getElementById('clasificacionTratamiento');
+    if (sel) {
+        if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery(sel).data('select2')) {
+            jQuery(sel).select2('enable', !disabled);
+        } else {
+            sel.disabled = disabled;
+        }
+    }
+}
+
+function nuevaClasificacion() {
+    if (modoNuevoClasificacion) {
+        modoNuevoClasificacion = false;
+        document.getElementById('clasificacionForm').reset();
+        document.getElementById('clasificacionCod').value = '';
+        setCamposClasificacionDisabled(true);
+        document.getElementById('btnGuardarClasificacion').classList.add('hidden');
+        document.getElementById('btnNuevoClasificacion').innerHTML = '<i class="bx bx-plus text-xl"></i>';
+        document.getElementById('btnNuevoClasificacion').title = 'Nueva';
+    } else {
+        modoNuevoClasificacion = true;
+        document.getElementById('clasificacionForm').reset();
+        document.getElementById('clasificacionCod').value = '';
+        document.getElementById('clasificacionCod').focus();
+        setCamposClasificacionDisabled(false);
+        document.getElementById('btnGuardarClasificacion').classList.remove('hidden');
+        document.getElementById('btnNuevoClasificacion').innerHTML = '<i class="bx bx-x text-xl"></i>';
+        document.getElementById('btnNuevoClasificacion').title = 'Cancelar';
+    }
+    document.getElementById('btnEditarClasificacion').classList.add('hidden');
+    document.getElementById('btnEliminarClasificacion').classList.add('hidden');
+    resetBtnEditarClasificacion();
+    modoEdicionClasificacion = false;
+}
+
+function resetBtnEditarClasificacion() {
+    const btn = document.getElementById('btnEditarClasificacion');
+    if (!btn) return;
+    btn.innerHTML = '<i class="bx bx-edit text-xl"></i>';
+    btn.title = 'Editar';
+    btn.classList.remove('bg-green-500');
+    btn.classList.add('bg-amber-500');
+}
+
+function guardarClasificacion() {
+    const cod = document.getElementById('clasificacionCod').value.trim();
+    if (!cod) {
+        Toastify({text: 'Ingrese un código', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+    const descripcion = document.getElementById('clasificacionDescripcion').value.trim();
+    if (!descripcion) {
+        Toastify({text: 'Ingrese una descripción', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+    const tratamiento = document.getElementById('clasificacionTratamiento').value;
+    if (!tratamiento) {
+        Toastify({text: 'Debe asignar un tratamiento', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+
+    buscarXHRClasificacion('nueva_clasificacion', {
+        codigo: cod,
+        descripcion: descripcion,
+        tratamiento: tratamiento
+    }, function(data) {
+        if (data.success) {
+            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+            buscarPorCodigoClasificacion();
+        } else {
+            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+        }
+    });
+}
+
+function editarClasificacion() {
+    const btn = document.getElementById('btnEditarClasificacion');
+    if (!modoEdicionClasificacion) {
+        modoEdicionClasificacion = true;
+        setCamposClasificacionDisabled(false);
+        btn.innerHTML = '<i class="bx bx-check text-xl"></i>';
+        btn.title = 'Guardar';
+        btn.classList.remove('bg-amber-500');
+        btn.classList.add('bg-green-500');
+        document.getElementById('btnEliminarClasificacion').classList.add('hidden');
+    } else {
+        const cod = document.getElementById('clasificacionCod').value.trim();
+        if (!cod) {
+            Toastify({text: 'Seleccione un código', style: {background: '#f44336'}}).showToast();
+            return;
+        }
+        const tratamiento = document.getElementById('clasificacionTratamiento').value;
+        if (!tratamiento) {
+            Toastify({text: 'Debe asignar un tratamiento', style: {background: '#f44336'}}).showToast();
+            return;
+        }
+        buscarXHRClasificacion('editar_clasificacion', {
+            codigo: cod,
+            descripcion: document.getElementById('clasificacionDescripcion').value,
+            tratamiento: tratamiento
+        }, function(data) {
+            if (data.success) {
+                Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                modoEdicionClasificacion = false;
+                setCamposClasificacionDisabled(true);
+                resetBtnEditarClasificacion();
+                document.getElementById('btnEliminarClasificacion').classList.remove('hidden');
+            } else {
+                Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+            }
+        });
+    }
+}
+
+function eliminarClasificacion() {
+    const cod = document.getElementById('clasificacionCod').value.trim();
+    if (!cod) {
+        Toastify({text: 'Seleccione una clasificación', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+    const esActivo = estadoOriginalClasificacion === 'Activo';
+    mostrarModalConfirm({
+        datos: [
+            { label: 'Código', value: cod },
+            { label: 'Descripción', value: document.getElementById('clasificacionDescripcion').value || '—' },
+        ],
+        titulo: esActivo ? 'Desactivar Clasificación' : 'Activar Clasificación',
+        mensaje: esActivo ? '¿Está seguro de desactivar esta clasificación?' : '¿Está seguro de activar esta clasificación?',
+        icono: esActivo ? 'bx bx-no-entry text-xl sm:text-2xl text-amber-500' : 'bx bx-check-circle text-xl sm:text-2xl text-green-500',
+        textoBoton: esActivo ? 'Desactivar' : 'Activar',
+        colorBoton: esActivo ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-green-500 text-white hover:bg-green-600',
+        onConfirm: function() {
+            const action = esActivo ? 'desactivar_clasificacion' : 'activar_clasificacion';
+            buscarXHRClasificacion(action, {codigo: cod}, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    if (esActivo) {
+                        nuevaClasificacion();
+                    } else {
+                        buscarPorCodigoClasificacion();
+                    }
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
+        }
+    });
+}
+
+function actualizarBtnEliminarClasificacion() {
+    const btn = document.getElementById('btnEliminarClasificacion');
+    if (!btn) return;
+    const esActivo = estadoOriginalClasificacion === 'Activo';
+    btn.title = esActivo ? 'Desactivar' : 'Activar';
+    btn.querySelector('i').className = esActivo ? 'bx bx-no-entry text-xl' : 'bx bx-check-circle text-xl';
+    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'bg-amber-500', 'hover:bg-amber-600');
+    btn.classList.add(esActivo ? 'bg-amber-500' : 'bg-green-500', esActivo ? 'hover:bg-amber-600' : 'hover:bg-green-600');
+}
+
+function abrirListaClasificaciones() {
+    buscarXHRClasificacion('listar_clasificaciones', {}, function(data) {
+        const rows = (data.clasificaciones || []).map(function(c) {
+            return { codigo: c.codigo, descripcion: c.descripcion, tratamiento: c.tratamiento || '' };
+        });
+        abrirModalBusqueda({
+            titulo: 'Lista de Clasificaciones',
+            columnas: [
+                { title: 'Código', field: 'codigo', width: 100 },
+                { title: 'Descripción', field: 'descripcion' },
+                { title: 'Tratamiento', field: 'tratamiento', width: 120 },
+            ],
+            data: rows,
+            filtroCampos: ['codigo', 'descripcion', 'tratamiento'],
+            onSelect: function(row) {
+                document.getElementById('clasificacionCod').value = row.codigo;
+                buscarPorCodigoClasificacion();
+            },
+            onRefresh: function(opts) {
+                buscarXHRClasificacion('listar_clasificaciones', {}, function(d) {
+                    opts.data = (d.clasificaciones || []).map(function(c) {
+                        return { codigo: c.codigo, descripcion: c.descripcion, tratamiento: c.tratamiento || '' };
+                    });
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
+    });
+}
+
+function seleccionarClasificacion(codigo, descripcion, tratamiento) {
+    document.getElementById('clasificacionCod').value = codigo;
+    document.getElementById('clasificacionDescripcion').value = descripcion || '';
+    seleccionarTratamientoEnSelect('clasificacionTratamiento', tratamiento || '');
+    setCamposClasificacionDisabled(true);
+    document.getElementById('btnGuardarClasificacion').classList.add('hidden');
+    document.getElementById('btnEditarClasificacion').classList.remove('hidden');
+    document.getElementById('btnEliminarClasificacion').classList.remove('hidden');
+    modoEdicionClasificacion = false;
+    resetBtnEditarClasificacion();
+    modoNuevoClasificacion = false;
+    document.getElementById('btnNuevoClasificacion').innerHTML = '<i class="bx bx-plus text-xl"></i>';
+    document.getElementById('btnNuevoClasificacion').title = 'Nueva';
+}
+
+// ==================== TRATAMIENTOS ====================
+let modoEdicionTratamiento = false;
+let modoNuevoTratamiento = false;
+let estadoOriginalTratamiento = 'Activo';
+
+function buscarXHRTratamiento(action, datos, callback) {
+    const formData = new FormData();
+    formData.append('action', action);
+    for (let key in datos) { formData.append(key, datos[key]); }
+    fetch(urlParametros, {
+        method: 'POST',
+        body: formData,
+        headers: {'X-CSRFToken': csrfToken}
+    })
+    .then(res => res.json())
+    .then(callback)
+    .catch(err => console.error('Error:', err));
+}
+
+function buscarPorCodigoTratamiento() {
+    const cod = document.getElementById('tratamientoCod').value.trim();
+    if (!cod) { return; }
+    modoNuevoTratamiento = false;
+    document.getElementById('btnNuevoTratamiento').innerHTML = '<i class="bx bx-plus text-xl"></i>';
+    document.getElementById('btnNuevoTratamiento').title = 'Nuevo';
+
+    buscarXHRTratamiento('buscar_tratamiento', {codigo: cod}, function(data) {
+        if (data.success && data.data) {
+            document.getElementById('tratamientoCod').value = data.data.codigo;
+            document.getElementById('tratamientoDescripcion').value = data.data.descripcion || '';
+            document.getElementById('tratamientoCodigoAra').value = data.data.codigo_ara || '';
+            document.getElementById('tratamientoEstado').checked = data.data.estado === 'Activo';
+            estadoOriginalTratamiento = data.data.estado || 'Activo';
+            setCamposTratamientoDisabled(true);
+            document.getElementById('btnGuardarTratamiento').classList.add('hidden');
+            document.getElementById('btnEditarTratamiento').classList.remove('hidden');
+            actualizarBtnEliminarTratamiento();
+            modoEdicionTratamiento = false;
+            resetBtnEditarTratamiento();
+        } else {
+            document.getElementById('tratamientoForm').reset();
+            document.getElementById('tratamientoCod').value = cod;
+            document.getElementById('tratamientoEstado').checked = true;
+            estadoOriginalTratamiento = 'Activo';
+            setCamposTratamientoDisabled(false);
+            document.getElementById('btnGuardarTratamiento').classList.remove('hidden');
+            document.getElementById('btnEditarTratamiento').classList.add('hidden');
+            document.getElementById('btnEliminarTratamiento').classList.add('hidden');
+            modoEdicionTratamiento = false;
+            resetBtnEditarTratamiento();
+        }
+    });
+}
+
+function setCamposTratamientoDisabled(disabled) {
+    ['tratamientoDescripcion', 'tratamientoCodigoAra'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = disabled;
+    });
+}
+
+function nuevoTratamiento() {
+    if (modoNuevoTratamiento) {
+        modoNuevoTratamiento = false;
+        document.getElementById('tratamientoForm').reset();
+        document.getElementById('tratamientoCod').value = '';
+        setCamposTratamientoDisabled(true);
+        document.getElementById('btnGuardarTratamiento').classList.add('hidden');
+        document.getElementById('btnNuevoTratamiento').innerHTML = '<i class="bx bx-plus text-xl"></i>';
+        document.getElementById('btnNuevoTratamiento').title = 'Nuevo';
+    } else {
+        modoNuevoTratamiento = true;
+        document.getElementById('tratamientoForm').reset();
+        document.getElementById('tratamientoCod').value = '';
+        document.getElementById('tratamientoCod').focus();
+        setCamposTratamientoDisabled(false);
+        document.getElementById('btnGuardarTratamiento').classList.remove('hidden');
+        document.getElementById('btnNuevoTratamiento').innerHTML = '<i class="bx bx-x text-xl"></i>';
+        document.getElementById('btnNuevoTratamiento').title = 'Cancelar';
+    }
+    document.getElementById('btnEditarTratamiento').classList.add('hidden');
+    document.getElementById('btnEliminarTratamiento').classList.add('hidden');
+    resetBtnEditarTratamiento();
+    modoEdicionTratamiento = false;
+}
+
+function resetBtnEditarTratamiento() {
+    const btn = document.getElementById('btnEditarTratamiento');
+    if (!btn) return;
+    btn.innerHTML = '<i class="bx bx-edit text-xl"></i>';
+    btn.title = 'Editar';
+    btn.classList.remove('bg-green-500');
+    btn.classList.add('bg-amber-500');
+}
+
+function guardarTratamiento() {
+    const cod = document.getElementById('tratamientoCod').value.trim();
+    if (!cod) {
+        Toastify({text: 'Ingrese un código LER', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+    const descripcion = document.getElementById('tratamientoDescripcion').value.trim();
+    if (!descripcion) {
+        Toastify({text: 'Ingrese una descripción', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+
+    buscarXHRTratamiento('nuevo_tratamiento', {
+        codigo: cod,
+        descripcion: descripcion,
+        codigo_ara: document.getElementById('tratamientoCodigoAra').value
+    }, function(data) {
+        if (data.success) {
+            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+            cargarTratamientosOptions();
+            buscarPorCodigoTratamiento();
+        } else {
+            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+        }
+    });
+}
+
+function editarTratamiento() {
+    const btn = document.getElementById('btnEditarTratamiento');
+    if (!modoEdicionTratamiento) {
+        modoEdicionTratamiento = true;
+        setCamposTratamientoDisabled(false);
+        btn.innerHTML = '<i class="bx bx-check text-xl"></i>';
+        btn.title = 'Guardar';
+        btn.classList.remove('bg-amber-500');
+        btn.classList.add('bg-green-500');
+        document.getElementById('btnEliminarTratamiento').classList.add('hidden');
+    } else {
+        const cod = document.getElementById('tratamientoCod').value.trim();
+        if (!cod) {
+            Toastify({text: 'Seleccione un código', style: {background: '#f44336'}}).showToast();
+            return;
+        }
+        buscarXHRTratamiento('editar_tratamiento', {
+            codigo: cod,
+            descripcion: document.getElementById('tratamientoDescripcion').value,
+            codigo_ara: document.getElementById('tratamientoCodigoAra').value
+        }, function(data) {
+            if (data.success) {
+                Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                cargarTratamientosOptions();
+                modoEdicionTratamiento = false;
+                setCamposTratamientoDisabled(true);
+                resetBtnEditarTratamiento();
+                document.getElementById('btnEliminarTratamiento').classList.remove('hidden');
+            } else {
+                Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+            }
+        });
+    }
+}
+
+function eliminarTratamiento() {
+    const cod = document.getElementById('tratamientoCod').value.trim();
+    if (!cod) {
+        Toastify({text: 'Seleccione un tratamiento', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+    const esActivo = estadoOriginalTratamiento === 'Activo';
+    mostrarModalConfirm({
+        datos: [
+            { label: 'Código LER', value: cod },
+            { label: 'Descripción', value: document.getElementById('tratamientoDescripcion').value || '—' },
+        ],
+        titulo: esActivo ? 'Desactivar Tratamiento' : 'Activar Tratamiento',
+        mensaje: esActivo ? '¿Está seguro de desactivar este tratamiento?' : '¿Está seguro de activar este tratamiento?',
+        icono: esActivo ? 'bx bx-no-entry text-xl sm:text-2xl text-amber-500' : 'bx bx-check-circle text-xl sm:text-2xl text-green-500',
+        textoBoton: esActivo ? 'Desactivar' : 'Activar',
+        colorBoton: esActivo ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-green-500 text-white hover:bg-green-600',
+        onConfirm: function() {
+            const action = esActivo ? 'desactivar_tratamiento' : 'activar_tratamiento';
+            buscarXHRTratamiento(action, {codigo: cod}, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    cargarTratamientosOptions();
+                    if (esActivo) {
+                        nuevoTratamiento();
+                    } else {
+                        buscarPorCodigoTratamiento();
+                    }
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
+        }
+    });
+}
+
+function actualizarBtnEliminarTratamiento() {
+    const btn = document.getElementById('btnEliminarTratamiento');
+    if (!btn) return;
+    const esActivo = estadoOriginalTratamiento === 'Activo';
+    btn.title = esActivo ? 'Desactivar' : 'Activar';
+    btn.querySelector('i').className = esActivo ? 'bx bx-no-entry text-xl' : 'bx bx-check-circle text-xl';
+    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'bg-amber-500', 'hover:bg-amber-600');
+    btn.classList.add(esActivo ? 'bg-amber-500' : 'bg-green-500', esActivo ? 'hover:bg-amber-600' : 'hover:bg-green-600');
+}
+
+function abrirListaTratamientos() {
+    buscarXHRTratamiento('listar_tratamientos', {}, function(data) {
+        abrirModalBusqueda({
+            titulo: 'Lista de Tratamientos',
+            columnas: [
+                { title: 'Código LER', field: 'codigo', width: 120 },
+                { title: 'Descripción', field: 'descripcion' },
+                { title: 'Código ARA', field: 'codigo_ara', width: 120 },
+            ],
+            data: (data.tratamientos || []).map(function(t) {
+                return { codigo: t.codigo_ler, descripcion: t.descripcion, codigo_ara: t.codigo_ara };
+            }),
+            filtroCampos: ['codigo', 'descripcion'],
+            onSelect: function(row) {
+                document.getElementById('tratamientoCod').value = row.codigo;
+                buscarPorCodigoTratamiento();
+            },
+            onRefresh: function(opts) {
+                buscarXHRTratamiento('listar_tratamientos', {}, function(d) {
+                    opts.data = (d.tratamientos || []).map(function(t) {
+                        return { codigo: t.codigo_ler, descripcion: t.descripcion, codigo_ara: t.codigo_ara };
+                    });
+                    abrirModalBusqueda(opts);
+                });
+            },
+        });
+    });
+}
+
+function seleccionarTratamiento(codigo, descripcion, codigoAra) {
+    document.getElementById('tratamientoCod').value = codigo;
+    document.getElementById('tratamientoDescripcion').value = descripcion || '';
+    document.getElementById('tratamientoCodigoAra').value = codigoAra || '';
+    setCamposTratamientoDisabled(true);
+    document.getElementById('btnGuardarTratamiento').classList.add('hidden');
+    document.getElementById('btnEditarTratamiento').classList.remove('hidden');
+    document.getElementById('btnEliminarTratamiento').classList.remove('hidden');
+    modoEdicionTratamiento = false;
+    resetBtnEditarTratamiento();
+    modoNuevoTratamiento = false;
+    document.getElementById('btnNuevoTratamiento').innerHTML = '<i class="bx bx-plus text-xl"></i>';
+    document.getElementById('btnNuevoTratamiento').title = 'Nuevo';
 }

@@ -9,6 +9,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 from modulos.maestros.models.articulos import Articulos
 from modulos.maestros.models.procesos import Procesos
+from modulos.maestros.models.clasificacion import Clasificacion
 from modulos.maestros.models.auxiliares import TipoArticulo, UnidadMedida
 
 
@@ -53,6 +54,8 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
             return self._listar_tipos()
         elif action == "listar_umedidas":
             return self._listar_umedidas()
+        elif action == "listar_clasificaciones":
+            return self._listar_clasificaciones()
 
         return self.render_to_response(self.get_context_data())
 
@@ -71,6 +74,10 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
     def _listar_umedidas(self) -> JsonResponse:
         unidades = UnidadMedida.objects.values("id", "nombre", "abreviatura").order_by("nombre")
         return JsonResponse({"umedidas": list(unidades)})
+
+    def _listar_clasificaciones(self) -> JsonResponse:
+        clasificaciones = Clasificacion.objects.filter(estado='Activo').values("codigo", "descripcion").order_by("codigo")
+        return JsonResponse({"clasificaciones": list(clasificaciones)})
 
     def _buscar(self, codigo: str | None) -> JsonResponse:
         if not codigo:
@@ -106,6 +113,8 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
                     "stomin": articulo.stomin if articulo.stomin is not None else "",
                     "stomax": articulo.stomax if articulo.stomax is not None else "",
                     "proceso": articulo.prc if articulo.prc is not None else "",
+                    "peso": articulo.peso if articulo.peso is not None else "",
+                    "categoria": articulo.categoria_id or "",
                 }
             })
         except Articulos.DoesNotExist:
@@ -121,6 +130,15 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
                     tipo_articulo_obj = TipoArticulo.objects.get(nombre=tipo_nombre)
                 except TipoArticulo.DoesNotExist:
                     pass
+            categoria_cod = data.get("categoria")
+            categoria_obj = None
+            if categoria_cod:
+                try:
+                    categoria_obj = Clasificacion.objects.get(codigo=categoria_cod)
+                except Clasificacion.DoesNotExist:
+                    pass
+            peso = data.get("peso")
+            peso = float(peso) if peso not in (None, "") else None
             articulo = Articulos(
                 codigo=data.get("codigo"),
                 descr=data.get("nombre"),
@@ -130,6 +148,8 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
                 stomin=data.get("stomin") or None,
                 stomax=data.get("stomax") or None,
                 prc=data.get("proceso") or None,
+                peso=peso,
+                categoria=categoria_obj,
                 usr=usuario,
                 timeuser=timezone.now()
             )
@@ -154,6 +174,16 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
             articulo.stomin = data.get("stomin") or None
             articulo.stomax = data.get("stomax") or None
             articulo.prc = data.get("proceso") or None
+            categoria_cod = data.get("categoria")
+            if categoria_cod:
+                try:
+                    articulo.categoria = Clasificacion.objects.get(codigo=categoria_cod)
+                except Clasificacion.DoesNotExist:
+                    articulo.categoria = None
+            else:
+                articulo.categoria = None
+            peso = data.get("peso")
+            articulo.peso = float(peso) if peso not in (None, "") else None
             articulo.usr = usuario
             articulo.timeuser = timezone.now()
             articulo.save(using="default")

@@ -396,6 +396,13 @@ function buscarArticuloOcat() {
             document.getElementById('ocatArtNombre').value = data.data.nombre || '';
             document.getElementById('ocatArtUM').value = data.data.um || '';
             window.articuloPrc = data.data.prc || null;
+            document.getElementById('ocatArtPeso').value = data.data.peso || 0;
+            const catSel = document.getElementById('ocatArtCategoria');
+            catSel.value = data.data.categoria || '';
+            actualizarSelect2(catSel);
+            const tratSel = document.getElementById('ocatArtTratamiento');
+            tratSel.value = data.data.tratamiento || '';
+            actualizarSelect2(tratSel);
         } else {
             Toastify({text: 'Artículo no encontrado', style: {background: '#f44336'}}).showToast();
         }
@@ -420,6 +427,13 @@ function abrirListaArticulos() {
                 document.getElementById('ocatArtUM').value = row.um || '';
                 document.getElementById('ocatArtPUnit').value = row.precio || 0;
                 window.articuloPrc = row.prc || null;
+                document.getElementById('ocatArtPeso').value = row.peso || 0;
+                const catSel = document.getElementById('ocatArtCategoria');
+                catSel.value = row.categoria || '';
+                actualizarSelect2(catSel);
+                const tratSel = document.getElementById('ocatArtTratamiento');
+                tratSel.value = row.tratamiento || '';
+                actualizarSelect2(tratSel);
             },
             onRefresh: function(opts) {
                 buscarXHROcat('listar_articulos', {}, function(data) {
@@ -685,12 +699,13 @@ function buscarOcat() {
             columnas: [
                 { title: 'Nro', field: 'numero', width: 80 },
                 { title: 'Fecha', field: 'fecha', width: 110 },
-                { title: 'RUT', field: 'rut' },
+                { title: 'RUT', field: 'rut', width: 110 },
+                { title: 'Cliente', field: 'nombre' },
                 { title: 'Estado', field: 'estado', width: 90 },
                 { title: 'Total', field: 'total', width: 100 },
             ],
             data: data.ocat || [],
-            filtroCampos: ['numero', 'rut', 'estado'],
+            filtroCampos: ['numero', 'rut', 'nombre', 'estado'],
             onSelect: function(row) {
                 cargarOcat(row.numero);
             },

@@ -68,7 +68,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
         if not codigo:
             return JsonResponse({"success": False})
         try:
-            articulo = Articulos.objects.filter(codigo=codigo).exclude(tipo='Inactivo').first()
+            articulo = Articulos.objects.select_related("categoria__tratamiento").filter(codigo=codigo).exclude(tipo='Inactivo').first()
             if not articulo:
                 return JsonResponse({"success": False, "message": "Artículo no encontrado"})
             return JsonResponse({
@@ -78,15 +78,32 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     "nombre": articulo.descr or "",
                     "um": articulo.um or "",
                     "precio": articulo.precio or 0,
-                    "prc": articulo.prc
+                    "prc": articulo.prc,
+                    "peso": articulo.peso or 0,
+                    "categoria": articulo.categoria.codigo if articulo.categoria else "",
+                    "categoria_nombre": articulo.categoria.descripcion if articulo.categoria else "",
+                    "tratamiento": articulo.categoria.tratamiento.codigo_ler if articulo.categoria and articulo.categoria.tratamiento else "",
+                    "tratamiento_nombre": articulo.categoria.tratamiento.descripcion if articulo.categoria and articulo.categoria.tratamiento else ""
                 }
             })
         except Exception as e:
             return JsonResponse({"success": False, "message": "Artículo no encontrado"})
 
     def _listar_articulos(self) -> JsonResponse:
-        articulos = Articulos.objects.values("codigo", "descr", "um", "precio", "prc").exclude(tipo='Inactivo').order_by("descr")
-        return JsonResponse({"articulos": list(articulos)})
+        articulos = Articulos.objects.select_related("categoria__tratamiento").exclude(tipo='Inactivo').order_by("descr")
+        resultado = [{
+            "codigo": a.codigo,
+            "descr": a.descr,
+            "um": a.um,
+            "precio": a.precio,
+            "prc": a.prc,
+            "peso": a.peso or 0,
+            "categoria": a.categoria.codigo if a.categoria else "",
+            "categoria_nombre": a.categoria.descripcion if a.categoria else "",
+            "tratamiento": a.categoria.tratamiento.codigo_ler if a.categoria and a.categoria.tratamiento else "",
+            "tratamiento_nombre": a.categoria.tratamiento.descripcion if a.categoria and a.categoria.tratamiento else ""
+        } for a in articulos]
+        return JsonResponse({"articulos": resultado})
 
     def _listar_bodegas(self) -> JsonResponse:
         bodegas = Bodegas.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
@@ -96,6 +113,11 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
         movs = Movs.objects.filter(linea=0, tipo=7).values(
             "numero", "fecha", "rut", "docref", "tipodocref", "canttotal", "neto", "punit", "tipo", "estado", "codencargado", "patente_id"
         ).order_by("-numero")
+        ruts = {m["rut"] for m in movs if m["rut"]}
+        clientes_map = {
+            p.rut: p.nombre
+            for p in Provclientes.objects.filter(rut__in=ruts).only("rut", "nombre")
+        }
         resultado = []
         for m in movs:
             fecha = ""
@@ -105,6 +127,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                 "numero": m["numero"],
                 "fecha": fecha,
                 "rut": m["rut"] or "",
+                "nombre": clientes_map.get(m["rut"], ""),
                 "docref": m["docref"] or "",
                 "tipodocref": m["tipodocref"] or "",
                 "canttotal": m["canttotal"] or 0,

@@ -13,6 +13,8 @@ from modulos.maestros.models.procesos import Procesos
 from modulos.maestros.models.empleados import Empleados
 from modulos.maestros.models.auxiliares import Cpago
 from modulos.maestros.models.transportistas import Transportistas, Patentes
+from modulos.maestros.models.clasificacion import Clasificacion
+from modulos.maestros.models.tratamiento_ler import TratamientoLER
 
 
 
@@ -35,6 +37,8 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
         context["empleados"] = self._get_empleados_list()
         context["cpagos"] = self._get_cpagos_list()
         context["transportistas"] = self._get_transportistas_list()
+        context["clasificaciones"] = self._get_clasificaciones_list()
+        context["tratamientos"] = self._get_tratamientos_list()
         return context
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> JsonResponse:
@@ -91,6 +95,21 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
             "listar_patentes": lambda d: self._listar_patentes(d.get("rut")),
             "nueva_patente": self._guardar_patente,
             "eliminar_patente": lambda d: self._eliminar_patente(d.get("id")),
+            # Clasificaciones
+            "buscar_clasificacion": lambda d: self._buscar_clasificacion(d.get("codigo")),
+            "nueva_clasificacion": self._guardar_clasificacion,
+            "editar_clasificacion": self._actualizar_clasificacion,
+            "desactivar_clasificacion": lambda d: self._desactivar_clasificacion(d.get("codigo")),
+            "activar_clasificacion": lambda d: self._activar_clasificacion(d.get("codigo")),
+            "listar_clasificaciones": lambda d: self._listar_clasificaciones(),
+            # Tratamientos
+            "buscar_tratamiento": lambda d: self._buscar_tratamiento(d.get("codigo")),
+            "nuevo_tratamiento": self._guardar_tratamiento,
+            "editar_tratamiento": self._actualizar_tratamiento,
+            "desactivar_tratamiento": lambda d: self._desactivar_tratamiento(d.get("codigo")),
+            "activar_tratamiento": lambda d: self._activar_tratamiento(d.get("codigo")),
+            "listar_tratamientos": lambda d: self._listar_tratamientos(),
+            "listar_tratamientos_options": lambda d: self._listar_tratamientos_options(),
         }
         return handlers.get(action, lambda _: JsonResponse({"success": False, "message": "Acción inválida"}))
 
@@ -565,5 +584,160 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
         try:
             Patentes.objects.get(id=id).delete(using="default")
             return JsonResponse({"success": True, "message": "Patente eliminada correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    # ==================== CLASIFICACIONES ====================
+    def _get_clasificaciones_list(self) -> list[dict]:
+        return list(Clasificacion.objects.values("codigo", "descripcion", "tratamiento", "estado").order_by("codigo"))
+
+    def _listar_clasificaciones(self) -> JsonResponse:
+        return JsonResponse({"clasificaciones": self._get_clasificaciones_list()})
+
+    def _buscar_clasificacion(self, codigo: str | None) -> JsonResponse:
+        if not codigo:
+            return JsonResponse({"success": False})
+        try:
+            c = Clasificacion.objects.get(codigo=codigo)
+            return JsonResponse({
+                "success": True,
+                "data": {
+                    "codigo": c.codigo,
+                    "descripcion": c.descripcion or "",
+                    "tratamiento": c.tratamiento.codigo_ler if c.tratamiento else "",
+                    "tratamiento_descripcion": c.tratamiento.descripcion if c.tratamiento else "",
+                    "estado": c.estado or "Activo"
+                }
+            })
+        except Clasificacion.DoesNotExist:
+            return JsonResponse({"success": False})
+
+    def _guardar_clasificacion(self, data: dict[str, Any]) -> JsonResponse:
+        try:
+            tratamiento_cod = data.get("tratamiento")
+            if not tratamiento_cod:
+                return JsonResponse({"success": False, "message": "Debe asignar un tratamiento"})
+            tratamiento = TratamientoLER.objects.get(codigo_ler=tratamiento_cod)
+            c = Clasificacion(
+                codigo=data.get("codigo"),
+                descripcion=data.get("descripcion"),
+                tratamiento=tratamiento,
+            )
+            c.save(using="default")
+            return JsonResponse({"success": True, "message": "Clasificación guardada correctamente"})
+        except TratamientoLER.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Tratamiento no encontrado"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _actualizar_clasificacion(self, data: dict[str, Any]) -> JsonResponse:
+        try:
+            tratamiento_cod = data.get("tratamiento")
+            if not tratamiento_cod:
+                return JsonResponse({"success": False, "message": "Debe asignar un tratamiento"})
+            tratamiento = TratamientoLER.objects.get(codigo_ler=tratamiento_cod)
+            c = Clasificacion.objects.get(codigo=data.get("codigo"))
+            c.descripcion = data.get("descripcion")
+            c.tratamiento = tratamiento
+            c.save(using="default")
+            return JsonResponse({"success": True, "message": "Clasificación actualizada correctamente"})
+        except Clasificacion.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Clasificación no encontrada"})
+        except TratamientoLER.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Tratamiento no encontrado"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _desactivar_clasificacion(self, codigo: str | None) -> JsonResponse:
+        if not codigo:
+            return JsonResponse({"success": False, "message": "Código requerido"})
+        try:
+            c = Clasificacion.objects.get(codigo=codigo)
+            c.estado = 'Inactivo'
+            c.save(using="default")
+            return JsonResponse({"success": True, "message": "Clasificación desactivada correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _activar_clasificacion(self, codigo: str | None) -> JsonResponse:
+        if not codigo:
+            return JsonResponse({"success": False, "message": "Código requerido"})
+        try:
+            c = Clasificacion.objects.get(codigo=codigo)
+            c.estado = 'Activo'
+            c.save(using="default")
+            return JsonResponse({"success": True, "message": "Clasificación activada correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    # ==================== TRATAMIENTOS ====================
+    def _get_tratamientos_list(self) -> list[dict]:
+        return list(TratamientoLER.objects.values("codigo_ler", "descripcion", "codigo_ara", "estado").order_by("codigo_ler"))
+
+    def _listar_tratamientos(self) -> JsonResponse:
+        return JsonResponse({"tratamientos": self._get_tratamientos_list()})
+
+    def _listar_tratamientos_options(self) -> JsonResponse:
+        data = TratamientoLER.objects.filter(estado='Activo').values("codigo_ler", "descripcion").order_by("descripcion")
+        return JsonResponse({"tratamientos": list(data)})
+
+    def _buscar_tratamiento(self, codigo: str | None) -> JsonResponse:
+        if not codigo:
+            return JsonResponse({"success": False})
+        try:
+            t = TratamientoLER.objects.get(codigo_ler=codigo)
+            return JsonResponse({
+                "success": True,
+                "data": {
+                    "codigo": t.codigo_ler,
+                    "descripcion": t.descripcion or "",
+                    "codigo_ara": t.codigo_ara or "",
+                    "estado": t.estado or "Activo"
+                }
+            })
+        except TratamientoLER.DoesNotExist:
+            return JsonResponse({"success": False})
+
+    def _guardar_tratamiento(self, data: dict[str, Any]) -> JsonResponse:
+        try:
+            t = TratamientoLER(
+                codigo_ler=data.get("codigo"),
+                descripcion=data.get("descripcion"),
+                codigo_ara=data.get("codigo_ara") or "",
+            )
+            t.save(using="default")
+            return JsonResponse({"success": True, "message": "Tratamiento guardado correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _actualizar_tratamiento(self, data: dict[str, Any]) -> JsonResponse:
+        try:
+            t = TratamientoLER.objects.get(codigo_ler=data.get("codigo"))
+            t.descripcion = data.get("descripcion")
+            t.codigo_ara = data.get("codigo_ara") or ""
+            t.save(using="default")
+            return JsonResponse({"success": True, "message": "Tratamiento actualizado correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _desactivar_tratamiento(self, codigo: str | None) -> JsonResponse:
+        if not codigo:
+            return JsonResponse({"success": False, "message": "Código requerido"})
+        try:
+            t = TratamientoLER.objects.get(codigo_ler=codigo)
+            t.estado = 'Inactivo'
+            t.save(using="default")
+            return JsonResponse({"success": True, "message": "Tratamiento desactivado correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _activar_tratamiento(self, codigo: str | None) -> JsonResponse:
+        if not codigo:
+            return JsonResponse({"success": False, "message": "Código requerido"})
+        try:
+            t = TratamientoLER.objects.get(codigo_ler=codigo)
+            t.estado = 'Activo'
+            t.save(using="default")
+            return JsonResponse({"success": True, "message": "Tratamiento activado correctamente"})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})

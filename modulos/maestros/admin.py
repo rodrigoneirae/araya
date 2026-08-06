@@ -51,15 +51,18 @@ class EmpleadosAdmin(admin.ModelAdmin):
 
 @admin.register(Clasificacion)
 class ClasificacionAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'descripcion')
+    list_display = ('codigo', 'descripcion', 'tratamiento', 'estado')
     search_fields = ('codigo', 'descripcion')
+    list_filter = ('estado',)
+    list_select_related = ('tratamiento',)
     ordering = ('codigo',)
 
 
 @admin.register(TratamientoLER)
 class TratamientoLERAdmin(admin.ModelAdmin):
-    list_display = ('codigo_ler', 'descripcion', 'codigo_ara')
+    list_display = ('codigo_ler', 'descripcion', 'codigo_ara', 'estado')
     search_fields = ('codigo_ler', 'descripcion', 'codigo_ara')
+    list_filter = ('estado',)
     ordering = ('codigo_ler',)
 
 

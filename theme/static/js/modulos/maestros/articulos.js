@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarProcesos();
     cargarTipos();
     cargarUMedida();
+    cargarCategorias();
 
     const btnEliminar = document.getElementById('btnEliminar');
     if (btnEliminar) {
@@ -100,6 +101,21 @@ function cargarUMedida() {
     });
 }
 
+function cargarCategorias() {
+    buscarXHR('listar_clasificaciones', {}, function(data) {
+        const select = document.getElementById('categoria');
+        if (select && data.clasificaciones) {
+            data.clasificaciones.forEach(c => {
+                const option = document.createElement('option');
+                option.value = c.codigo;
+                option.textContent = c.codigo + ' - ' + c.descripcion;
+                select.appendChild(option);
+            });
+            refrescarSelect2('categoria');
+        }
+    });
+}
+
 function abrirListaArticulos() {
     buscarXHR('listar_codigos', {}, function(data) {
         abrirModalBusqueda({
@@ -157,6 +173,9 @@ function buscarPorCodigo() {
             document.getElementById('stomax').value = data.data.stomax !== null && data.data.stomax !== '' ? data.data.stomax : '';
             document.getElementById('procesos').value = data.data.proceso || '';
             actualizarSelect2('procesos');
+            document.getElementById('peso').value = data.data.peso !== null && data.data.peso !== '' ? data.data.peso : '';
+            document.getElementById('categoria').value = data.data.categoria || '';
+            actualizarSelect2('categoria');
             tipoOriginal = data.data.estado || 'Activo';
             setCamposDisabled(true);
             document.getElementById('btnGuardar').classList.add('hidden');
@@ -172,6 +191,7 @@ function buscarPorCodigo() {
             actualizarSelect2('tipo');
             actualizarSelect2('um');
             actualizarSelect2('procesos');
+            actualizarSelect2('categoria');
             document.getElementById('btnGuardar').classList.remove('hidden');
             document.getElementById('btnEditar').classList.add('hidden');
             document.getElementById('btnEliminar').classList.add('hidden');
@@ -182,7 +202,7 @@ function buscarPorCodigo() {
 }
 
 function setCamposDisabled(disabled) {
-    ['codigo', 'nombre', 'tipo', 'um', 'stomin', 'stomax', 'procesos'].forEach(id => {
+    ['codigo', 'nombre', 'tipo', 'um', 'stomin', 'stomax', 'procesos', 'peso', 'categoria'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         if (el.tagName === 'SELECT' && typeof jQuery !== 'undefined' && jQuery.fn.select2) {
@@ -261,7 +281,9 @@ function guardarArticulo() {
         um: document.getElementById('um').value,
         stomin: document.getElementById('stomin').value,
         stomax: document.getElementById('stomax').value,
-        proceso: document.getElementById('procesos').value
+        proceso: document.getElementById('procesos').value,
+        peso: document.getElementById('peso').value,
+        categoria: document.getElementById('categoria').value
     }, function(data) {
         if (data.success) {
             Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
@@ -298,7 +320,9 @@ function editarArticulo() {
             um: document.getElementById('um').value,
             stomin: document.getElementById('stomin').value,
             stomax: document.getElementById('stomax').value,
-            proceso: document.getElementById('procesos').value
+            proceso: document.getElementById('procesos').value,
+            peso: document.getElementById('peso').value,
+            categoria: document.getElementById('categoria').value
         }, function(data) {
             if (data.success) {
                 Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();

@@ -91,7 +91,7 @@
                                 <option value="">--- Seleccionar ---</option>
                             </select>
                         </div>
-                        <div class="sm:col-span-1">
+                        <div class="sm:col-span-1 hidden">
                             <label class="block text-sm font-medium text-aq-text mb-1">Estado</label>
                             <select id="ocatEstado" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                                 <option value="Abierto">Abierto</option>
@@ -99,14 +99,15 @@
                                 <option value="Terminado">Terminado</option>
                             </select>
                         </div>
+                           <div class="sm:col-span-1">
+                            <label class="block text-sm font-medium text-aq-text mb-1">Total</label>
+                            <input type="number" id="ocatTotal" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
+                        </div>
                         <div class="sm:col-span-1">
                             <label class="block text-sm font-medium text-aq-text mb-1">Neto</label>
                             <input type="number" id="ocatNeto" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
                         </div>
-                        <div class="sm:col-span-1">
-                            <label class="block text-sm font-medium text-aq-text mb-1">Total</label>
-                            <input type="number" id="ocatTotal" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
-                        </div>
+
                         <div class="sm:col-span-1">
                             <label class="block text-sm font-medium text-aq-text mb-1">Transportista</label>
                             <select id="ocatTransportista" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">

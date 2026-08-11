@@ -19,6 +19,7 @@ from modulos.inventario.models.saldos import Saldos
 from modulos.maestros.models.empleados import Empleados
 from modulos.maestros.models.procesos import Procesos
 from modulos.maestros.models.articulos import Articulos
+from modulos.maestros.models.prov_cliente import Provclientes
 from modulos.maestros.models.bodegas import Bodegas
 from modulos.maestros.models.docs import Docs
 from modulos.maestros.models.prov_cliente import Provclientes
@@ -668,6 +669,12 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
             for p in Procesos.objects.all()
         }
 
+        ruts = {m.rut for m in movs if m.rut}
+        cliente_map = {
+            c.rut: c.nombre
+            for c in Provclientes.objects.filter(rut__in=ruts)
+        }
+
         resultado = []
 
         for m in movs:
@@ -694,6 +701,8 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                 "peso": m.codigo.peso or 0 if m.codigo else 0,
                 "proceso_nombre": proceso_nombre,
                 "estado": m.estado or "",
+                "rut_cliente": m.rut or "",
+                "nombre_cliente": cliente_map.get(m.rut, "") if m.rut else "",
             })
 
         print("RESULTADO FINAL:", len(resultado))

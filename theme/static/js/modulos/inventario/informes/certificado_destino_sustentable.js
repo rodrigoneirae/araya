@@ -49,7 +49,80 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('certFechaInicio')?.addEventListener('change', function() {
         autoCompletarMes();
     });
+
+    cargarCertificados();
 });
+
+let tablaCert = null;
+
+function cargarCertificados() {
+    buscarXHR('listar_certificados', {}, function(data) {
+        const certs = data.certificados || [];
+        if (tablaCert) { tablaCert.destroy(); tablaCert = null; }
+        tablaCert = new Tabulator("#tablaCertificados", {
+            data: certs,
+            layout: "fitColumns",
+            height: "100%",
+            pagination: true,
+            paginationSize: 15,
+            paginationSizeSelector: [10, 20, 50, 100],
+            placeholder: "No se han emitido certificados",
+            columns: [
+                { title: "Folio", field: "folio", widthGrow: 1, hozAlign: "center" },
+                { title: "RUT", field: "rut", widthGrow: 2, hozAlign: "center" },
+                { title: "Cliente", field: "nombre", widthGrow: 3 },
+                { title: "Emisión", field: "fecha_emision", widthGrow: 2, hozAlign: "center" },
+                { title: "Período", field: "periodo", widthGrow: 2, hozAlign: "center" },
+                { title: "Kilos", field: "total_kilos", widthGrow: 1, hozAlign: "right",
+                    formatter: function(cell) {
+                        return (cell.getValue() || 0).toLocaleString('es-CL', {maximumFractionDigits: 2});
+                    }
+                },
+                { title: "Registro", field: "fec_crea", widthGrow: 2, hozAlign: "center" },
+                { title: "", field: "folio", widthGrow: 1, hozAlign: "center",
+                    formatter: function(cell) {
+                        return `<button type="button" onclick="descargarCertificado(${cell.getValue()})" class="px-2 py-1 rounded bg-aq-primary text-white hover:bg-aq-primary/80 text-xs" title="Descargar"><i class='bx bxs-download'></i></button>`;
+                    }
+                },
+            ],
+        });
+    });
+}
+
+function descargarCertificado(folio) {
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', _getCookie('csrftoken'));
+    formData.append('action', 'descargar_certificado');
+    formData.append('folio', folio);
+
+    fetch(urlCert, { method: 'POST', body: formData })
+    .then(res => {
+        if (!res.ok) throw new Error('Error HTTP ' + res.status);
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            return res.json().then(data => { throw new Error(data.message || 'Error al descargar'); });
+        }
+        return res.blob();
+    })
+    .then(blob => {
+        const filename = `certificado_destino_sustentable_folio_${folio}.pdf`;
+        if (typeof window.downloadBlobTauri === 'function') {
+            window.downloadBlobTauri(blob, filename);
+        } else {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        Toastify({text: 'Error: ' + err.message, style: {background: '#f44336'}}).showToast();
+    });
+}
 
 function autoCompletarMes() {
     const inicio = document.getElementById('certFechaInicio').value;
@@ -172,6 +245,7 @@ function generarPDF() {
             document.body.removeChild(link);
             URL.revokeObjectURL(link.href);
         }
+        cargarCertificados();
     })
     .catch(err => {
         ocultarSpinner();

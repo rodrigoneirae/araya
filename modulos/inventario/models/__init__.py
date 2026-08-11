@@ -1,2 +1,3 @@
 from modulos.inventario.models.movs import Movs
 from modulos.inventario.models.saldos import Saldos
+from modulos.inventario.models.certificado_destino_sustentable import CertificadoDestinoSustentable

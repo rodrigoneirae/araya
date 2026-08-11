@@ -7,7 +7,7 @@ from typing import Any
 
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Sum
+from django.db.models import Max, Sum
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.generic import TemplateView
@@ -16,7 +16,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas as rl_canvas
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 
 from modulos.inventario.models.movs import Movs
 from modulos.maestros.models.prov_cliente import Provclientes
@@ -24,6 +24,7 @@ from modulos.maestros.models.clasificacion import Clasificacion
 from modulos.maestros.models.tratamiento_ler import TratamientoLER
 from modulos.maestros.models.sucursales import Sucursal
 from modulos.maestros.models.transportistas import Patentes
+from modulos.inventario.models.certificado_destino_sustentable import CertificadoDestinoSustentable
 
 
 class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
@@ -39,6 +40,8 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
             "buscar_cliente": lambda d: self._buscar_cliente(d.get("rut")),
             "listar_clientes": lambda _: self._listar_clientes(),
             "generar_pdf": lambda d: self._generar_pdf(self.request, d),
+            "listar_certificados": lambda _: self._listar_certificados(),
+            "descargar_certificado": lambda d: self._descargar_certificado(d),
         }
         return handlers.get(action, lambda _: JsonResponse({"success": False, "message": "Acción inválida"}))
 
@@ -57,6 +60,39 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
     def _listar_clientes(self) -> JsonResponse:
         clientes = Provclientes.objects.values("rut", "nombre").order_by("nombre")
         return JsonResponse({"clientes": list(clientes)})
+
+    def _listar_certificados(self) -> JsonResponse:
+        def _fmt(dt):
+            return dt.strftime("%d/%m/%Y") if dt else ""
+
+        certs = []
+        for c in CertificadoDestinoSustentable.objects.order_by("-folio"):
+            periodo = ""
+            if c.fecha_inicio and c.fecha_corte:
+                periodo = f"{_fmt(c.fecha_inicio)} - {_fmt(c.fecha_corte)}"
+            certs.append({
+                "folio": c.folio,
+                "rut": c.rut or "",
+                "nombre": c.nombre or "",
+                "fecha_emision": _fmt(c.fecha_emision),
+                "periodo": periodo,
+                "total_kilos": c.total_kilos or 0,
+                "fec_crea": c.timeuser.strftime("%d/%m/%Y %H:%M") if c.timeuser else "",
+            })
+        return JsonResponse({"certificados": certs})
+
+    def _descargar_certificado(self, data: dict) -> HttpResponse | JsonResponse:
+        folio = data.get("folio")
+        try:
+            cert = CertificadoDestinoSustentable.objects.get(folio=folio)
+        except (CertificadoDestinoSustentable.DoesNotExist, ValueError):
+            return JsonResponse({"success": False, "message": "Certificado no encontrado"})
+        if not cert.pdf:
+            return JsonResponse({"success": False, "message": "El certificado no tiene archivo adjunto"})
+        filename = f"certificado_destino_sustentable_{cert.rut or 'cliente'}.pdf"
+        response = HttpResponse(bytes(cert.pdf), content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{filename}"'
+        return response
 
     def _generar_pdf(self, request: HttpRequest, data: dict) -> HttpResponse:
         rut = data.get("rut", "").strip()
@@ -102,7 +138,10 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
         if not detalles:
             return JsonResponse({"success": False, "message": "No hay registros para el período seleccionado"})
 
-        total_kilos = sum(float(d.cantidad or 0) for d in detalles)
+        def peso_linea(d: Movs) -> float:
+            return float(d.cantidad or 0) * float(d.peso or 0)
+
+        total_kilos = sum(peso_linea(d) for d in detalles)
 
         resumen_cat: dict[str, float] = {}
         for d in detalles:
@@ -111,7 +150,7 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
                 key = f"{cat.codigo} - {cat.descripcion}"
             else:
                 key = "SIN CATEGORÍA"
-            resumen_cat[key] = resumen_cat.get(key, 0) + float(d.cantidad or 0)
+            resumen_cat[key] = resumen_cat.get(key, 0) + peso_linea(d)
 
         doc_nums = {d.numero for d in detalles}
         headers = {h.numero: h for h in Movs.objects.filter(tipo=7, linea=0, numero__in=doc_nums)}
@@ -132,7 +171,8 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
         if not os.path.exists(firma_path):
             firma_path = None
 
-        cert_numero = Movs.objects.filter(tipo=7, linea=0).count()
+        ultimo_folio = CertificadoDestinoSustentable.objects.aggregate(m=Max("folio"))["m"] or 0
+        cert_numero = ultimo_folio + 1
 
         def build_elements():
             styles = getSampleStyleSheet()
@@ -232,7 +272,7 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
             elems.append(Spacer(1, 4 * mm))
 
             # --- Categories summary table ---
-            cat_header = ["CATEGORÍA", "CANTIDAD (KGS)"]
+            cat_header = ["CATEGORÍA", "PESO (KGS)"]
             cat_data = [cat_header]
             for cat_nombre, kilos in resumen_cat.items():
                 cat_data.append([
@@ -278,20 +318,28 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
                 "tratamiento y/o disposición de los residuos indicados."
             )
             elems.append(Paragraph(cert_text, normal_style))
-            elems.append(Spacer(1, 10 * mm))
+            elems.append(Spacer(1, 60 * mm))
 
             # --- Signature ---
             if firma_path:
                 try:
+                    from io import BytesIO
                     from PIL import Image as PILImage
-                    from reportlab.lib.utils import ImageReader
+                    from reportlab.platypus import Image
                     img = PILImage.open(firma_path)
+                    if img.mode == "RGBA":
+                        bg = PILImage.new("RGB", img.size, (255, 255, 255))
+                        bg.paste(img, mask=img.split()[3])
+                        img = bg
+                    img_bytes = BytesIO()
+                    img.convert("RGB").save(img_bytes, format="PNG")
+                    img_bytes.seek(0)
                     img_width = 50 * mm
                     img_height = 15 * mm
                     elems.append(Spacer(1, 5 * mm))
                     firma_data = [[
                         Paragraph("", cell_style),
-                        ImageReader(img),
+                        Image(img_bytes, width=img_width, height=img_height),
                         Paragraph("", cell_style),
                     ]]
                     firma_tbl = Table(firma_data, colWidths=[60 * mm, 50 * mm, 60 * mm])
@@ -309,20 +357,20 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
                 ("TOPPADDING", (0, 0), (-1, -1), 30),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
             ]))
-            elems.append(firma_line_tbl)
+            # elems.append(firma_line_tbl)
 
-            elems.append(Spacer(1, 2 * mm))
-            firma_text_data = [["EMBALAJES INDUSTRIALES ARAYA LTDA", ""]]
-            firma_text_tbl = Table(firma_text_data, colWidths=[80 * mm, 80 * mm])
+            elems.append(Spacer(1, 4 * mm))
+            firma_text_data = [["EMBALAJES INDUSTRIALES ARAYA LTDA"]]
+            firma_text_tbl = Table(firma_text_data, colWidths=[170 * mm])
             firma_text_tbl.setStyle(TableStyle([
-                ("ALIGN", (0, 0), (0, 0), "CENTER"),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                 ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("FONTNAME", (0, 0), (0, 0), "Helvetica-Bold"),
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
             ]))
             elems.append(firma_text_tbl)
 
             # --- PAGE BREAK ---
-            elems.append(Spacer(1, 20 * mm))
+            elems.append(PageBreak())
 
             # ===================== PAGE 2: DETALLE PARA DECLARACION =====================
             elems.append(Paragraph("DETALLE PARA DECLARACION", ParagraphStyle(
@@ -363,7 +411,7 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
                     Paragraph(sucursal, center_style),
                     Paragraph(cat_nombre, cell_style),
                     Paragraph(trat_nombre, cell_style),
-                    Paragraph(f"{float(d.cantidad or 0):,.0f}".replace(",", "."), right_style),
+                    Paragraph(f"{peso_linea(d):,.0f}".replace(",", "."), right_style),
                     Paragraph(doc_ref, center_style),
                     Paragraph(rut_trans, center_style),
                     Paragraph(patente, center_style),
@@ -438,6 +486,19 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
 
         pdf_bytes = buf.getvalue()
         buf.close()
+
+        CertificadoDestinoSustentable.objects.create(
+            folio=cert_numero,
+            rut=rut,
+            nombre=cliente.nombre,
+            fecha_emision=fe,
+            fecha_inicio=fi,
+            fecha_corte=fc,
+            total_kilos=total_kilos,
+            pdf=pdf_bytes,
+            usr=request.user.username if request.user.is_authenticated else "",
+        )
+
         filename = f"certificado_destino_sustentable_{rut}.pdf"
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
         response["Content-Disposition"] = f'inline; filename="{filename}"'

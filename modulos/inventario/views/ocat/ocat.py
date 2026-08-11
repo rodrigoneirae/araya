@@ -136,7 +136,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                 "tipo": m["tipo"],
                 "estado": m["estado"] or "",
                 "codencargado": m["codencargado"] or "",
-                "total": float(m["canttotal"] or 0) * float(m["punit"] or 0),
+                "total": float(m["canttotal"] or 0),
             })
         return JsonResponse({"ocat": resultado})
 

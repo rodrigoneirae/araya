@@ -702,6 +702,7 @@ function buscarOcat() {
                 { title: 'RUT', field: 'rut', width: 110 },
                 { title: 'Cliente', field: 'nombre' },
                 { title: 'Estado', field: 'estado', width: 90 },
+                { title: 'Neto', field: 'neto', width: 100 },
                 { title: 'Total', field: 'total', width: 100 },
             ],
             data: data.ocat || [],

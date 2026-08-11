@@ -782,13 +782,15 @@ function abrirListaOR() {
                 columnas: [
                     { title: 'N° OR', field: 'numero', width: 80 },
                     { title: 'Fecha', field: 'fecha', width: 100 },
+                    { title: 'RUT', field: 'rut', width: 90 },
+                    { title: 'Cliente', field: 'nombre_cliente', width: 130 },
                     { title: 'Código', field: 'codigo', width: 90 },
                     { title: 'Nombre', field: 'nombre' },
                     { title: 'Cant', field: 'cantidad', width: 70 },
                     { title: 'Bodega', field: 'bodega', width: 80 },
                 ],
                 data: [],
-                filtroCampos: ['numero', 'codigo', 'nombre'],
+                filtroCampos: ['numero', 'codigo', 'nombre', 'rut', 'nombre_cliente'],
                 onSelect: null,
                 onRefresh: function(opts) { abrirListaOR(); },
             });
@@ -808,13 +810,15 @@ function abrirListaOR() {
             columnas: [
                 { title: 'N° OR', field: 'numero', width: 80 },
                 { title: 'Fecha', field: 'fecha', width: 100 },
+                { title: 'RUT', field: 'rut', width: 90 },
+                { title: 'Cliente', field: 'nombre_cliente', width: 130 },
                 { title: 'Código', field: 'codigo', width: 90 },
                 { title: 'Nombre', field: 'nombre' },
                 { title: 'Cant', field: 'cantidad', width: 70 },
                 { title: 'Bodega', field: 'bodega', width: 80 },
             ],
             data: dataOR,
-            filtroCampos: ['numero', 'codigo', 'nombre'],
+            filtroCampos: ['numero', 'codigo', 'nombre', 'rut', 'nombre_cliente'],
             onSelect: function(row) {
                 const key = (row.codigo || '') + '|' + (row.numero || '');
                 const yaExiste = detallesOt.some(d => (d.codigo || '') + '|' + (d.docref || '') === key);
@@ -837,6 +841,7 @@ function abrirListaOR() {
                     docref: row.numero || '',
                     tipo: '7',
                     rut: row.rut || '',
+                    nombre_cliente: row.nombre_cliente || '',
                     canttotal: row.cantidad || 0,
                 });
                 renderizarDetalleOt();

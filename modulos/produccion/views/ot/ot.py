@@ -172,13 +172,14 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                     "nombre": articulo.descr or "",
                     "um": articulo.um or "",
                     "precio": articulo.precio or 0,
+                    "peso": articulo.peso or 0,
                 }
             })
         except Exception as e:
             return JsonResponse({"success": False, "message": "Artículo no encontrado"})
 
     def _listar_articulos(self) -> JsonResponse:
-        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").exclude(tipo='Inactivo').order_by("descr")
+        articulos = Articulos.objects.values("codigo", "descr", "um", "precio", "peso").exclude(tipo='Inactivo').order_by("descr")
         return JsonResponse({"articulos": list(articulos)})
 
     def _listar_ot(self) -> JsonResponse:
@@ -234,10 +235,13 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                     art = Articulos.objects.filter(codigo=d["codigo"]).first()
                     d["nombre"] = art.descr if art else ""
                     d["um"] = art.um if art else ""
+                    d["peso"] = art.peso or 0
                 else:
                     d["nombre"] = ""
                     d["um"] = ""
+                    d["peso"] = 0
                 d["cantidad"] = abs(d["cantidad"]) if d.get("cantidad") else 0
+                d["peso_total"] = round(d["cantidad"] * d["peso"], 2)
 
             pe_refs = [(idx, d) for idx, d in enumerate(detalles) if d.get("tipodocref") == 6 and d.get("docref") and d.get("codigo")]
             for _, d in pe_refs:
@@ -687,6 +691,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                 "bodega": str(m.bodega) if m.bodega else "",
                 "cantidad": m.cantidad or 0,
                 "punit": punit or 0,
+                "peso": m.codigo.peso or 0 if m.codigo else 0,
                 "proceso_nombre": proceso_nombre,
                 "estado": m.estado or "",
             })
@@ -720,10 +725,13 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
                     art = Articulos.objects.filter(codigo=d["codigo"]).first()
                     d["nombre"] = art.descr if art else ""
                     d["um"] = art.um if art else ""
+                    d["peso"] = art.peso or 0
                 else:
                     d["nombre"] = ""
                     d["um"] = ""
+                    d["peso"] = 0
                 d["cantidad"] = abs(d["cantidad"]) if d.get("cantidad") else 0
+                d["peso_total"] = round(d["cantidad"] * d["peso"], 2)
             return JsonResponse({"success": True, "detalles": detalles})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})

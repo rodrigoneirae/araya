@@ -111,11 +111,12 @@ class IndexCoreView( LoginRequiredMixin,TemplateView):
             .annotate(saldo=Sum('cantidad'))
             .order_by('-saldo')
         )
+
         resultados = []
         for a in articulos:
             saldo = float(a['saldo'] or 0)
-            if saldo != 0:
-                resultados.append({
+            # if saldo != 0:
+            resultados.append({
                     'codigo': a['codigo__codigo'],
                     'nombre': a['codigo__descr'] or 'Sin nombre',
                     'um': a['codigo__um'] or '',

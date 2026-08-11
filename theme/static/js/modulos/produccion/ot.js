@@ -388,6 +388,7 @@ function abrirModalORUnico() {
                     cantidad: Math.abs(row.cantidad || 0),
                     punit: row.punit || 0,
                     um: row.um || '',
+                    peso: row.peso || 0,
                     bodega: row.bodega || '',
                     fecha: row.fecha || '',
                     estado: 'Abierto',
@@ -467,6 +468,7 @@ function abrirModalPEUnico() {
                     cantidad: Math.abs(row.cantidad || 0),
                     punit: row.punit || 0,
                     um: row.um || '',
+                    peso: row.peso || 0,
                     bodega: row.bodega || '',
                     fecha: row.fecha || '',
                     estado: 'Abierto',
@@ -675,6 +677,7 @@ function buscarProductoOt() {
             document.getElementById('otProdNombre').value = data.data.nombre;
             document.getElementById('otProdUM').value = data.data.um;
             window.productoPrc = data.data.precio || null;
+            window.productoPeso = data.data.peso || 0;
         } else {
             Toastify({text: data.message || 'Artículo no encontrado', style: {background: '#f44336'}}).showToast();
         }
@@ -688,6 +691,7 @@ function abrirListaProductos() {
             nombre: a.descr || '',
             um: a.um || '',
             precio: a.precio || 0,
+            peso: a.peso || 0,
         }));
         abrirModalBusqueda({
             titulo: 'Seleccionar Producto',
@@ -705,6 +709,7 @@ function abrirListaProductos() {
                 document.getElementById('otProdNombre').value = row.nombre || '';
                 document.getElementById('otProdUM').value = row.um || '';
                 window.productoPrc = row.precio || null;
+                window.productoPeso = row.peso || 0;
             },
         });
     });
@@ -739,6 +744,7 @@ function agregarProductoOt() {
         cantidad: cant,
         punit: window.productoPrc || 0,
         um: um,
+        peso: window.productoPeso || 0,
         bodega: bodega,
         fecha: '',
         estado: 'Abierto',
@@ -755,6 +761,7 @@ function agregarProductoOt() {
     document.getElementById('otProdCant').value = '';
     document.getElementById('otProdBodega').value = '';
     window.productoPrc = null;
+    window.productoPeso = null;
 
     renderizarDetalleOt();
     Toastify({text: 'Producto agregado', style: {background: '#4caf50'}}).showToast();
@@ -818,6 +825,7 @@ function abrirListaOR() {
                     cantidad: Math.abs(row.cantidad || 0),
                     punit: row.punit || 0,
                     um: row.um || '',
+                    peso: row.peso || 0,
                     bodega: row.bodega || '',
                     fecha: row.fecha || '',
                     estado: 'Abierto',
@@ -897,6 +905,7 @@ function abrirListaPE() {
                     cantidad: Math.abs(row.cantidad || 0),
                     punit: row.punit || 0,
                     um: row.um || '',
+                    peso: row.peso || 0,
                     bodega: row.bodega || '',
                     fecha: row.fecha || '',
                     estado: 'Abierto',
@@ -927,7 +936,7 @@ function renderizarDetalleOt() {
     tbody.innerHTML = '';
 
     if (detallesOt.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="12" class="px-3 py-4 text-center text-aq-text">Sin artículos agregados</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13" class="px-3 py-4 text-center text-aq-text">Sin artículos agregados</td></tr>';
         document.getElementById('resumenEncargado').textContent = '-';
         document.getElementById('resumenProceso').textContent = '-';
         document.getElementById('resumenEstado').textContent = '-';
@@ -938,6 +947,7 @@ function renderizarDetalleOt() {
     let totalCant = 0;
     let totalCantTotal = 0;
     let totalPUnit = 0;
+    let totalPeso = 0;
 
     detallesOt.forEach((d, index) => {
         const tr = document.createElement('tr');
@@ -948,9 +958,11 @@ function renderizarDetalleOt() {
             if (f) fechaFmt = f.split('-').reverse().join('-');
         }
 
+        const pesoTotal = (d.cantidad || 0) * (d.peso || 0);
         totalCant += d.cantidad || 0;
         totalCantTotal += d.canttotal || 0;
         totalPUnit += d.punit || 0;
+        totalPeso += pesoTotal;
 
         tr.innerHTML = `
             <td class="px-1 py-1 text-aq-text">${d.docref || ''}</td>
@@ -963,6 +975,7 @@ function renderizarDetalleOt() {
             <td class="px-1 py-1 text-aq-text text-right">${d.canttotal || 0}</td>
             <td class="px-1 py-1 text-aq-text">${d.estado || ''}</td>
             <td class="px-1 py-1 text-aq-text text-right">${d.punit ? d.punit.toFixed(0) : 0}</td>
+            <td class="px-1 py-1 text-aq-text text-right">${pesoTotal ? pesoTotal.toFixed(2) : 0}</td>
             <td class="px-1 py-1 text-center">
                 ${modoEdicionOt ? '<button onclick="eliminarArticuloOt(' + index + ')" class="text-red-500 hover:text-red-700" title="Eliminar"><i class="bx bx-trash"></i></button>' : ''}
             </td>
@@ -979,6 +992,7 @@ function renderizarDetalleOt() {
         <td class="px-1 py-1.5 text-aq-text text-right font-bold">${totalCantTotal}</td>
         <td class="px-1 py-1.5 text-aq-text"></td>
         <td class="px-1 py-1.5 text-aq-text text-right font-bold">${totalPUnit.toFixed(0)}</td>
+        <td class="px-1 py-1.5 text-aq-text text-right font-bold">${totalPeso.toFixed(2)}</td>
         <td class="px-1 py-1.5 text-aq-text"></td>
     `;
     tbody.appendChild(trTotal);

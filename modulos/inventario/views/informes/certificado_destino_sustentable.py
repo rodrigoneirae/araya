@@ -23,6 +23,7 @@ from modulos.maestros.models.prov_cliente import Provclientes
 from modulos.maestros.models.clasificacion import Clasificacion
 from modulos.maestros.models.tratamiento_ler import TratamientoLER
 from modulos.maestros.models.sucursales import Sucursal
+from modulos.maestros.models.transportistas import Patentes
 
 
 class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
@@ -101,7 +102,7 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
         if not detalles:
             return JsonResponse({"success": False, "message": "No hay registros para el período seleccionado"})
 
-        total_kilos = sum(float(d.peso or 0) for d in detalles)
+        total_kilos = sum(float(d.cantidad or 0) for d in detalles)
 
         resumen_cat: dict[str, float] = {}
         for d in detalles:
@@ -110,7 +111,12 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
                 key = f"{cat.codigo} - {cat.descripcion}"
             else:
                 key = "SIN CATEGORÍA"
-            resumen_cat[key] = resumen_cat.get(key, 0) + float(d.peso or 0)
+            resumen_cat[key] = resumen_cat.get(key, 0) + float(d.cantidad or 0)
+
+        doc_nums = {d.numero for d in detalles}
+        headers = {h.numero: h for h in Movs.objects.filter(tipo=7, linea=0, numero__in=doc_nums)}
+        pat_ids = {h.patente_id for h in headers.values() if h.patente_id}
+        pat_map = {p.id: p for p in Patentes.objects.filter(id__in=pat_ids)}
 
         logo_path = os.path.join(
             settings.STATIC_ROOT,
@@ -344,16 +350,23 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
                 fecha_str = d.fecha.strftime("%d/%m/%Y") if d.fecha else ""
                 sucursal = d.sucursal.nombre if d.sucursal else (cliente.direccion or "")
                 doc_ref = str(int(d.numero)) if d.numero else ""
+                h = headers.get(d.numero)
+                rut_trans = (h.glosa or d.glosa or "") if h else (d.glosa or "")
+                patente = ""
+                if h and h.patente_id:
+                    pat = pat_map.get(h.patente_id)
+                    if pat:
+                        patente = pat.patente
 
                 det_data.append([
                     Paragraph(fecha_str, center_style),
                     Paragraph(sucursal, center_style),
                     Paragraph(cat_nombre, cell_style),
                     Paragraph(trat_nombre, cell_style),
-                    Paragraph(f"{float(d.peso or 0):,.0f}".replace(",", "."), right_style),
+                    Paragraph(f"{float(d.cantidad or 0):,.0f}".replace(",", "."), right_style),
                     Paragraph(doc_ref, center_style),
-                    Paragraph(d.glosa or "", center_style),
-                    Paragraph(str(d.patente_id or ""), center_style),
+                    Paragraph(rut_trans, center_style),
+                    Paragraph(patente, center_style),
                 ])
 
             det_tbl = Table(det_data, colWidths=det_col_widths, repeatRows=1)

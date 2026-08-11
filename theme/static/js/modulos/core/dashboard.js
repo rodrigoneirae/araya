@@ -142,8 +142,10 @@ if (selBodega && data.bodegas_opciones?.length) {
                 const val = this.value.trim();
                 if (val) {
                     stockTable.setFilter([
-                        { field: 'codigo', type: 'like', value: val },
-                        { field: 'nombre', type: 'like', value: val },
+                        [
+                            { field: 'codigo', type: 'like', value: val },
+                            { field: 'nombre', type: 'like', value: val },
+                        ],
                     ]);
                 } else {
                     stockTable.clearFilter();

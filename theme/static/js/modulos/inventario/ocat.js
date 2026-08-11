@@ -301,7 +301,7 @@ function actualizarSelect2(el) {
 }
 
 function setCamposOcatEditable(editable) {
-    const inputs = ['ocatFecha', 'ocatProveedor', 'ocatTipoDoc', 'ocatRef', 'ocatEncargado', 'ocatArtCod', 'ocatArtCant', 'ocatArtPUnit', 'ocatArtFecha', 'ocatArtPeso', 'ocatNeto', 'ocatTotal', 'ocatTransportista', 'ocatPatente', 'ocatSucursal', 'ocatPeso'];
+    const inputs = ['ocatFecha', 'ocatProveedor', 'ocatTipoDoc', 'ocatRef', 'ocatEncargado', 'ocatArtCod', 'ocatArtCant', 'ocatArtPUnit', 'ocatArtFecha', 'ocatArtPeso', 'ocatNeto', 'ocatTotal', 'ocatTransportista', 'ocatPatente', 'ocatPatenteInformada', 'ocatSucursal', 'ocatPeso'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -648,6 +648,7 @@ function guardarOcat() {
     const patenteOption = patenteSelect.selectedIndex > 0 ? patenteSelect.options[patenteSelect.selectedIndex] : null;
     const patenteId = patenteOption && patenteOption.dataset.id ? patenteOption.dataset.id : '';
     const transportistaRut = document.getElementById('ocatTransportista').value;
+    const patenteInformada = document.getElementById('ocatPatenteInformada').value;
     const peso = document.getElementById('ocatPeso').value;
     const sucursal_id = document.getElementById('ocatSucursal').value;
 
@@ -678,6 +679,7 @@ function guardarOcat() {
             total: total,
             patente_id: patenteId,
             transportista_rut: transportistaRut,
+            patente_informada: patenteInformada,
             peso: peso,
             sucursal_id: sucursal_id,
             detalles: JSON.stringify(detallesOcat)
@@ -828,6 +830,7 @@ function cargarOcat(numero) {
             document.getElementById('ocatNeto').value = data.data.neto || 0;
             document.getElementById('ocatTotal').value = data.data.total || 0;
             document.getElementById('ocatPeso').value = data.data.peso || '';
+            document.getElementById('ocatPatenteInformada').value = data.data.patente_informada || '';
 
             const transpSel = document.getElementById('ocatTransportista');
             const patenteSel = document.getElementById('ocatPatente');

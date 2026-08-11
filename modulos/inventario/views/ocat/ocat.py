@@ -231,6 +231,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     "total": float(encabezado.canttotal or 0),
                     "patente_id": encabezado.patente_id or "",
                     "patente_nombre": patente_nombre,
+                    "patente_informada": encabezado.patente_informada or "",
                     "transportista_rut": transportista_rut,
                     "transportista_nombre": transportista_nombre,
                     "peso": encabezado.numid or "",
@@ -306,6 +307,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     patente_id = int(patente_id)
                 except (ValueError, TypeError):
                     patente_id = None
+            patente_informada = data.get("patente_informada") or None
             transportista_rut = data.get("transportista_rut") or None
             peso = data.get("peso") or None
             sucursal_id = data.get("sucursal_id") or None
@@ -328,6 +330,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                 neto=neto,
                 estado=estado,
                 patente_id=patente_id,
+                patente_informada=patente_informada,
                 glosa=transportista_rut,
                 numid=peso,
                 sucursal_id=sucursal_id,

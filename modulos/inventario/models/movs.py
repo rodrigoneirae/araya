@@ -68,6 +68,8 @@ class Movs(models.Model):
 
     patente_id = models.IntegerField(blank=True, null=True)
 
+    patente_informada = models.CharField(db_column='PatenteInformada', max_length=50, blank=True, null=True)
+
     peso = models.FloatField(db_column='Peso', blank=True, null=True)
     categoria = models.ForeignKey(
         Clasificacion,

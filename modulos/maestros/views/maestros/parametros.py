@@ -95,6 +95,9 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
             "listar_patentes": lambda d: self._listar_patentes(d.get("rut")),
             "nueva_patente": self._guardar_patente,
             "eliminar_patente": lambda d: self._eliminar_patente(d.get("id")),
+            "reasignar_patente": lambda d: self._reasignar_patente(d.get("id"), d.get("rut")),
+            "buscar_patente": lambda d: self._buscar_patente(d.get("patente")),
+            "listar_patentes_sin_asignar": lambda d: self._listar_patentes_sin_asignar(),
             # Clasificaciones
             "buscar_clasificacion": lambda d: self._buscar_clasificacion(d.get("codigo")),
             "nueva_clasificacion": self._guardar_clasificacion,
@@ -584,6 +587,59 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
         try:
             Patentes.objects.get(id=id).delete(using="default")
             return JsonResponse({"success": True, "message": "Patente eliminada correctamente"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _listar_patentes_sin_asignar(self) -> JsonResponse:
+        try:
+            qs = Patentes.objects.filter(transportista__isnull=True).order_by("patente")
+            patentes = [{
+                "id": p.id,
+                "patente": p.patente,
+                "transportista_rut": "",
+                "transportista_nombre": "",
+                "sin_transportista": True,
+            } for p in qs]
+            return JsonResponse({"patentes": patentes})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e), "patentes": []})
+
+    def _buscar_patente(self, patente: str | None) -> JsonResponse:
+        if not patente:
+            return JsonResponse({"success": False})
+        try:
+            p = Patentes.objects.select_related("transportista").get(patente=patente)
+            return JsonResponse({
+                "success": True,
+                "data": {
+                    "id": p.id,
+                    "patente": p.patente,
+                    "transportista_rut": p.transportista.rut if p.transportista else "",
+                    "transportista_nombre": p.transportista.nombre if p.transportista else "",
+                    "sin_transportista": p.transportista is None,
+                }
+            })
+        except Patentes.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Patente no encontrada"})
+
+    def _reasignar_patente(self, id: str | None, rut: str | None) -> JsonResponse:
+        if not id:
+            return JsonResponse({"success": False, "message": "ID requerido"})
+        try:
+            p = Patentes.objects.get(id=id)
+            if rut:
+                t = Transportistas.objects.get(rut=rut)
+                p.transportista = t
+                msg = f"Patente {p.patente} asignada a {t.nombre}"
+            else:
+                p.transportista = None
+                msg = f"Patente {p.patente} dejada sin transportista"
+            p.save(using="default")
+            return JsonResponse({"success": True, "message": msg})
+        except Patentes.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Patente no encontrada"})
+        except Transportistas.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Transportista no encontrado"})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 

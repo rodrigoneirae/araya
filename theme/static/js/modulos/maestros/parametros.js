@@ -21,6 +21,11 @@ document.addEventListener('DOMContentLoaded', function() {
     addEnterAndBlur('clasificacionCod', buscarPorCodigoClasificacion);
     addEnterAndBlur('tratamientoCod', buscarPorCodigoTratamiento);
     cargarTratamientosOptions();
+
+    const chk = document.getElementById('patentesMostrarSinAsignar');
+    if (chk) {
+        chk.addEventListener('change', cargarPatentesParaTransportistaActual);
+    }
 });
 
 function buscarXHRBodega(action, datos, callback) {
@@ -1283,7 +1288,7 @@ function buscarPorRutTransportista() {
             modoEdicionTransportista = false;
             resetBtnEditarTransportista();
             transportistaActualPatentes = data.data.rut;
-            renderizarPatentes(data.data.patentes || []);
+            cargarPatentesParaTransportistaActual();
         } else {
             document.getElementById('transportistaForm').reset();
             document.getElementById('transportistaRut').value = rut;
@@ -1484,29 +1489,98 @@ function seleccionarTransportista(rut, nombre) {
     document.getElementById('btnNuevoTransportista').innerHTML = '<i class="bx bx-plus text-xl"></i>';
     document.getElementById('btnNuevoTransportista').title = 'Nuevo';
     transportistaActualPatentes = rut;
-    buscarXHRTransportista('buscar_transportista', {rut: rut}, function(data) {
-        renderizarPatentes(data.data?.patentes || []);
-    });
+    cargarPatentesParaTransportistaActual();
 }
 
 // ==================== PATENTES ====================
+let patentesCache = [];
+let reasignarPatenteId = null;
+
 function renderizarPatentes(patentes) {
+    patentesCache = patentes || [];
     const tbody = document.getElementById('tablaPatentes');
     tbody.innerHTML = '';
     if (!patentes || patentes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="2" class="px-3 py-4 text-center text-aq-muted">Sin patentes registradas</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="px-3 py-4 text-center text-aq-muted">Sin patentes registradas</td></tr>';
         return;
     }
     patentes.forEach(p => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="px-3 py-2 text-aq-text">${p.patente}</td>
-            <td class="px-3 py-2 text-right">
+        const sinAsignar = !p.transportista_rut;
+        const transpTxt = sinAsignar
+            ? '<span class="inline-block px-2 py-0.5 text-xs rounded bg-amber-500/20 text-amber-500 border border-amber-500/40">Sin asignar</span>'
+            : `${p.transportista_nombre || ''} <span class="text-aq-muted text-xs">(${p.transportista_rut})</span>`;
+        const accion = `
+            <div class="flex justify-end gap-1">
+                <button onclick="abrirModalReasignarPatente(${p.id}, '${(p.patente || '').replace(/'/g, "\\'")}', '${(p.transportista_rut || '').replace(/'/g, "\\'")}')" class="text-blue-500 hover:text-blue-700 p-1" title="Reasignar transportista">
+                    <i class='bx bx-transfer'></i>
+                </button>
                 <button onclick="eliminarPatente(${p.id}, this)" class="text-red-500 hover:text-red-700 p-1" title="Eliminar patente">
                     <i class='bx bx-trash'></i>
                 </button>
-            </td>`;
+            </div>`;
+        tr.innerHTML = `
+            <td class="px-3 py-2 text-aq-text font-medium">${p.patente}</td>
+            <td class="px-3 py-2 text-aq-text">${transpTxt}</td>
+            <td class="px-3 py-2 text-right">${accion}</td>`;
         tbody.appendChild(tr);
+    });
+}
+
+function cargarPatentesParaTransportistaActual() {
+    const rut = document.getElementById('transportistaRut').value.trim();
+    const mostrarSinAsignar = document.getElementById('patentesMostrarSinAsignar')?.checked ?? true;
+    const tbody = document.getElementById('tablaPatentes');
+    if (!rut) {
+        tbody.innerHTML = '<tr><td colspan="3" class="px-3 py-4 text-center text-aq-muted">Seleccione un transportista para ver sus patentes</td></tr>';
+        return;
+    }
+    buscarXHRTransportista('buscar_transportista', {rut: rut}, function(data) {
+        let patentes = (data.data && data.data.patentes) || [];
+        if (mostrarSinAsignar) {
+            buscarXHRTransportista('listar_patentes_sin_asignar', {}, function(d2) {
+                const sinAsignar = (d2.patentes || []).map(x => ({...x, sin_transportista: true}));
+                renderizarPatentes([...patentes, ...sinAsignar]);
+            });
+        } else {
+            renderizarPatentes(patentes);
+        }
+    });
+}
+
+function abrirModalReasignarPatente(id, patente, transportistaActual) {
+    reasignarPatenteId = id;
+    document.getElementById('reasignarPatenteTxt').value = patente || '';
+    buscarXHRTransportista('listar_transportistas', {}, function(data) {
+        const sel = document.getElementById('reasignarTransportistaSel');
+        sel.innerHTML = '<option value="">--- Sin asignar ---</option>';
+        (data.transportistas || []).forEach(t => {
+            const option = document.createElement('option');
+            option.value = t.rut;
+            option.textContent = `${t.nombre} (${t.rut})`;
+            sel.appendChild(option);
+        });
+        sel.value = transportistaActual || '';
+        document.getElementById('modalReasignarPatente').classList.remove('hidden');
+    });
+}
+
+function cerrarModalReasignarPatente() {
+    document.getElementById('modalReasignarPatente').classList.add('hidden');
+    reasignarPatenteId = null;
+}
+
+function confirmarReasignarPatente() {
+    if (reasignarPatenteId === null) return;
+    const rut = document.getElementById('reasignarTransportistaSel').value;
+    buscarXHRTransportista('reasignar_patente', {id: reasignarPatenteId, rut: rut}, function(data) {
+        if (data.success) {
+            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+            cerrarModalReasignarPatente();
+            cargarPatentesParaTransportistaActual();
+        } else {
+            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+        }
     });
 }
 
@@ -1539,9 +1613,7 @@ function confirmarAgregarPatente() {
         if (data.success) {
             Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
             cerrarModalPatente();
-            buscarXHRTransportista('buscar_transportista', {rut: rut}, function(d) {
-                renderizarPatentes(d.data?.patentes || []);
-            });
+            cargarPatentesParaTransportistaActual();
         } else {
             Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
         }
@@ -1558,10 +1630,7 @@ function eliminarPatente(id, btn) {
             buscarXHRTransportista('eliminar_patente', {id: id}, function(data) {
                 if (data.success) {
                     Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
-                    const rut = document.getElementById('transportistaRut').value.trim();
-                    buscarXHRTransportista('buscar_transportista', {rut: rut}, function(d) {
-                        renderizarPatentes(d.data?.patentes || []);
-                    });
+                    cargarPatentesParaTransportistaActual();
                 } else {
                     Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
                 }

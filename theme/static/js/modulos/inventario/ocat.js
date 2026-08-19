@@ -143,61 +143,64 @@ function cargarDatosIniciales() {
 
     const transpSelect = document.getElementById('ocatTransportista');
     const patenteSelect = document.getElementById('ocatPatente');
+
+    function poblarSelectPatentes(patentes) {
+        const sel = document.getElementById('ocatPatente');
+        if (!sel) return;
+        if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery(sel).data('select2')) {
+            jQuery(sel).select2('destroy');
+        }
+        sel.innerHTML = '<option value="">--- Seleccionar ---</option>';
+        (patentes || []).forEach(p => {
+            const option = document.createElement('option');
+            option.value = p.patente;
+            option.dataset.id = p.id;
+            option.dataset.transportistaRut = p.transportista_rut || '';
+            option.dataset.transportistaNombre = p.transportista_nombre || '';
+            option.dataset.sinTransportista = p.sin_transportista ? '1' : '0';
+            const transpTxt = p.transportista_nombre ? ' → ' + p.transportista_nombre : ' (sin transportista)';
+            option.textContent = p.patente + transpTxt;
+            sel.appendChild(option);
+        });
+        jQuery(sel).select2({
+            language: 'es',
+            width: '100%',
+            placeholder: 'Buscar patente...',
+            allowClear: true,
+        });
+    }
+
+    buscarXHROcat('listar_patentes', {}, function(data) {
+        poblarSelectPatentes(data.patentes || []);
+    });
+
     if (transpSelect) {
         jQuery(transpSelect).on('select2:select select2:unselect', function() {
-            const rut = jQuery(transpSelect).val();
-            const patenteSel = document.getElementById('ocatPatente');
-            if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery(patenteSel).data('select2')) {
-                jQuery(patenteSel).select2('destroy');
-            }
-            patenteSel.innerHTML = '<option value="">--- Seleccionar ---</option>';
-            if (rut) {
-                buscarXHROcat('listar_patentes', {rut: rut}, function(data) {
-                    if (data.patentes) {
-                        data.patentes.forEach(p => {
-                            const option = document.createElement('option');
-                            option.value = p.patente;
-                            option.dataset.id = p.id;
-                            option.textContent = p.patente;
-                            patenteSel.appendChild(option);
-                        });
-                    }
-                    jQuery(patenteSel).select2({
-                        language: 'es',
-                        width: '100%',
-                        placeholder: '--- Seleccionar ---',
-                        allowClear: true,
-                    });
-                });
-            } else {
-                jQuery(patenteSel).select2({
-                    language: 'es',
-                    width: '100%',
-                    placeholder: '--- Seleccionar ---',
-                    allowClear: true,
-                });
-            }
         });
     }
     if (patenteSelect) {
         jQuery(patenteSelect).on('change', function() {
-            const patente = jQuery(patenteSelect).val();
-            if (patente) {
-                buscarXHROcat('buscar_por_patente', {patente: patente}, function(data) {
-                    if (data.success) {
-                        const transpSel = document.getElementById('ocatTransportista');
-                        if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery(transpSel).data('select2')) {
-                            jQuery(transpSel).val(data.data.rut).trigger('change');
-                        } else {
-                            for (let i = 0; i < transpSel.options.length; i++) {
-                                if (transpSel.options[i].value === data.data.rut) {
-                                    transpSel.selectedIndex = i;
-                                    break;
-                                }
-                            }
+            const sel = document.getElementById('ocatPatente');
+            const opt = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex] : null;
+            if (!opt || !opt.value) {
+                return;
+            }
+            const dsT = opt.dataset.sinTransportista === '1';
+            const tRut = opt.dataset.transportistaRut || '';
+            if (!dsT && tRut) {
+                const transpSel = document.getElementById('ocatTransportista');
+                if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery(transpSel).data('select2')) {
+                    jQuery(transpSel).val(tRut).trigger('change');
+                } else {
+                    for (let i = 0; i < transpSel.options.length; i++) {
+                        if (transpSel.options[i].value === tRut) {
+                            transpSel.selectedIndex = i;
+                            break;
                         }
                     }
-                });
+                }
+            } else {
+                Toastify({text: 'Patente sin transportista asignado. Use "Patente Informada" para crearla.', style: {background: '#ff9800'}}).showToast();
             }
         });
     }
@@ -280,6 +283,14 @@ function nuevaOcat() {
     document.getElementById('btnEditarOcat').classList.add('hidden');
     document.getElementById('btnEliminarOcat').classList.add('hidden');
     document.getElementById('btnGuardarOcat').classList.remove('hidden');
+    const transpSel = document.getElementById('ocatTransportista');
+    if (transpSel) {
+        jQuery(transpSel).val('').trigger('change');
+    }
+    const patSel = document.getElementById('ocatPatente');
+    if (patSel) {
+        jQuery(patSel).val('').trigger('change');
+    }
     setCamposOcatEditable(true);
     calcularTotalesOcat();
 }
@@ -844,14 +855,7 @@ function cargarOcat(numero) {
                 }
             }
             actualizarSelect2(transpSel);
-            patenteSel.innerHTML = '<option value="">--- Seleccionar ---</option>';
-            (data.data.patentes_disponibles || []).forEach(p => {
-                const option = document.createElement('option');
-                option.value = p.patente;
-                option.dataset.id = p.id;
-                option.textContent = p.patente;
-                patenteSel.appendChild(option);
-            });
+            poblarSelectPatentes(data.data.patentes_disponibles || []);
             if (data.data.patente_nombre) {
                 setTimeout(function() {
                     for (let i = 0; i < patenteSel.options.length; i++) {
@@ -862,8 +866,6 @@ function cargarOcat(numero) {
                     }
                     actualizarSelect2(patenteSel);
                 }, 0);
-            } else {
-                actualizarSelect2(patenteSel);
             }
 
             const sucSel = document.getElementById('ocatSucursal');

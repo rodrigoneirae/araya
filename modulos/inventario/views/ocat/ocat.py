@@ -1,6 +1,8 @@
 from typing import Any
 import json
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import models
+from django.db.models import Sum
 from django.http import HttpRequest,HttpResponseRedirect, HttpResponse, JsonResponse
 from django.views.generic import TemplateView
 from django.utils import timezone
@@ -44,7 +46,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             "listar_bodegas": lambda _: self._listar_bodegas(),
             "calcular_cup": lambda d: self._calcular_cup(d),
             "listar_transportistas": lambda _: self._listar_transportistas(),
-            "listar_patentes": lambda d: self._listar_patentes(d.get("rut")),
+            "listar_patentes": lambda d: self._listar_patentes(d.get("q"), d.get("rut")),
             "buscar_por_patente": lambda d: self._buscar_por_patente(d.get("patente")),
             "listar_clasificaciones": lambda _: self._listar_clasificaciones(),
             "listar_tratamientos": lambda _: self._listar_tratamientos(),
@@ -202,17 +204,25 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             transportista_nombre = ""
             patentes_list = []
             if encabezado.patente_id:
-                pat = Patentes.objects.filter(id=encabezado.patente_id).first()
+                pat = Patentes.objects.select_related("transportista").filter(id=encabezado.patente_id).first()
                 if pat:
                     patente_nombre = pat.patente
-                    transportista_nombre = pat.transportista.nombre
+                    if pat.transportista:
+                        transportista_nombre = pat.transportista.nombre
 
             transportista_rut = encabezado.glosa or ""
 
-            if transportista_rut:
-                patentes_list = list(Patentes.objects.filter(
-                    transportista__rut=transportista_rut
-                ).values("id", "patente"))
+            patentes_list = list(Patentes.objects.select_related("transportista").annotate(
+                _transportista_rut=models.F("transportista__rut"),
+                _transportista_nombre=models.F("transportista__nombre"),
+            ).values("id", "patente", "_transportista_rut", "_transportista_nombre").order_by("patente"))
+            patentes_list = [{
+                "id": p["id"],
+                "patente": p["patente"],
+                "transportista_rut": p["_transportista_rut"] or "",
+                "transportista_nombre": p["_transportista_nombre"] or "",
+                "sin_transportista": not p["_transportista_rut"],
+            } for p in patentes_list]
 
             return JsonResponse({
                 "success": True,
@@ -307,8 +317,17 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     patente_id = int(patente_id)
                 except (ValueError, TypeError):
                     patente_id = None
-            patente_informada = data.get("patente_informada") or None
+            patente_informada = (data.get("patente_informada") or "").strip() or None
             transportista_rut = data.get("transportista_rut") or None
+
+            if patente_informada:
+                existe = Patentes.objects.filter(patente__iexact=patente_informada).first()
+                if not existe:
+                    Patentes.objects.create(
+                        patente=patente_informada.upper(),
+                        transportista=None,
+                    )
+
             peso = data.get("peso") or None
             sucursal_id = data.get("sucursal_id") or None
             if sucursal_id == "0":
@@ -374,7 +393,6 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": False, "message": str(e)})
 
     def _calcular_cup(self, datos) -> JsonResponse:
-        from django.db.models import Sum
         try:
             codigo = datos.get("codigo")
             nuevo_punit = float(datos.get("nuevo_punit", 0))
@@ -422,26 +440,45 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
         transportistas = Transportistas.objects.values("rut", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"transportistas": list(transportistas)})
 
-    def _listar_patentes(self, rut: str | None) -> JsonResponse:
-        if not rut:
-            return JsonResponse({"patentes": []})
-        patentes = Patentes.objects.filter(transportista__rut=rut, transportista__estado='Activo').values("id", "patente")
-        return JsonResponse({"patentes": list(patentes)})
+    def _listar_patentes(self, q: str | None = None, rut: str | None = None) -> JsonResponse:
+        qs = Patentes.objects.select_related("transportista").all()
+        if rut:
+            qs = qs.filter(transportista__rut=rut)
+        if q:
+            qs = qs.filter(patente__icontains=q)
+        resultado = [{
+            "id": p.id,
+            "patente": p.patente,
+            "transportista_rut": p.transportista.rut if p.transportista else "",
+            "transportista_nombre": p.transportista.nombre if p.transportista else "",
+            "sin_transportista": p.transportista is None,
+        } for p in qs.order_by("patente")[:200]]
+        return JsonResponse({"patentes": resultado})
 
     def _buscar_por_patente(self, patente: str | None) -> JsonResponse:
         if not patente:
             return JsonResponse({"success": False})
         try:
-            p = Patentes.objects.get(patente=patente, transportista__estado='Activo')
+            p = Patentes.objects.select_related("transportista").get(patente=patente)
+            if p.transportista:
+                return JsonResponse({
+                    "success": True,
+                    "data": {
+                        "rut": p.transportista.rut,
+                        "nombre": p.transportista.nombre,
+                        "sin_transportista": False,
+                    }
+                })
             return JsonResponse({
                 "success": True,
                 "data": {
-                    "rut": p.transportista.rut,
-                    "nombre": p.transportista.nombre
+                    "rut": "",
+                    "nombre": "",
+                    "sin_transportista": True,
                 }
             })
         except Patentes.DoesNotExist:
-            return JsonResponse({"success": False})
+            return JsonResponse({"success": False, "data": {"sin_transportista": True}})
 
     def _listar_sucursales(self, rut: str | None) -> JsonResponse:
         if not rut:

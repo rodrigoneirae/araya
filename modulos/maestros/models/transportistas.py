@@ -21,9 +21,11 @@ class Patentes(models.Model):
         Transportistas,
         on_delete=models.CASCADE,
         related_name='patentes',
-        db_column='rut_transportista'
+        db_column='rut_transportista',
+        null=True,
+        blank=True,
     )
-    patente = models.CharField(max_length=10, unique=True)
+    patente = models.CharField(max_length=15, unique=True)
 
     class Meta:
         db_table = 'Patentes'

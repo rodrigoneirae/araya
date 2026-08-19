@@ -503,7 +503,13 @@ class IndexParametrosView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": False})
         try:
             t = Transportistas.objects.get(rut=rut)
-            patentes = list(t.patentes.values("id", "patente"))
+            patentes = [{
+                "id": p.id,
+                "patente": p.patente,
+                "transportista_rut": t.rut,
+                "transportista_nombre": t.nombre,
+                "sin_transportista": False,
+            } for p in t.patentes.all()]
             return JsonResponse({
                 "success": True,
                 "data": {

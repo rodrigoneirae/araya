@@ -1510,11 +1510,17 @@ function renderizarPatentes(patentes) {
         const transpTxt = sinAsignar
             ? '<span class="inline-block px-2 py-0.5 text-xs rounded bg-amber-500/20 text-amber-500 border border-amber-500/40">Sin asignar</span>'
             : `${p.transportista_nombre || ''} <span class="text-aq-muted text-xs">(${p.transportista_rut})</span>`;
+        const desasignarBtn = sinAsignar ? '' : `
+                <button onclick="desasignarPatente(${p.id}, '${(p.patente || '').replace(/'/g, "\\'")}')" class="text-amber-500 hover:text-amber-700 p-1" title="Quitar transportista (dejar sin asignar)">
+                    <i class='bx bx-user-x'></i>
+                </button>`;
+        const reasignarTitulo = sinAsignar ? 'Asignar a transportista' : 'Cambiar transportista';
         const accion = `
             <div class="flex justify-end gap-1">
-                <button onclick="abrirModalReasignarPatente(${p.id}, '${(p.patente || '').replace(/'/g, "\\'")}', '${(p.transportista_rut || '').replace(/'/g, "\\'")}')" class="text-blue-500 hover:text-blue-700 p-1" title="Reasignar transportista">
+                <button onclick="abrirModalReasignarPatente(${p.id}, '${(p.patente || '').replace(/'/g, "\\'")}', '${(p.transportista_rut || '').replace(/'/g, "\\'")}')" class="text-blue-500 hover:text-blue-700 p-1" title="${reasignarTitulo}">
                     <i class='bx bx-transfer'></i>
                 </button>
+                ${desasignarBtn}
                 <button onclick="eliminarPatente(${p.id}, this)" class="text-red-500 hover:text-red-700 p-1" title="Eliminar patente">
                     <i class='bx bx-trash'></i>
                 </button>
@@ -1524,6 +1530,24 @@ function renderizarPatentes(patentes) {
             <td class="px-3 py-2 text-aq-text">${transpTxt}</td>
             <td class="px-3 py-2 text-right">${accion}</td>`;
         tbody.appendChild(tr);
+    });
+}
+
+function desasignarPatente(id, patente) {
+    mostrarModalConfirm({
+        mensaje: `¿Quitar el transportista de la patente "${patente}"? Quedará sin asignar.`,
+        textoBoton: 'Desasignar',
+        colorBoton: 'bg-amber-500 text-white hover:bg-amber-600',
+        onConfirm: function() {
+            buscarXHRTransportista('reasignar_patente', {id: id, rut: ''}, function(data) {
+                if (data.success) {
+                    Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                    cargarPatentesParaTransportistaActual();
+                } else {
+                    Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+                }
+            });
+        }
     });
 }
 
@@ -1551,9 +1575,11 @@ function cargarPatentesParaTransportistaActual() {
 function abrirModalReasignarPatente(id, patente, transportistaActual) {
     reasignarPatenteId = id;
     document.getElementById('reasignarPatenteTxt').value = patente || '';
+    const titulo = transportistaActual ? 'Cambiar Transportista' : 'Asignar Transportista';
+    document.getElementById('modalReasignarPatenteTitulo').textContent = titulo;
     buscarXHRTransportista('listar_transportistas', {}, function(data) {
         const sel = document.getElementById('reasignarTransportistaSel');
-        sel.innerHTML = '<option value="">--- Sin asignar ---</option>';
+        sel.innerHTML = '<option value="">--- Sin asignar (quitar transportista) ---</option>';
         (data.transportistas || []).forEach(t => {
             const option = document.createElement('option');
             option.value = t.rut;
@@ -1561,6 +1587,12 @@ function abrirModalReasignarPatente(id, patente, transportistaActual) {
             sel.appendChild(option);
         });
         sel.value = transportistaActual || '';
+        const btn = document.getElementById('btnConfirmarReasignar');
+        if (transportistaActual) {
+            btn.textContent = 'Guardar cambios';
+        } else {
+            btn.textContent = 'Asignar';
+        }
         document.getElementById('modalReasignarPatente').classList.remove('hidden');
     });
 }

@@ -322,11 +322,17 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
 
             if patente_informada:
                 existe = Patentes.objects.filter(patente__iexact=patente_informada).first()
+                transportista_obj = None
+                if transportista_rut:
+                    transportista_obj = Transportistas.objects.filter(rut=transportista_rut).first()
                 if not existe:
                     Patentes.objects.create(
                         patente=patente_informada.upper(),
-                        transportista=None,
+                        transportista=transportista_obj,
                     )
+                elif transportista_obj and not existe.transportista:
+                    existe.transportista = transportista_obj
+                    existe.save()
 
             peso = data.get("peso") or None
             sucursal_id = data.get("sucursal_id") or None

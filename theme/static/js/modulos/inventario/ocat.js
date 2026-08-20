@@ -49,6 +49,32 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+function poblarSelectPatentes(patentes) {
+    const sel = document.getElementById('ocatPatente');
+    if (!sel) return;
+    if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery(sel).data('select2')) {
+        jQuery(sel).select2('destroy');
+    }
+    sel.innerHTML = '<option value="">--- Seleccionar ---</option>';
+    (patentes || []).forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.patente;
+        option.dataset.id = p.id;
+        option.dataset.transportistaRut = p.transportista_rut || '';
+        option.dataset.transportistaNombre = p.transportista_nombre || '';
+        option.dataset.sinTransportista = p.sin_transportista ? '1' : '0';
+        const transpTxt = p.transportista_nombre ? ' → ' + p.transportista_nombre : ' (sin transportista)';
+        option.textContent = p.patente + transpTxt;
+        sel.appendChild(option);
+    });
+    jQuery(sel).select2({
+        language: 'es',
+        width: '100%',
+        placeholder: 'Buscar patente...',
+        allowClear: true,
+    });
+}
+
 function cargarDatosIniciales() {
     buscarXHROcat('listar_proveedores', {}, function(data) {
         const select = document.getElementById('ocatProveedor');
@@ -143,32 +169,6 @@ function cargarDatosIniciales() {
 
     const transpSelect = document.getElementById('ocatTransportista');
     const patenteSelect = document.getElementById('ocatPatente');
-
-    function poblarSelectPatentes(patentes) {
-        const sel = document.getElementById('ocatPatente');
-        if (!sel) return;
-        if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery(sel).data('select2')) {
-            jQuery(sel).select2('destroy');
-        }
-        sel.innerHTML = '<option value="">--- Seleccionar ---</option>';
-        (patentes || []).forEach(p => {
-            const option = document.createElement('option');
-            option.value = p.patente;
-            option.dataset.id = p.id;
-            option.dataset.transportistaRut = p.transportista_rut || '';
-            option.dataset.transportistaNombre = p.transportista_nombre || '';
-            option.dataset.sinTransportista = p.sin_transportista ? '1' : '0';
-            const transpTxt = p.transportista_nombre ? ' → ' + p.transportista_nombre : ' (sin transportista)';
-            option.textContent = p.patente + transpTxt;
-            sel.appendChild(option);
-        });
-        jQuery(sel).select2({
-            language: 'es',
-            width: '100%',
-            placeholder: 'Buscar patente...',
-            allowClear: true,
-        });
-    }
 
     buscarXHROcat('listar_patentes', {}, function(data) {
         poblarSelectPatentes(data.patentes || []);

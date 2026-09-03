@@ -60,6 +60,17 @@ document.addEventListener('DOMContentLoaded', function() {
             Toastify({text: 'Documento cerrado. No se pueden realizar cambios.', style: {background: '#f44336'}}).showToast();
         }
     });
+
+    const otSearchBtn = document.querySelector('button[onclick="buscarOt()"]');
+    if (otSearchBtn) {
+        otSearchBtn.disabled = false;
+        otSearchBtn.removeAttribute('onclick');
+        otSearchBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            buscarOt();
+        });
+    }
 });
 
 function getEncargadoOptions() {
@@ -171,8 +182,6 @@ function initSubTabulators(callback) {
         { title: 'Artículo', field: 'codigo', width: 80,
             bottomCalc: function() { return 'Totales'; },
             bottomCalcFormatter: function(cell) { return cell.getValue(); },
-            groupBottomCalc: function() { return 'Subtotal'; },
-            groupBottomCalcFormatter: function(cell) { return cell.getValue(); }
         },
         { title: 'Nombre', field: 'nombre', widthGrow: 2 },
         { title: 'Fecha', field: 'fecha', width: 90, hozAlign: 'center',
@@ -217,7 +226,7 @@ function initSubTabulators(callback) {
         columns: colDef, data: [], layout: 'fitColumns', minHeight: '100px',
         placeholder: 'Sin datos', tableBuilt: onBuilt,
     });
-    tabSubValeConsumo = new Tabulator('#tablaSubValeConsumo', {
+tabSubValeConsumo = new Tabulator('#tablaSubValeConsumo', {
         columns: colDef, data: [], layout: 'fitColumns', minHeight: '100px',
         placeholder: 'Sin datos', tableBuilt: onBuilt,
         groupBy: 'fecha',
@@ -226,7 +235,6 @@ function initSubTabulators(callback) {
             const fmt = parts.length === 3 ? parts.reverse().join('-') : (value || 'Sin fecha');
             return `<span style="font-weight:700">Fecha: ${fmt}</span> <span style="margin-left:8px;color:rgb(var(--aq-muted))">(${count} ítem${count===1?'':'s'})</span>`;
         },
-        groupBottomCalc: undefined,
     });
     tabSubParteEntrada = new Tabulator('#tablaSubParteEntrada', {
         columns: colDef, data: [], layout: 'fitColumns', minHeight: '100px',
@@ -237,11 +245,7 @@ function initSubTabulators(callback) {
             const fmt = parts.length === 3 ? parts.reverse().join('-') : (value || 'Sin fecha');
             return `<span style="font-weight:700">Fecha: ${fmt}</span> <span style="margin-left:8px;color:rgb(var(--aq-muted))">(${count} ítem${count===1?'':'s'})</span>`;
         },
-        groupBottomCalc: undefined,
     });
-    tabSubDetalleOT.on("rowClick", function(e, row) { abrirModalEditarSubitemRow(row); });
-    tabSubValeConsumo.on("rowClick", function(e, row) { abrirModalEditarSubitemRow(row); });
-    tabSubParteEntrada.on("rowClick", function(e, row) { abrirModalEditarSubitemRow(row); });
 }
 
 function cargarSubformulariosOT(numero) {
@@ -311,7 +315,7 @@ function cargarDatosIniciales() {
 
     initSubTabulators(function() {
         nuevaOt();
-        setCamposOtEditable(true);
+        setCamposOtEditable(false);
         document.getElementById('btnEditarOt').classList.add('hidden');
         document.getElementById('btnGuardarOt').classList.remove('hidden');
         cargarListasORPE();
@@ -540,17 +544,20 @@ function nuevaOt() {
 }
 
 function setCamposOtEditable(editable) {
-    const inputs = ['otNumero', 'otFecha', 'otEncargado', 'otProceso', 'otRut', 'otGlosa'];
+    const inputs = ['otFecha', 'otEncargado', 'otProceso', 'otRut', 'otGlosa'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             if (el.tagName === 'SELECT') {
                 el.disabled = !editable;
             } else {
-                el.readOnly = !editable;
+                el.disabled = !editable;
             }
         }
     });
+
+    const otBtn = document.querySelector('button[onclick="buscarOt()"]');
+    if (otBtn) otBtn.disabled = false;
 
     const inputOR = document.getElementById('inputOR');
     if (inputOR) inputOR.disabled = !editable;
@@ -1079,27 +1086,37 @@ function guardarOt() {
 }
 
 function buscarOt() {
-    buscarXHROt('listar_ot', {}, function(data) {
-        abrirModalBusqueda({
-            titulo: 'Buscar OT',
-            columnas: [
-                { title: 'Nro', field: 'numero', width: 80 },
-                { title: 'Fecha', field: 'fecha', width: 110 },
-                { title: 'Encargado', field: 'encargado_nombre' },
-                { title: 'Proceso', field: 'proceso_nombre' },
-                { title: 'Estado', field: 'estado', width: 90 },
-            ],
-            data: data.ot || [],
-            filtroCampos: ['numero', 'encargado_nombre', 'proceso_nombre', 'estado'],
-            onSelect: function(row) { cargarOt(row.numero); },
-            onRefresh: function(opts) {
-                buscarXHROt('listar_ot', {}, function(data) {
-                    opts.data = data.ot || [];
-                    abrirModalBusqueda(opts);
+    try {
+        buscarXHROt('listar_ot', {}, function(data) {
+            try {
+                abrirModalBusqueda({
+                    titulo: 'Buscar OT',
+                    columnas: [
+                        { title: 'Nro', field: 'numero', width: 80 },
+                        { title: 'Fecha', field: 'fecha', width: 110 },
+                        { title: 'Encargado', field: 'encargado_nombre' },
+                        { title: 'Proceso', field: 'proceso_nombre' },
+                        { title: 'Estado', field: 'estado', width: 90 },
+                    ],
+                    data: data.ot || [],
+                    filtroCampos: ['numero', 'encargado_nombre', 'proceso_nombre', 'estado'],
+                    onSelect: function(row) { cargarOt(row.numero); },
+                    onRefresh: function(opts) {
+                        buscarXHROt('listar_ot', {}, function(data) {
+                            opts.data = data.ot || [];
+                            abrirModalBusqueda(opts);
+                        });
+                    },
                 });
-            },
+            } catch (err) {
+                console.error('Error al abrir modal:', err);
+                Toastify({text: 'Error al abrir modal: ' + err.message, style: {background: '#f44336'}}).showToast();
+            }
         });
-    });
+    } catch (err) {
+        console.error('Error en buscarOt:', err);
+        Toastify({text: 'Error: ' + err.message, style: {background: '#f44336'}}).showToast();
+    }
 }
 
 function cambiarTabOt(tab) {

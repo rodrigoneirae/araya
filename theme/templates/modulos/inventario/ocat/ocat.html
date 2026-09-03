@@ -65,19 +65,20 @@
                                 <option value="">--- Seleccionar ---</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-aq-text mb-1">Tipo Documento</label>
-                            <select id="ocatTipoDoc" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
-                                <option value="">--- Seleccionar ---</option>
-                            </select>
-                        </div>
-                        <div>
+                            <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Sucursal</label>
                             <select id="ocatSucursal" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
                                 <option value="">--- Seleccionar ---</option>
                             </select>
                             <span id="ocatSucursalDir" class="text-xs text-aq-text/60 mt-0.5 block"></span>
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-aq-text mb-1">Tipo Documento</label>
+                            <select id="ocatTipoDoc" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
+                                <option value="">--- Seleccionar ---</option>
+                            </select>
+                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Referencia</label>
                             <input type="text" id="ocatRef" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
@@ -110,18 +111,19 @@
                             <label class="block text-sm font-medium text-aq-text mb-1">Total</label>
                             <input type="number" id="ocatTotal" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
                         </div>
+                             <div>
+                            <label class="block text-sm font-medium text-aq-text mb-1">Patente</label>
+                            <select id="ocatPatente" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
+                                <option value="">--- Buscar patente ---</option>
+                            </select>
+                        </div>
                         <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Transportista</label>
                             <select id="ocatTransportista" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
                                 <option value="">--- Seleccionar ---</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-aq-text mb-1">Patente</label>
-                            <select id="ocatPatente" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
-                                <option value="">--- Buscar patente ---</option>
-                            </select>
-                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Patente Informada</label>
                             <input type="text" id="ocatPatenteInformada" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Nueva patente (se guarda en maestro)">
@@ -140,49 +142,62 @@
                     <div class="flex gap-2 mb-3 flex-wrap items-end">
 
                     <div class="w-24 sm:w-28 md:w-32">
+                        <label for="ocatArtCod" class="block text-xs font-medium text-aq-text mb-1">Código</label>
                         <div class="flex h-[34px]">
-                            <input type="text" id="ocatArtCod" onchange="buscarArticuloInput()" class="w-full px-2 py-1.5 rounded-l-lg border border-aq-border bg-aq-bg text-aq-text text-xs" placeholder="Código">
+                            <input type="text" id="ocatArtCod" onchange="buscarArticuloInput()" class="w-full px-2 py-1.5 rounded-l-lg border border-aq-border bg-aq-bg text-aq-text text-xs">
                             <button type="button" onclick="abrirListaArticulos()" class="px-2 py-1.5 rounded-r-lg bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white border border-l-0 border-aq-border" title="Buscar">
                                 <i class='bx bx-search text-xs'></i>
                             </button>
                         </div>
                     </div>
                     <div class="flex-1 min-w-[100px] sm:min-w-[120px] md:w-48">
-                        <input type="text" id="ocatArtNombre" class="w-full px-2 py-1.5  border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="Nombre" readonly>
+                        <label for="ocatArtNombre" class="block text-xs font-medium text-aq-text mb-1">Nombre</label>
+                        <input type="text" id="ocatArtNombre" class="w-full px-2 py-1.5 border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" readonly>
                     </div>
                     <div class="w-16 sm:w-20">
-                        <input type="number" id="ocatArtCant" class="w-full px-2 py-1.5  border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="Cant">
+                        <label for="ocatArtCant" class="block text-xs font-medium text-aq-text mb-1">Cant</label>
+                        <input type="number" id="ocatArtCant" class="w-full px-2 py-1.5 border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
                     </div>
                     <div class="w-20 sm:w-24">
-                        <input type="number" id="ocatArtPUnit" class="w-full px-2 py-1.5  border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="P.Unit">
+                        <label for="ocatArtPUnit" class="block text-xs font-medium text-aq-text mb-1">P.Unit</label>
+                        <input type="number" id="ocatArtPUnit" class="w-full px-2 py-1.5 border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
                     </div>
                     <div class="w-16 sm:w-20">
-                        <input type="text" id="ocatArtUM" class="w-full px-2 py-1.5  border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="UM" readonly>
+                        <label for="ocatArtUM" class="block text-xs font-medium text-aq-text mb-1">UM</label>
+                        <input type="text" id="ocatArtUM" class="w-full px-2 py-1.5 border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" readonly>
                     </div>
                     <div class="w-20 sm:w-24 md:w-28">
-                        <select id="ocatArtBodega" class="w-full px-2 py-1.5  border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
-                            <option value="">Bodega</option>
+                        <label for="ocatArtBodega" class="block text-xs font-medium text-aq-text mb-1">Bodega</label>
+                        <select id="ocatArtBodega" class="w-full px-2 py-1.5 border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
+                            <option value=""></option>
                         </select>
                     </div>
                     <div class="w-28 sm:w-32">
-                        <input type="date" id="ocatArtFecha" class="w-full px-2 py-1.5  border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
+                        <label for="ocatArtFecha" class="block text-xs font-medium text-aq-text mb-1">Fecha</label>
+                        <input type="date" id="ocatArtFecha" class="w-full px-2 py-1.5 border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
                     </div>
                     <div class="w-20 sm:w-24">
-                        <input type="number" id="ocatArtPeso" class="w-full px-2 py-1.5  border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]" placeholder="Peso">
+                        <label for="ocatArtPeso" class="block text-xs font-medium text-aq-text mb-1">Peso</label>
+                        <input type="number" id="ocatArtPeso" class="w-full px-2 py-1.5 border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
                     </div>
                     <div class="w-28 sm:w-32 md:w-36">
-                        <select id="ocatArtCategoria" class="w-full px-2 py-1.5  border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
-                            <option value="">Categoría</option>
+                        <label for="ocatArtCategoria" class="block text-xs font-medium text-aq-text mb-1">Categoría</label>
+                        <select id="ocatArtCategoria" class="w-full px-2 py-1.5 border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
+                            <option value=""></option>
                         </select>
                     </div>
                     <div class="w-28 sm:w-32 md:w-36">
-                        <select id="ocatArtTratamiento" class="w-full px-2 py-1.5  border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
-                            <option value="">Tratamiento</option>
+                        <label for="ocatArtTratamiento" class="block text-xs font-medium text-aq-text mb-1">Tratamiento</label>
+                        <select id="ocatArtTratamiento" class="w-full px-2 py-1.5 border border-aq-border bg-aq-bg text-aq-text text-xs h-[34px]">
+                            <option value=""></option>
                         </select>
                     </div>
-                            <button type="button" onclick="agregarArticuloOcat()" class="px-3 py-1.5  bg-aq-primary text-white hover:opacity-85 text-xs h-[34px]" title="Agregar">
-                        <i class='bx bx-plus'></i>
-                    </button>
+                    <div>
+                        <label class="block text-xs font-medium text-aq-text mb-1 opacity-0">Agregar</label>
+                        <button type="button" onclick="agregarArticuloOcat()" class="px-3 py-1.5 bg-aq-primary text-white hover:opacity-85 text-xs h-[34px]" title="Agregar">
+                            <i class='bx bx-plus'></i>
+                        </button>
+                    </div>
                 </div>
 
                 </div>

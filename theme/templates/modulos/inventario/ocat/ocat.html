@@ -45,91 +45,90 @@
         <div class="p-4 w-full flex-1 overflow-hidden flex flex-col">
             <div id="contenido-encabezado" class="tab-content h-full">
                 <form id="ocatForm" class="space-y-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-                        <div class="sm:col-span-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                        <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Folio</label>
                             <div class="flex gap-2">
-                                <input type="text" id="ocatNumero" onchange="buscarFolioInput()" class="flex-1 min-w-0 px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
-                                <button type="button" onclick="buscarOcat()" class="px-3 py-2  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
+                                <input type="text" id="ocatNumero" onchange="buscarFolioInput()" class="flex-1 min-w-0 px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
+                                <button type="button" onclick="buscarOcat()" class="px-3 py-2 bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Buscar">
                                     <i class='bx bx-search'></i>
                                 </button>
                             </div>
                         </div>
-                        <div class="sm:col-span-1">
+                        <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Fecha</label>
-                            <input type="date" id="ocatFecha" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
+                            <input type="date" id="ocatFecha" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
                         </div>
-                        <div class="sm:col-span-2 lg:col-span-2">
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-sm font-medium text-aq-text mb-1">Proveedor</label>
-                                    <div class="flex gap-2">
-                                        <select id="ocatProveedor" class="flex-1 min-w-0 px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
-                                            <option value="">--- Seleccionar ---</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-aq-text mb-1">Sucursal</label>
-                                    <select id="ocatSucursal" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
-                                        <option value="">--- Seleccionar ---</option>
-                                    </select>
-                                    <span id="ocatSucursalDir" class="text-xs text-aq-text/60 mt-0.5 block"></span>
-                                </div>
-                            </div>
+                        <div class="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+                            <label class="block text-sm font-medium text-aq-text mb-1">Proveedor</label>
+                            <select id="ocatProveedor" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
+                                <option value="">--- Seleccionar ---</option>
+                            </select>
                         </div>
-                        <div class="sm:col-span-1">
+                        <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Tipo Documento</label>
-                            <select id="ocatTipoDoc" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
+                            <select id="ocatTipoDoc" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
                                 <option value="">--- Seleccionar ---</option>
                             </select>
                         </div>
-                        <div class="sm:col-span-1">
+                        <div>
+                            <label class="block text-sm font-medium text-aq-text mb-1">Sucursal</label>
+                            <select id="ocatSucursal" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
+                                <option value="">--- Seleccionar ---</option>
+                            </select>
+                            <span id="ocatSucursalDir" class="text-xs text-aq-text/60 mt-0.5 block"></span>
+                        </div>
+                        <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Referencia</label>
-                            <input type="text" id="ocatRef" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
+                            <input type="text" id="ocatRef" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
                         </div>
-                        <div class="sm:col-span-1">
+                        <div>
+                            <label class="block text-sm font-medium text-aq-text mb-1">Trato</label>
+                            <select id="ocatTrato" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
+                                <option value="">--- Sin trato ---</option>
+                            </select>
+                        </div>
+                        <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Encargado</label>
-                            <select id="ocatEncargado" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
+                            <select id="ocatEncargado" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
                                 <option value="">--- Seleccionar ---</option>
                             </select>
                         </div>
-                        <div class="sm:col-span-1 hidden">
+                        <div class="hidden">
                             <label class="block text-sm font-medium text-aq-text mb-1">Estado</label>
-                            <select id="ocatEstado" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
+                            <select id="ocatEstado" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
                                 <option value="Abierto">Abierto</option>
                                 <option value="Cerrado">Cerrado</option>
                                 <option value="Terminado">Terminado</option>
                             </select>
                         </div>
-                           <div class="sm:col-span-1">
-                            <label class="block text-sm font-medium text-aq-text mb-1">Total</label>
-                            <input type="number" id="ocatTotal" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
-                        </div>
-                        <div class="sm:col-span-1">
+                        <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Neto</label>
-                            <input type="number" id="ocatNeto" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
+                            <input type="number" id="ocatNeto" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
                         </div>
-
-                        <div class="sm:col-span-1">
+                        <div>
+                            <label class="block text-sm font-medium text-aq-text mb-1">Total</label>
+                            <input type="number" id="ocatTotal" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
+                        </div>
+                        <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Transportista</label>
-                            <select id="ocatTransportista" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
+                            <select id="ocatTransportista" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
                                 <option value="">--- Seleccionar ---</option>
                             </select>
                         </div>
-                        <div class="sm:col-span-1">
+                        <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Patente</label>
-                            <select id="ocatPatente" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text">
+                            <select id="ocatPatente" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text">
                                 <option value="">--- Buscar patente ---</option>
                             </select>
                         </div>
-                        <div class="sm:col-span-1">
+                        <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Patente Informada</label>
-                            <input type="text" id="ocatPatenteInformada" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text" placeholder="Nueva patente (se guarda en maestro)">
+                            <input type="text" id="ocatPatenteInformada" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Nueva patente (se guarda en maestro)">
                         </div>
-                        <div class="sm:col-span-1">
+                        <div>
                             <label class="block text-sm font-medium text-aq-text mb-1">Peso</label>
-                            <input type="number" id="ocatPeso" class="w-full px-3 py-2  border border-aq-border bg-aq-bg text-aq-text" placeholder="Kgs">
+                            <input type="number" id="ocatPeso" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" placeholder="Kgs">
                         </div>
                     </div>
                 </form>

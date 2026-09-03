@@ -295,6 +295,13 @@ function nuevaOcat() {
     }
     const tratosSpan = document.getElementById('ocatTratosProveedor');
     if (tratosSpan) tratosSpan.innerHTML = '';
+    const tratoSel = document.getElementById('ocatTrato');
+    if (tratoSel) {
+        tratoSel.innerHTML = '<option value="">--- Sin trato ---</option>';
+        if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+            jQuery(tratoSel).val('').trigger('change');
+        }
+    }
     setCamposOcatEditable(true);
     calcularTotalesOcat();
 }
@@ -666,6 +673,7 @@ function guardarOcat() {
     const patenteInformada = document.getElementById('ocatPatenteInformada').value;
     const peso = document.getElementById('ocatPeso').value;
     const sucursal_id = document.getElementById('ocatSucursal').value;
+    const trato_ref = document.getElementById('ocatTrato').value;
 
     if (rut === '') {
         Toastify({text: 'Seleccione un proveedor', style: {background: '#f44336'}}).showToast();
@@ -697,6 +705,7 @@ function guardarOcat() {
             patente_informada: patenteInformada,
             peso: peso,
             sucursal_id: sucursal_id,
+            trato_ref: trato_ref,
             detalles: JSON.stringify(detallesOcat)
         }, function(data) {
             if (data.success) {
@@ -796,7 +805,7 @@ function cargarOcat(numero) {
                 }
             }
             actualizarSelect2(provSelect);
-            actualizarTratosProveedor(data.data.rut || '');
+            actualizarTratosProveedor(data.data.rut || '', data.data.trato_ref || '');
 
             const docSelect = document.getElementById('ocatTipoDoc');
             if (data.data.tipodocref) {
@@ -953,23 +962,53 @@ function actualizarDireccionSucursal() {
     }
 }
 
-function actualizarTratosProveedor(rut) {
+function actualizarTratosProveedor(rut, selectedTrato) {
     const span = document.getElementById('ocatTratosProveedor');
-    if (!span) return;
+    const tratoSelect = document.getElementById('ocatTrato');
+    if (!span && !tratoSelect) return;
     if (!rut) {
-        span.innerHTML = '';
+        if (span) span.innerHTML = '';
+        if (tratoSelect) {
+            tratoSelect.innerHTML = '<option value="">--- Sin trato ---</option>';
+            if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery(tratoSelect).data('select2')) {
+                jQuery(tratoSelect).val('').trigger('change');
+            }
+        }
         return;
     }
     buscarXHROcat('get_tratos_proveedor', {rut: rut}, function(data) {
         const tratos = (data && data.tratos) || [];
-        if (tratos.length === 0) {
-            span.innerHTML = '';
-            return;
+        if (span) {
+            if (tratos.length === 0) {
+                span.innerHTML = '';
+            } else {
+                const badges = tratos.map(t =>
+                    `<span class="inline-flex items-center px-2 py-0.5 mr-1 text-xs font-medium bg-aq-primary/10 text-aq-primary border border-aq-primary/30 rounded">${t}</span>`
+                ).join('');
+                span.innerHTML = '<i class="bx bx-leaf align-middle"></i> Tratos: ' + badges;
+            }
         }
-        const badges = tratos.map(t =>
-            `<span class="inline-flex items-center px-2 py-0.5 mr-1 text-xs font-medium bg-aq-primary/10 text-aq-primary border border-aq-primary/30 rounded">${t}</span>`
-        ).join('');
-        span.innerHTML = '<i class="bx bx-leaf align-middle"></i> Tratos: ' + badges;
+        if (tratoSelect) {
+            const valueToSet = selectedTrato !== undefined ? selectedTrato : jQuery(tratoSelect).val();
+            const opts = ['<option value="">--- Sin trato ---</option>'];
+            if (selectedTrato && !tratos.includes(selectedTrato)) {
+                opts.push(`<option value="${selectedTrato}">${selectedTrato}</option>`);
+            }
+            tratos.forEach(t => opts.push(`<option value="${t}">${t}</option>`));
+            tratoSelect.innerHTML = opts.join('');
+            if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+                if (jQuery(tratoSelect).data('select2')) {
+                    jQuery(tratoSelect).val(valueToSet).trigger('change');
+                } else {
+                    jQuery(tratoSelect).select2({
+                        language: 'es',
+                        width: '100%',
+                        placeholder: '--- Sin trato ---',
+                        allowClear: true,
+                    }).val(valueToSet).trigger('change');
+                }
+            }
+        }
     });
 }
 

@@ -92,6 +92,7 @@ class Movs(models.Model):
         blank=True,
         null=True
     )
+    trato_ref = models.CharField(db_column='TratoRef', max_length=50, blank=True, null=True)
 
     class Meta:
         db_table = 'Movs'

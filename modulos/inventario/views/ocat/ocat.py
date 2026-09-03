@@ -249,6 +249,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     "peso": encabezado.numid or "",
                     "sucursal_id": encabezado.sucursal_id or "",
                     "patentes_disponibles": patentes_list,
+                    "trato_ref": encabezado.trato_ref or "",
                     "detalles": detalles
                 }
             })
@@ -343,6 +344,8 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             if peso:
                 peso = float(peso)
 
+            trato_ref = (data.get("trato_ref") or "").strip() or None
+
             Movs.objects.create(
                 numero=numero,
                 tipo=tipo,
@@ -361,6 +364,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                 glosa=transportista_rut,
                 numid=peso,
                 sucursal_id=sucursal_id,
+                trato_ref=trato_ref,
                 usr=usr,
                 timeuser=time_user
             )
@@ -392,6 +396,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     categoria=categoria_obj,
                     tratamiento=tratamiento_obj,
                     sucursal_id=sucursal_id,
+                    trato_ref=trato_ref,
                     usr=usr,
                     timeuser=time_user
                 )

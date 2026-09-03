@@ -355,7 +355,7 @@ function abrirModalSustentable() {
     }
     const form = document.getElementById('sustentableForm');
     if (form) form.reset();
-    ['sustEmiteCertificado', 'sustPagaDisposicion', 'sustPagoMaterial', 'sustRecepcion', 'sustRetiro', 'sustReparacion'].forEach(id => {
+    ['sustEmiteCertificado', 'sustPagaDisposicion', 'sustRecepcion', 'sustRetiro'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.checked = false;
     });
@@ -369,12 +369,10 @@ function abrirModalSustentable() {
             document.getElementById('sustEmiteCertificado').checked = !!d.emite_certificado;
             document.getElementById('sustPagaDisposicion').checked = !!d.paga_disposicion;
             document.getElementById('sustValorDisposicion').value = d.valor_disposicion || '';
-            document.getElementById('sustPagoMaterial').checked = !!d.pago_material;
             document.getElementById('sustTarifaAsociada').value = d.tarifa_asociada || '';
             document.getElementById('sustRecepcion').checked = !!d.recepcion;
             document.getElementById('sustRetiro').checked = !!d.retiro;
             document.getElementById('sustValorRetiro').value = d.valor_retiro || '';
-            document.getElementById('sustReparacion').checked = !!d.reparacion;
             document.getElementById('sustValorReparacion').value = d.valor_reparacion || '';
             document.getElementById('sustCondicionesEspec').value = d.condiciones_espec || '';
             const tipos = Array.isArray(d.tipo_trato) ? d.tipo_trato : [];
@@ -404,12 +402,10 @@ function guardarSustentable() {
         emite_certificado: document.getElementById('sustEmiteCertificado').checked ? '1' : '0',
         paga_disposicion: document.getElementById('sustPagaDisposicion').checked ? '1' : '0',
         valor_disposicion: document.getElementById('sustValorDisposicion').value,
-        pago_material: document.getElementById('sustPagoMaterial').checked ? '1' : '0',
         tarifa_asociada: document.getElementById('sustTarifaAsociada').value,
         recepcion: document.getElementById('sustRecepcion').checked ? '1' : '0',
         retiro: document.getElementById('sustRetiro').checked ? '1' : '0',
         valor_retiro: document.getElementById('sustValorRetiro').value,
-        reparacion: document.getElementById('sustReparacion').checked ? '1' : '0',
         valor_reparacion: document.getElementById('sustValorReparacion').value,
         condiciones_espec: document.getElementById('sustCondicionesEspec').value,
         tipo_trato: tiposSeleccionados.join(','),

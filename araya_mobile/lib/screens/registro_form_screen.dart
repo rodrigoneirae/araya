@@ -34,12 +34,16 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
   bool _searchingArticulo = false;
   bool _searchingEncargado = false;
   bool _offline = false;
+  bool _otArticulosExpandido = true;
   String? _error;
   List<Articulo> _articulosResults = [];
   List<Empleado> _empleadosResults = [];
   final List<_LineaItem> _items = [];
+  final Set<String> _articulosAnadidos = <String>{};
 
   TipoRegistro _tipoSeleccionado = TipoRegistro.parteEntrada;
+  TipoRegistro? _tipoAutoDetectado;
+  String? _tipoRazon;
   Empleado? _encargadoSeleccionado;
   double? _otNumero;
 
@@ -56,13 +60,158 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
         _encargadoSeleccionado = widget.ordenTrabajoDetalle!.encargado;
         _searchEncargadoController.text = _encargadoSeleccionado!.nombre;
       }
+      final deteccion = _detectarTipoRegistro(widget.ordenTrabajoDetalle!);
+      _tipoSeleccionado = deteccion.tipo;
+      _tipoAutoDetectado = deteccion.tipo;
+      _tipoRazon = deteccion.razon;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _precargarArticulosDeOT();
+    });
+  }
+
+  _TipoDeteccion _detectarTipoRegistro(OrdenTrabajoDetalle ot) {
+    final pePool = ot.detalles.where((d) => d.codigo.isNotEmpty && d.docref != null);
+    final vcPool = ot.detalles.where((d) => d.codigo.isNotEmpty && d.docref == null);
+
+    final pePendientes = pePool.where((d) => d.cantidad > 0).length;
+    final vcPendientes = vcPool.where((d) => d.pendiente > 0).length;
+
+    if (pePendientes == 0 && vcPendientes == 0) {
+      return _TipoDeteccion(
+        tipo: TipoRegistro.valeConsumo,
+        razon: 'OT sin ítems pendientes · se asume Vale de Consumo',
+      );
+    }
+    if (pePendientes > vcPendientes) {
+      return _TipoDeteccion(
+        tipo: TipoRegistro.parteEntrada,
+        razon: '$pePendientes ítems de Orden de Recepción pendientes',
+      );
+    }
+    if (vcPendientes > pePendientes) {
+      return _TipoDeteccion(
+        tipo: TipoRegistro.valeConsumo,
+        razon: '$vcPendientes ítems del OT pendientes de consumo',
+      );
+    }
+    return _TipoDeteccion(
+      tipo: TipoRegistro.valeConsumo,
+      razon: 'Igual cantidad de pendientes · se asume Vale de Consumo',
+    );
+  }
+
+  void _precargarArticulosDeOT() {
+    final ot = widget.ordenTrabajoDetalle;
+    if (ot == null) return;
+
+    final pool = _poolParaTipo(ot, _tipoSeleccionado);
+    if (pool.isEmpty) return;
+
+    setState(() {
+      for (final i in _items) {
+        i.cantidadController.dispose();
+        i.cantidadFocus.dispose();
+        i.observacionController.dispose();
+      }
+      _items.clear();
+      _articulosAnadidos.clear();
+
+      for (final d in pool) {
+        final cant = _cantidadSugerida(d, _tipoSeleccionado);
+        final cantStr = cant.toStringAsFixed(
+          cant == cant.roundToDouble() ? 0 : 2,
+        );
+        _items.add(_LineaItem(
+          articulo: Articulo(codigo: d.codigo, descr: d.descr, um: ''),
+          cantidadInicial: cantStr,
+        ));
+        _articulosAnadidos.add(d.codigo);
+      }
+    });
+
+    if (_items.isNotEmpty) {
+      _searchArticuloFocus.unfocus();
+      final lastItem = _items.last;
+      final cantStr = lastItem.cantidadController.text;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        lastItem.cantidadFocus.requestFocus();
+        lastItem.cantidadController.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: cantStr.length,
+        );
+      });
+    }
+  }
+
+  List<OTDetalle> _poolParaTipo(OrdenTrabajoDetalle ot, TipoRegistro tipo) {
+    final es = ot.detalles.where((d) => d.codigo.isNotEmpty);
+    if (tipo == TipoRegistro.parteEntrada) {
+      return es.where((d) => d.docref != null && d.cantidad > 0).toList();
+    }
+    return es.where((d) => d.docref == null && d.pendiente > 0).toList();
+  }
+
+  double _cantidadSugerida(OTDetalle d, TipoRegistro tipo) {
+    if (tipo == TipoRegistro.parteEntrada) {
+      return d.cantidad;
+    }
+    return d.pendiente > 0 ? d.pendiente : d.cantidad;
+  }
+
+  void _anadirArticuloDeOT(OTDetalle d) {
+    if (_articulosAnadidos.contains(d.codigo)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${d.descr} ya está agregado'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+      return;
+    }
+    if (widget.ordenTrabajoDetalle != null) {
+      final pool = _poolParaTipo(widget.ordenTrabajoDetalle!, _tipoSeleccionado);
+      final enPool = pool.any((p) => p.codigo == d.codigo);
+      if (!enPool) {
+        final msg = _tipoSeleccionado == TipoRegistro.parteEntrada
+            ? 'Este ítem no proviene de Orden de Recepción'
+            : 'Este ítem no es consumible directo del OT';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+        );
+        return;
+      }
+    }
+    final cant = _cantidadSugerida(d, _tipoSeleccionado);
+    final cantStr = cant.toStringAsFixed(
+      cant == cant.roundToDouble() ? 0 : 2,
+    );
+    final nuevoItem = _LineaItem(
+      articulo: Articulo(codigo: d.codigo, descr: d.descr, um: ''),
+      cantidadInicial: cantStr,
+    );
+    setState(() {
+      _items.add(nuevoItem);
+      _articulosAnadidos.add(d.codigo);
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      nuevoItem.cantidadFocus.requestFocus();
+      nuevoItem.cantidadController.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: cantStr.length,
+      );
+    });
   }
 
   @override
   void dispose() {
     for (final i in _items) {
       i.cantidadController.dispose();
+      i.cantidadFocus.dispose();
       i.observacionController.dispose();
     }
     _documentoController.dispose();
@@ -150,9 +299,12 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
 
   void _removeItem(int index) {
     setState(() {
+      final codigo = _items[index].articulo.codigo;
       _items[index].cantidadController.dispose();
+      _items[index].cantidadFocus.dispose();
       _items[index].observacionController.dispose();
       _items.removeAt(index);
+      _articulosAnadidos.remove(codigo);
     });
   }
 
@@ -226,6 +378,106 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
     }
   }
 
+  Widget _buildOtArticulosSugeridos(ThemeData theme, bool isDark) {
+    final ot = widget.ordenTrabajoDetalle!;
+    final cs = theme.colorScheme;
+    final pool = _poolParaTipo(ot, _tipoSeleccionado);
+    if (pool.isEmpty) return const SizedBox.shrink();
+
+    final origenLabel = _tipoSeleccionado == TipoRegistro.parteEntrada
+        ? 'desde Orden de Recepción'
+        : 'del OT';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        color: cs.primary.withValues(alpha: isDark ? 0.15 : 0.06),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            InkWell(
+              onTap: () => setState(() => _otArticulosExpandido = !_otArticulosExpandido),
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+                child: Row(
+                  children: [
+                    Icon(Icons.bolt, size: 18, color: cs.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Ítems disponibles $origenLabel  ·  ${pool.length}',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: cs.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      _otArticulosExpandido ? Icons.expand_less : Icons.expand_more,
+                      color: cs.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_otArticulosExpandido) ...[
+              const Divider(height: 1),
+              ...pool.map((d) {
+                final agregado = _articulosAnadidos.contains(d.codigo);
+                final cant = _cantidadSugerida(d, _tipoSeleccionado);
+                final cantTxt = cant.toStringAsFixed(
+                  cant == cant.roundToDouble() ? 0 : 2,
+                );
+                final subtitle = _tipoSeleccionado == TipoRegistro.parteEntrada
+                    ? '${d.codigo} · OR ref ${d.docref!.toInt()} · $cantTxt'
+                    : '${d.codigo} · pendiente $cantTxt';
+                return InkWell(
+                  onTap: () => _anadirArticuloDeOT(d),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                d.descr,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                subtitle,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          agregado ? Icons.check_circle : Icons.add_circle_outline,
+                          color: agregado ? Colors.green : cs.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 6),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -263,7 +515,16 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                       label: Text(tipo.label),
                                       selected: selected,
                                       onSelected: (val) {
-                                        setState(() => _tipoSeleccionado = tipo);
+                                        setState(() {
+                                          _tipoSeleccionado = tipo;
+                                          if (_tipoAutoDetectado != null &&
+                                              tipo != _tipoAutoDetectado) {
+                                            _tipoRazon = 'Selección manual del operador';
+                                          }
+                                        });
+                                        if (widget.ordenTrabajoDetalle != null) {
+                                          _precargarArticulosDeOT();
+                                        }
                                       },
                                       selectedColor: cs.primary.withValues(alpha: 0.2),
                                     ),
@@ -271,6 +532,30 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                 );
                               }).toList(),
                             ),
+                            if (_tipoRazon != null) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    _tipoSeleccionado == _tipoAutoDetectado
+                                        ? Icons.auto_awesome
+                                        : Icons.edit_note,
+                                    size: 14,
+                                    color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      _tipoRazon!,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -357,6 +642,8 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 12),
+                    if (widget.ordenTrabajoDetalle != null)
+                      _buildOtArticulosSugeridos(theme, isDark),
                     TextField(
                       controller: _searchArticuloController,
                       focusNode: _searchArticuloFocus,
@@ -464,9 +751,11 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                           flex: 2,
                                           child: TextField(
                                             controller: item.cantidadController,
+                                            focusNode: item.cantidadFocus,
                                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                             decoration: const InputDecoration(
                                               labelText: 'Cantidad *',
+                                              hintText: 'Editable',
                                               isDense: true,
                                               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                             ),
@@ -559,8 +848,16 @@ class _LineaItem {
   final Articulo articulo;
   final TextEditingController cantidadController;
   final TextEditingController observacionController;
+  final FocusNode cantidadFocus;
 
-  _LineaItem({required this.articulo})
-      : cantidadController = TextEditingController(),
-        observacionController = TextEditingController();
+  _LineaItem({required this.articulo, String? cantidadInicial})
+      : cantidadController = TextEditingController(text: cantidadInicial ?? ''),
+        observacionController = TextEditingController(),
+        cantidadFocus = FocusNode();
+}
+
+class _TipoDeteccion {
+  final TipoRegistro tipo;
+  final String razon;
+  const _TipoDeteccion({required this.tipo, required this.razon});
 }

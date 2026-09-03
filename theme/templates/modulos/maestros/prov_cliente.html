@@ -50,6 +50,9 @@
                         <button type="button" onclick="abrirModalSucursal()" class="w-9 h-9 flex-shrink-0 flex items-center justify-center  bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Sucursales">
                             <i class='bx bx-buildings'></i>
                         </button>
+                        <button type="button" id="btnSustentable" onclick="abrirModalSustentable()" class="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-aq-border text-aq-text hover:bg-aq-primary hover:text-white" title="Config. Sustentable">
+                            <i class='bx bx-leaf'></i>
+                        </button>
                     </div>
                 </div>
 
@@ -174,6 +177,88 @@
         <div class="flex justify-end gap-2 mt-4">
             <button type="button" onclick="cerrarModalSucursal()" class="px-4 py-2 text-sm border border-aq-border text-aq-text rounded-lg hover:bg-aq-surface-alt">Cancelar</button>
             <button type="button" onclick="guardarSucursal()" class="px-4 py-2 text-sm bg-aq-primary text-white rounded-lg hover:bg-aq-primary/90">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalSustentable" class="fixed inset-0 z-50 hidden bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-aq-surface border border-aq-border rounded-xl p-6 shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-aq-text" id="modalSustentableTitle">Configuración Sustentable</h3>
+            <button type="button" onclick="cerrarModalSustentable()" class="text-aq-text/60 hover:text-aq-text text-2xl leading-none">&times;</button>
+        </div>
+        <form id="sustentableForm" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-aq-text mb-1">Tipo de Trato <span class="text-aq-text/60 text-xs">(puede seleccionar varios)</span></label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <label class="flex items-center gap-2 px-3 py-2 border border-aq-border rounded-lg bg-aq-bg text-aq-text cursor-pointer hover:bg-aq-surface-alt">
+                            <input type="checkbox" name="sustTipoTrato" value="Reparacion" class="w-4 h-4 accent-aq-primary">
+                            <span class="text-sm">Reparación</span>
+                        </label>
+                        <label class="flex items-center gap-2 px-3 py-2 border border-aq-border rounded-lg bg-aq-bg text-aq-text cursor-pointer hover:bg-aq-surface-alt">
+                            <input type="checkbox" name="sustTipoTrato" value="Revaloracion" class="w-4 h-4 accent-aq-primary">
+                            <span class="text-sm">Revaloración</span>
+                        </label>
+                        <label class="flex items-center gap-2 px-3 py-2 border border-aq-border rounded-lg bg-aq-bg text-aq-text cursor-pointer hover:bg-aq-surface-alt">
+                            <input type="checkbox" name="sustTipoTrato" value="Disposicion" class="w-4 h-4 accent-aq-primary">
+                            <span class="text-sm">Disposición</span>
+                        </label>
+                        <label class="flex items-center gap-2 px-3 py-2 border border-aq-border rounded-lg bg-aq-bg text-aq-text cursor-pointer hover:bg-aq-surface-alt">
+                            <input type="checkbox" name="sustTipoTrato" value="Compra" class="w-4 h-4 accent-aq-primary">
+                            <span class="text-sm">Compra</span>
+                        </label>
+                    </div>
+                </div>
+                <label class="flex items-center gap-2 px-3 py-2 border border-aq-border rounded-lg bg-aq-bg text-aq-text cursor-pointer">
+                    <input type="checkbox" id="sustEmiteCertificado" class="w-4 h-4 accent-aq-primary">
+                    <span class="text-sm">Emite Certificado</span>
+                </label>
+                <label class="flex items-center gap-2 px-3 py-2 border border-aq-border rounded-lg bg-aq-bg text-aq-text cursor-pointer">
+                    <input type="checkbox" id="sustPagaDisposicion" class="w-4 h-4 accent-aq-primary">
+                    <span class="text-sm">Paga Disposición</span>
+                </label>
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Valor Disposición</label>
+                    <input type="text" id="sustValorDisposicion" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" maxlength="50">
+                </div>
+                <label class="flex items-center gap-2 px-3 py-2 border border-aq-border rounded-lg bg-aq-bg text-aq-text cursor-pointer">
+                    <input type="checkbox" id="sustPagoMaterial" class="w-4 h-4 accent-aq-primary">
+                    <span class="text-sm">Pago Material</span>
+                </label>
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-aq-text mb-1">Tarifa Asociada</label>
+                    <input type="text" id="sustTarifaAsociada" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" maxlength="50">
+                </div>
+                <label class="flex items-center gap-2 px-3 py-2 border border-aq-border rounded-lg bg-aq-bg text-aq-text cursor-pointer">
+                    <input type="checkbox" id="sustRecepcion" class="w-4 h-4 accent-aq-primary">
+                    <span class="text-sm">Recepción</span>
+                </label>
+                <label class="flex items-center gap-2 px-3 py-2 border border-aq-border rounded-lg bg-aq-bg text-aq-text cursor-pointer">
+                    <input type="checkbox" id="sustRetiro" class="w-4 h-4 accent-aq-primary">
+                    <span class="text-sm">Retiro</span>
+                </label>
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Valor Retiro</label>
+                    <input type="text" id="sustValorRetiro" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" maxlength="50">
+                </div>
+                <label class="flex items-center gap-2 px-3 py-2 border border-aq-border rounded-lg bg-aq-bg text-aq-text cursor-pointer">
+                    <input type="checkbox" id="sustReparacion" class="w-4 h-4 accent-aq-primary">
+                    <span class="text-sm">Reparación</span>
+                </label>
+                <div>
+                    <label class="block text-sm font-medium text-aq-text mb-1">Valor Reparación</label>
+                    <input type="text" id="sustValorReparacion" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text" maxlength="50">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-aq-text mb-1">Condiciones Específicas</label>
+                    <textarea id="sustCondicionesEspec" rows="3" class="w-full px-3 py-2 border border-aq-border bg-aq-bg text-aq-text"></textarea>
+                </div>
+            </div>
+        </form>
+        <div class="flex justify-end gap-2 mt-4">
+            <button type="button" onclick="cerrarModalSustentable()" class="px-4 py-2 text-sm border border-aq-border text-aq-text rounded-lg hover:bg-aq-surface-alt">Cancelar</button>
+            <button type="button" onclick="guardarSustentable()" class="px-4 py-2 text-sm bg-aq-primary text-white rounded-lg hover:bg-aq-primary/90">Guardar</button>
         </div>
     </div>
 </div>

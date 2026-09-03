@@ -237,6 +237,7 @@ function cargarDatosIniciales() {
                     });
                     actualizarDireccionSucursal();
                 });
+                actualizarTratosProveedor(rut);
             } else {
                 jQuery(sucSelect).select2({
                     language: 'es',
@@ -245,6 +246,7 @@ function cargarDatosIniciales() {
                     allowClear: true,
                 });
                 sucDirSpan.textContent = '';
+                actualizarTratosProveedor('');
             }
         });
     }
@@ -291,6 +293,8 @@ function nuevaOcat() {
     if (patSel) {
         jQuery(patSel).val('').trigger('change');
     }
+    const tratosSpan = document.getElementById('ocatTratosProveedor');
+    if (tratosSpan) tratosSpan.innerHTML = '';
     setCamposOcatEditable(true);
     calcularTotalesOcat();
 }
@@ -792,6 +796,7 @@ function cargarOcat(numero) {
                 }
             }
             actualizarSelect2(provSelect);
+            actualizarTratosProveedor(data.data.rut || '');
 
             const docSelect = document.getElementById('ocatTipoDoc');
             if (data.data.tipodocref) {
@@ -946,6 +951,26 @@ function actualizarDireccionSucursal() {
     } else {
         dirSpan.textContent = '';
     }
+}
+
+function actualizarTratosProveedor(rut) {
+    const span = document.getElementById('ocatTratosProveedor');
+    if (!span) return;
+    if (!rut) {
+        span.innerHTML = '';
+        return;
+    }
+    buscarXHROcat('get_tratos_proveedor', {rut: rut}, function(data) {
+        const tratos = (data && data.tratos) || [];
+        if (tratos.length === 0) {
+            span.innerHTML = '';
+            return;
+        }
+        const badges = tratos.map(t =>
+            `<span class="inline-flex items-center px-2 py-0.5 mr-1 text-xs font-medium bg-aq-primary/10 text-aq-primary border border-aq-primary/30 rounded">${t}</span>`
+        ).join('');
+        span.innerHTML = '<i class="bx bx-leaf align-middle"></i> Tratos: ' + badges;
+    });
 }
 
 let indiceCUP = null;

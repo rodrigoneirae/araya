@@ -10,6 +10,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from modulos.maestros.models.prov_cliente import Provclientes
 from modulos.maestros.models.auxiliares import Cpago
 from modulos.maestros.models.sucursales import Sucursal
+from modulos.maestros.models.prov_cliente_sustentable import ProvClienteSustentable
 
 
 def _get_movs_model():
@@ -53,6 +54,8 @@ class IndexProvClienteView(LoginRequiredMixin, TemplateView):
             "nueva_sucursal": self._nueva_sucursal,
             "editar_sucursal": self._editar_sucursal,
             "eliminar_sucursal": lambda d: self._eliminar_sucursal(d.get("id")),
+            "get_sustentable": lambda d: self._get_sustentable(d),
+            "guardar_sustentable": self._guardar_sustentable,
         }
         return handlers.get(action, lambda _: JsonResponse({"success": False, "message": "Acción inválida"}))
 
@@ -223,6 +226,70 @@ class IndexProvClienteView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": True, "message": "Sucursal eliminada correctamente"})
         except Sucursal.DoesNotExist:
             return JsonResponse({"success": False, "message": "Sucursal no encontrada"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    def _get_sustentable(self, data: dict[str, Any]) -> JsonResponse:
+        rut = data.get("rut")
+        if not rut:
+            return JsonResponse({"success": False})
+        try:
+            sust = ProvClienteSustentable.objects.get(provcliente__rut=rut)
+            return JsonResponse({
+                "success": True,
+                "exists": True,
+                "data": {
+                    "emite_certificado": sust.emite_certificado,
+                    "paga_disposicion": sust.paga_disposicion,
+                    "valor_disposicion": sust.valor_disposicion or "",
+                    "pago_material": sust.pago_material,
+                    "tarifa_asociada": sust.tarifa_asociada or "",
+                    "recepcion": sust.recepcion,
+                    "retiro": sust.retiro,
+                    "valor_retiro": sust.valor_retiro or "",
+                    "reparacion": sust.reparacion,
+                    "valor_reparacion": sust.valor_reparacion or "",
+                    "condiciones_espec": sust.condiciones_espec or "",
+                    "tipo_trato": [t.strip() for t in (sust.tipo_trato or "").split(",") if t.strip()],
+                },
+            })
+        except ProvClienteSustentable.DoesNotExist:
+            return JsonResponse({"success": True, "exists": False})
+
+    def _guardar_sustentable(self, data: dict[str, Any]) -> JsonResponse:
+        rut = data.get("rut")
+        if not rut:
+            return JsonResponse({"success": False, "message": "RUT requerido"})
+        try:
+            cliente = Provclientes.objects.get(rut=rut)
+        except Provclientes.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Cliente no encontrado"})
+
+        def _to_bool(v):
+            return str(v).lower() in ("1", "true", "on", "yes")
+
+        defaults = {
+            "emite_certificado": _to_bool(data.get("emite_certificado")),
+            "paga_disposicion": _to_bool(data.get("paga_disposicion")),
+            "valor_disposicion": data.get("valor_disposicion") or None,
+            "pago_material": _to_bool(data.get("pago_material")),
+            "tarifa_asociada": data.get("tarifa_asociada") or None,
+            "recepcion": _to_bool(data.get("recepcion")),
+            "retiro": _to_bool(data.get("retiro")),
+            "valor_retiro": data.get("valor_retiro") or None,
+            "reparacion": _to_bool(data.get("reparacion")),
+            "valor_reparacion": data.get("valor_reparacion") or None,
+            "condiciones_espec": data.get("condiciones_espec") or None,
+            "tipo_trato": data.get("tipo_trato") or None,
+        }
+
+        try:
+            obj, created = ProvClienteSustentable.objects.update_or_create(
+                provcliente=cliente,
+                defaults=defaults,
+            )
+            msg = "Configuración sustentable creada correctamente" if created else "Configuración sustentable actualizada correctamente"
+            return JsonResponse({"success": True, "message": msg})
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 

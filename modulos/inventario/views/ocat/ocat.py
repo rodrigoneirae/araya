@@ -18,6 +18,7 @@ from modulos.maestros.models.transportistas import Transportistas, Patentes
 from modulos.maestros.models.clasificacion import Clasificacion
 from modulos.maestros.models.tratamiento_ler import TratamientoLER
 from modulos.maestros.models.sucursales import Sucursal
+from modulos.maestros.models.prov_cliente_sustentable import ProvClienteSustentable
 
 
 class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
@@ -51,6 +52,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             "listar_clasificaciones": lambda _: self._listar_clasificaciones(),
             "listar_tratamientos": lambda _: self._listar_tratamientos(),
             "listar_sucursales": lambda d: self._listar_sucursales(d.get("rut")),
+            "get_tratos_proveedor": lambda d: self._get_tratos_proveedor(d.get("rut")),
         }
         return handlers.get(action, lambda _: JsonResponse({"success": False, "message": "Acción inválida"}))
 
@@ -498,6 +500,16 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
         if not sucursales and cliente_direccion:
             sucursales.append({"id": 0, "codigo": "0", "nombre": cliente_direccion, "direccion": cliente_direccion})
         return JsonResponse({"sucursales": sucursales, "cliente_direccion": cliente_direccion})
+
+    def _get_tratos_proveedor(self, rut: str | None) -> JsonResponse:
+        if not rut:
+            return JsonResponse({"success": True, "tratos": []})
+        try:
+            sust = ProvClienteSustentable.objects.get(provcliente__rut=rut)
+            tratos = [t.strip() for t in (sust.tipo_trato or "").split(",") if t.strip()]
+            return JsonResponse({"success": True, "tratos": tratos})
+        except ProvClienteSustentable.DoesNotExist:
+            return JsonResponse({"success": True, "tratos": []})
 
     def _listar_clasificaciones(self) -> JsonResponse:
         data = Clasificacion.objects.values("codigo", "descripcion").order_by("codigo")

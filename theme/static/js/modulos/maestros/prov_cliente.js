@@ -331,6 +331,100 @@ function eliminarSucursal(id, nombre) {
     });
 }
 
+function cargarSustentable() {
+    const rut = document.getElementById('rut').value.trim().toUpperCase();
+    if (!rut) return;
+    const btn = document.getElementById('btnSustentable');
+    if (btn) {
+        btn.dataset.exists = '0';
+        btn.classList.remove('text-green-500');
+    }
+    buscarXHR('get_sustentable', {rut: rut}, function(data) {
+        if (data.success && data.exists && btn) {
+            btn.dataset.exists = '1';
+            btn.classList.add('text-green-500');
+        }
+    });
+}
+
+function abrirModalSustentable() {
+    const rut = document.getElementById('rut').value.trim().toUpperCase();
+    if (!rut) {
+        Toastify({text: 'Seleccione un cliente/proveedor primero', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+    const form = document.getElementById('sustentableForm');
+    if (form) form.reset();
+    ['sustEmiteCertificado', 'sustPagaDisposicion', 'sustPagoMaterial', 'sustRecepcion', 'sustRetiro', 'sustReparacion'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = false;
+    });
+    document.querySelectorAll('input[name="sustTipoTrato"]').forEach(el => { el.checked = false; });
+    buscarXHR('get_sustentable', {rut: rut}, function(data) {
+        document.getElementById('modalSustentableTitle').textContent = data.exists
+            ? 'Editar Configuración Sustentable'
+            : 'Nueva Configuración Sustentable';
+        if (data.success && data.exists && data.data) {
+            const d = data.data;
+            document.getElementById('sustEmiteCertificado').checked = !!d.emite_certificado;
+            document.getElementById('sustPagaDisposicion').checked = !!d.paga_disposicion;
+            document.getElementById('sustValorDisposicion').value = d.valor_disposicion || '';
+            document.getElementById('sustPagoMaterial').checked = !!d.pago_material;
+            document.getElementById('sustTarifaAsociada').value = d.tarifa_asociada || '';
+            document.getElementById('sustRecepcion').checked = !!d.recepcion;
+            document.getElementById('sustRetiro').checked = !!d.retiro;
+            document.getElementById('sustValorRetiro').value = d.valor_retiro || '';
+            document.getElementById('sustReparacion').checked = !!d.reparacion;
+            document.getElementById('sustValorReparacion').value = d.valor_reparacion || '';
+            document.getElementById('sustCondicionesEspec').value = d.condiciones_espec || '';
+            const tipos = Array.isArray(d.tipo_trato) ? d.tipo_trato : [];
+            tipos.forEach(t => {
+                const cb = document.querySelector('input[name="sustTipoTrato"][value="' + t + '"]');
+                if (cb) cb.checked = true;
+            });
+        }
+        document.getElementById('modalSustentable').classList.remove('hidden');
+    });
+}
+
+function cerrarModalSustentable() {
+    document.getElementById('modalSustentable').classList.add('hidden');
+}
+
+function guardarSustentable() {
+    const rut = document.getElementById('rut').value.trim().toUpperCase();
+    if (!rut) {
+        Toastify({text: 'RUT no disponible', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+    const tiposSeleccionados = Array.from(document.querySelectorAll('input[name="sustTipoTrato"]:checked'))
+        .map(el => el.value);
+    const datos = {
+        rut: rut,
+        emite_certificado: document.getElementById('sustEmiteCertificado').checked ? '1' : '0',
+        paga_disposicion: document.getElementById('sustPagaDisposicion').checked ? '1' : '0',
+        valor_disposicion: document.getElementById('sustValorDisposicion').value,
+        pago_material: document.getElementById('sustPagoMaterial').checked ? '1' : '0',
+        tarifa_asociada: document.getElementById('sustTarifaAsociada').value,
+        recepcion: document.getElementById('sustRecepcion').checked ? '1' : '0',
+        retiro: document.getElementById('sustRetiro').checked ? '1' : '0',
+        valor_retiro: document.getElementById('sustValorRetiro').value,
+        reparacion: document.getElementById('sustReparacion').checked ? '1' : '0',
+        valor_reparacion: document.getElementById('sustValorReparacion').value,
+        condiciones_espec: document.getElementById('sustCondicionesEspec').value,
+        tipo_trato: tiposSeleccionados.join(','),
+    };
+    buscarXHR('guardar_sustentable', datos, function(data) {
+        if (data.success) {
+            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+            cerrarModalSustentable();
+            cargarSustentable();
+        } else {
+            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+        }
+    });
+}
+
 function setCamposDisabled(disabled) {
     ['rut', 'dig_ver', 'nombre', 'tipo', 'sigla', 'giro', 'direccion', 'comuna', 'ciudad', 'fono', 'fax', 'email', 'cpago', 'contacto', 'emailcontacto'].forEach(id => {
         const el = document.getElementById(id);

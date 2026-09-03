@@ -712,24 +712,21 @@ class IndexInformeOrProvedorView(LoginRequiredMixin, TemplateView):
         for enc in encabezados:
             numero = enc["numero"]
             detalles = detalles_map.get(numero, [])
-            encargado_nombre = empleados_map.get(float(enc["codencargado"]), "") if enc["codencargado"] else ""
-            total_ocat = float(enc["canttotal"] or 0) * float(enc["punit"] or 0)
+            total_ocat = sum(d["cantidad"] for d in detalles)
             resultado.append({
                 "numero": int(numero) if numero else "",
                 "fecha": enc["fecha"].strftime("%d-%m-%Y") if enc["fecha"] else "",
-                "estado": enc["estado"] or "",
                 "neto": float(enc["neto"] or 0),
                 "total": total_ocat,
-                "encargado_nombre": encargado_nombre,
                 "docref": str(int(enc["docref"])) if enc["docref"] else "",
                 "detalles": detalles,
             })
 
         total_neto = sum(o["neto"] for o in resultado)
-        total_monto = sum(o["total"] for o in resultado)
+        total_cantidad = sum(o["total"] for o in resultado)
 
         buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=15*mm, bottomMargin=15*mm)
+        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=15*mm, bottomMargin=15*mm, leftMargin=15*mm, rightMargin=15*mm)
 
         def cl(v):
             return f"{int(round(float(v))):,}".replace(",", ".")
@@ -770,7 +767,7 @@ class IndexInformeOrProvedorView(LoginRequiredMixin, TemplateView):
 
             elems.append(Spacer(1, 3*mm))
 
-            header_ocab = ["OCAT", "Fecha", "Estado", "Neto", "Total", "Encargado", "Doc.Ref"]
+            header_ocab = ["OCAT", "Fecha", "Neto", "Total Cant", "Doc.Ref"]
             header_det = ["L", "Código", "Nombre", "Cant", "P.Unit", "Total", "Bod"]
 
             for o in resultado:
@@ -778,13 +775,11 @@ class IndexInformeOrProvedorView(LoginRequiredMixin, TemplateView):
                 table_data_ocab.append([
                     Paragraph(str(o["numero"]), bold_style),
                     Paragraph(o["fecha"], center_style),
-                    Paragraph(o["estado"], cell_style),
                     Paragraph(cl(o["neto"]), right_style),
-                    Paragraph(cl(o["total"]), right_style),
-                    Paragraph(o["encargado_nombre"], cell_style),
+                    Paragraph(clq(o["total"]), right_style),
                     Paragraph(o["docref"], center_style),
                 ])
-                col_widths_ocab = [18*mm, 20*mm, 18*mm, 24*mm, 24*mm, 32*mm, 18*mm]
+                col_widths_ocab = [25*mm, 30*mm, 45*mm, 45*mm, 35*mm]
                 tbl_ocab = Table(table_data_ocab, colWidths=col_widths_ocab)
                 style_cmds_ocab = [
                     ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#374151")),
@@ -839,7 +834,7 @@ class IndexInformeOrProvedorView(LoginRequiredMixin, TemplateView):
             elems.append(Paragraph(
                 f"<b>Total OCAT:</b> {len(resultado)} &nbsp;&nbsp;&nbsp;"
                 f"<b>Neto Total:</b> ${cl(total_neto)} &nbsp;&nbsp;&nbsp;"
-                f"<b>Monto Total:</b> ${cl(total_monto)}",
+                f"<b>Total Cantidad:</b> {clq(total_cantidad)}",
                 subtitle_style,
             ))
             elems.append(Spacer(1, 3*mm))

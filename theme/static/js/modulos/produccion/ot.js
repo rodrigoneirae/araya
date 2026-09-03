@@ -52,15 +52,6 @@ function buscarXHROt(action, datos, callback) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    cargarDatosIniciales();
-    document.getElementById('otEstado')?.addEventListener('change', function() {
-        if (this.value === 'Cerrado' || this.value === 'Terminado') {
-            setCamposOtEditable(false);
-            document.getElementById('btnGuardarOt').classList.add('hidden');
-            Toastify({text: 'Documento cerrado. No se pueden realizar cambios.', style: {background: '#f44336'}}).showToast();
-        }
-    });
-
     const otSearchBtn = document.querySelector('button[onclick="buscarOt()"]');
     if (otSearchBtn) {
         otSearchBtn.disabled = false;
@@ -71,6 +62,21 @@ document.addEventListener('DOMContentLoaded', function() {
             buscarOt();
         });
     }
+
+    try {
+        cargarDatosIniciales();
+    } catch (err) {
+        console.error('Error en cargarDatosIniciales:', err);
+        Toastify({text: 'Error al inicializar: ' + err.message, style: {background: '#f44336'}}).showToast();
+    }
+
+    document.getElementById('otEstado')?.addEventListener('change', function() {
+        if (this.value === 'Cerrado' || this.value === 'Terminado') {
+            setCamposOtEditable(false);
+            document.getElementById('btnGuardarOt').classList.add('hidden');
+            Toastify({text: 'Documento cerrado. No se pueden realizar cambios.', style: {background: '#f44336'}}).showToast();
+        }
+    });
 });
 
 function getEncargadoOptions() {

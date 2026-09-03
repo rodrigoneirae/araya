@@ -264,7 +264,7 @@ function cargarDatosIniciales() {
     document.getElementById('ocatFecha').value = fecha;
     document.getElementById('ocatArtFecha').value = fecha;
     nuevaOcat();
-    setCamposOcatEditable(true);
+    setCamposOcatEditable(false);
     document.getElementById('btnEditarOcat').classList.add('hidden');
     document.getElementById('btnGuardarOcat').classList.remove('hidden');
 }
@@ -323,7 +323,7 @@ function actualizarSelect2(el) {
 }
 
 function setCamposOcatEditable(editable) {
-    const inputs = ['ocatFecha', 'ocatProveedor', 'ocatTipoDoc', 'ocatRef', 'ocatEncargado', 'ocatArtCod', 'ocatArtCant', 'ocatArtPUnit', 'ocatArtFecha', 'ocatArtPeso', 'ocatNeto', 'ocatTotal', 'ocatTransportista', 'ocatPatente', 'ocatPatenteInformada', 'ocatSucursal', 'ocatPeso'];
+    const inputs = ['ocatFecha', 'ocatProveedor', 'ocatTipoDoc', 'ocatRef', 'ocatEncargado', 'ocatTrato', 'ocatArtCod', 'ocatArtCant', 'ocatArtPUnit', 'ocatArtFecha', 'ocatArtPeso', 'ocatNeto', 'ocatTotal', 'ocatTransportista', 'ocatPatente', 'ocatPatenteInformada', 'ocatSucursal', 'ocatPeso'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -331,10 +331,13 @@ function setCamposOcatEditable(editable) {
                 el.disabled = !editable;
                 actualizarSelect2(el);
             } else {
-                el.readOnly = !editable;
+                el.disabled = !editable;
             }
         }
     });
+
+    const ocatBtn = document.querySelector('button[onclick="buscarOcat()"]');
+    if (ocatBtn) ocatBtn.disabled = false;
     const bodega = document.getElementById('ocatArtBodega');
     if (bodega) {
         bodega.disabled = !editable;

@@ -75,7 +75,7 @@ class IndexCoreView( LoginRequiredMixin,TemplateView):
 
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseRedirect | HttpResponse:
-        self.init_app()
+        # self.init_app()
 
         # if not WEB:
         #

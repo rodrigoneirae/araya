@@ -174,6 +174,7 @@ function buscarPorCodigo() {
             document.getElementById('procesos').value = data.data.proceso || '';
             actualizarSelect2('procesos');
             document.getElementById('peso').value = data.data.peso !== null && data.data.peso !== '' ? data.data.peso : '';
+            document.getElementById('precio').value = data.data.precio !== null && data.data.precio !== '' ? data.data.precio : '';
             document.getElementById('categoria').value = data.data.categoria || '';
             actualizarSelect2('categoria');
             tipoOriginal = data.data.estado || 'Activo';
@@ -202,7 +203,7 @@ function buscarPorCodigo() {
 }
 
 function setCamposDisabled(disabled) {
-    ['codigo', 'nombre', 'tipo', 'um', 'stomin', 'stomax', 'procesos', 'peso', 'categoria'].forEach(id => {
+    ['codigo', 'nombre', 'tipo', 'um', 'stomin', 'stomax', 'procesos', 'peso', 'precio', 'categoria'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         if (el.tagName === 'SELECT' && typeof jQuery !== 'undefined' && jQuery.fn.select2) {
@@ -283,6 +284,7 @@ function guardarArticulo() {
         stomax: document.getElementById('stomax').value,
         proceso: document.getElementById('procesos').value,
         peso: document.getElementById('peso').value,
+        precio: document.getElementById('precio').value,
         categoria: document.getElementById('categoria').value
     }, function(data) {
         if (data.success) {
@@ -322,6 +324,7 @@ function editarArticulo() {
             stomax: document.getElementById('stomax').value,
             proceso: document.getElementById('procesos').value,
             peso: document.getElementById('peso').value,
+            precio: document.getElementById('precio').value,
             categoria: document.getElementById('categoria').value
         }, function(data) {
             if (data.success) {

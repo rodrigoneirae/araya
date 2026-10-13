@@ -114,6 +114,7 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
                     "stomax": articulo.stomax if articulo.stomax is not None else "",
                     "proceso": articulo.prc if articulo.prc is not None else "",
                     "peso": articulo.peso if articulo.peso is not None else "",
+                    "precio": articulo.precio if articulo.precio is not None else "",
                     "categoria": articulo.categoria_id or "",
                 }
             })
@@ -139,6 +140,8 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
                     pass
             peso = data.get("peso")
             peso = float(peso) if peso not in (None, "") else None
+            precio = data.get("precio")
+            precio = int(precio) if precio not in (None, "") else None
             articulo = Articulos(
                 codigo=data.get("codigo"),
                 descr=data.get("nombre"),
@@ -149,6 +152,7 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
                 stomax=data.get("stomax") or None,
                 prc=data.get("proceso") or None,
                 peso=peso,
+                precio=precio,
                 categoria=categoria_obj,
                 usr=usuario,
                 timeuser=timezone.now()
@@ -184,6 +188,8 @@ class IndexArticulosView(LoginRequiredMixin, TemplateView):
                 articulo.categoria = None
             peso = data.get("peso")
             articulo.peso = float(peso) if peso not in (None, "") else None
+            precio = data.get("precio")
+            articulo.precio = int(precio) if precio not in (None, "") else None
             articulo.usr = usuario
             articulo.timeuser = timezone.now()
             articulo.save(using="default")

@@ -520,7 +520,12 @@ function nuevaOt() {
     document.getElementById('otEstado').dispatchEvent(new Event('change', { bubbles: true }));
     document.getElementById('otEncargado').value = '';
     document.getElementById('otEncargado').dispatchEvent(new Event('change', { bubbles: true }));
-    document.getElementById('otProceso').value = '';
+    const procesoReset = document.getElementById('otProceso');
+    if (procesoReset) {
+        procesoReset.value = '';
+        procesoReset.selectedIndex = 0;
+        procesoReset.dispatchEvent(new Event('change', { bubbles: true }));
+    }
     document.getElementById('otNumero').value = '';
     const rutReset = document.getElementById('otRut');
     if (rutReset) {

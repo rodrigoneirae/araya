@@ -4,6 +4,7 @@ from django.urls import include,path
 from django.conf import settings
 from django.http import JsonResponse
 from django.db import connections
+from django.views.generic import TemplateView
 
 from modulos.core.views.core.core import IndexCoreView, IndexUpdateView
 from modulos.core.views.auth.login import LoginView
@@ -20,6 +21,7 @@ def health_check(request):
 
 urlpatterns = [
     path('api/health/', health_check, name="health_check"),
+    path('privacy-policy/', TemplateView.as_view(template_name='privacy_policy.html'), name='privacy_policy'),
     path('admin/', admin.site.urls),
     path("", IndexCoreView.as_view(), name="home"),
     path("login/", LoginView.as_view(), name="login"),

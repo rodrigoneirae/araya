@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import '../services/config_service.dart';
 import '../services/theme_service.dart';
 import 'home_screen.dart';
+import 'privacy_policy_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final String baseUrl;
@@ -248,6 +249,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? ArayaColors.darkMuted
                           : ArayaColors.lightMuted,
                     ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const PrivacyPolicyScreen(),
+                      ),
+                    ),
+                    child: const Text('Política de privacidad'),
                   ),
                 ],
               ),

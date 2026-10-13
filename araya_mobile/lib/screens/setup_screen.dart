@@ -5,6 +5,7 @@ import '../services/config_service.dart';
 import '../services/api_service.dart';
 import '../services/theme_service.dart';
 import 'login_screen.dart';
+import 'privacy_policy_screen.dart';
 
 class SetupScreen extends StatefulWidget {
   final String? initialUrl;
@@ -76,9 +77,7 @@ class _SetupScreenState extends State<SetupScreen> {
     await _configService.setBackendUrl(url);
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => LoginScreen(baseUrl: url),
-      ),
+      MaterialPageRoute(builder: (_) => LoginScreen(baseUrl: url)),
     );
   }
 
@@ -121,7 +120,9 @@ class _SetupScreenState extends State<SetupScreen> {
               Text(
                 'Ingresa la URL del backend de Araya',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                  color: isDark
+                      ? ArayaColors.darkMuted
+                      : ArayaColors.lightMuted,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -143,7 +144,9 @@ class _SetupScreenState extends State<SetupScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: _statusOk == true
-                        ? (isDark ? Colors.green.shade900 : Colors.green.shade50)
+                        ? (isDark
+                              ? Colors.green.shade900
+                              : Colors.green.shade50)
                         : (isDark ? Colors.red.shade900 : Colors.red.shade50),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -159,8 +162,12 @@ class _SetupScreenState extends State<SetupScreen> {
                           _statusText!,
                           style: TextStyle(
                             color: _statusOk == true
-                                ? (isDark ? Colors.green.shade300 : Colors.green.shade800)
-                                : (isDark ? Colors.red.shade300 : Colors.red.shade800),
+                                ? (isDark
+                                      ? Colors.green.shade300
+                                      : Colors.green.shade800)
+                                : (isDark
+                                      ? Colors.red.shade300
+                                      : Colors.red.shade800),
                           ),
                         ),
                       ),
@@ -192,6 +199,15 @@ class _SetupScreenState extends State<SetupScreen> {
                   icon: const Icon(Icons.arrow_forward),
                   label: const Text('Guardar y continuar'),
                 ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const PrivacyPolicyScreen(),
+                  ),
+                ),
+                child: const Text('Política de privacidad'),
               ),
             ],
           ),

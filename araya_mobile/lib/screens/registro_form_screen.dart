@@ -65,18 +65,18 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
       _tipoAutoDetectado = deteccion.tipo;
       _tipoRazon = deteccion.razon;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _precargarArticulosDeOT();
-    });
   }
 
   _TipoDeteccion _detectarTipoRegistro(OrdenTrabajoDetalle ot) {
-    final pePool = ot.detalles.where((d) => d.codigo.isNotEmpty && d.docref != null);
-    final vcPool = ot.detalles.where((d) => d.codigo.isNotEmpty && d.docref == null);
+    final pePool = ot.detalles.where(
+      (d) => d.codigo.isNotEmpty && d.docref == null,
+    );
+    final vcPool = ot.detalles.where(
+      (d) => d.codigo.isNotEmpty && d.docref != null,
+    );
 
     final pePendientes = pePool.where((d) => d.cantidad > 0).length;
-    final vcPendientes = vcPool.where((d) => d.pendiente > 0).length;
+    final vcPendientes = vcPool.where((d) => d.cantidad > 0).length;
 
     if (pePendientes == 0 && vcPendientes == 0) {
       return _TipoDeteccion(
@@ -87,13 +87,13 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
     if (pePendientes > vcPendientes) {
       return _TipoDeteccion(
         tipo: TipoRegistro.parteEntrada,
-        razon: '$pePendientes ítems de Orden de Recepción pendientes',
+        razon: '$pePendientes ítems para crear Parte de Entrada',
       );
     }
     if (vcPendientes > pePendientes) {
       return _TipoDeteccion(
         tipo: TipoRegistro.valeConsumo,
-        razon: '$vcPendientes ítems del OT pendientes de consumo',
+        razon: '$vcPendientes ítems para consumir en Vale de Consumo',
       );
     }
     return _TipoDeteccion(
@@ -102,56 +102,22 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
     );
   }
 
-  void _precargarArticulosDeOT() {
-    final ot = widget.ordenTrabajoDetalle;
-    if (ot == null) return;
-
-    final pool = _poolParaTipo(ot, _tipoSeleccionado);
-    if (pool.isEmpty) return;
-
-    setState(() {
-      for (final i in _items) {
-        i.cantidadController.dispose();
-        i.cantidadFocus.dispose();
-        i.observacionController.dispose();
-      }
-      _items.clear();
-      _articulosAnadidos.clear();
-
-      for (final d in pool) {
-        final cant = _cantidadSugerida(d, _tipoSeleccionado);
-        final cantStr = cant.toStringAsFixed(
-          cant == cant.roundToDouble() ? 0 : 2,
-        );
-        _items.add(_LineaItem(
-          articulo: Articulo(codigo: d.codigo, descr: d.descr, um: ''),
-          cantidadInicial: cantStr,
-        ));
-        _articulosAnadidos.add(d.codigo);
-      }
-    });
-
-    if (_items.isNotEmpty) {
-      _searchArticuloFocus.unfocus();
-      final lastItem = _items.last;
-      final cantStr = lastItem.cantidadController.text;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        lastItem.cantidadFocus.requestFocus();
-        lastItem.cantidadController.selection = TextSelection(
-          baseOffset: 0,
-          extentOffset: cantStr.length,
-        );
-      });
+  void _limpiarItemsSeleccionados() {
+    for (final i in _items) {
+      i.cantidadController.dispose();
+      i.cantidadFocus.dispose();
+      i.observacionController.dispose();
     }
+    _items.clear();
+    _articulosAnadidos.clear();
   }
 
   List<OTDetalle> _poolParaTipo(OrdenTrabajoDetalle ot, TipoRegistro tipo) {
     final es = ot.detalles.where((d) => d.codigo.isNotEmpty);
     if (tipo == TipoRegistro.parteEntrada) {
-      return es.where((d) => d.docref != null && d.cantidad > 0).toList();
+      return es.where((d) => d.docref == null && d.cantidad > 0).toList();
     }
-    return es.where((d) => d.docref == null && d.pendiente > 0).toList();
+    return es.where((d) => d.docref != null && d.cantidad > 0).toList();
   }
 
   double _cantidadSugerida(OTDetalle d, TipoRegistro tipo) {
@@ -161,23 +127,22 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
     return d.pendiente > 0 ? d.pendiente : d.cantidad;
   }
 
-  void _anadirArticuloDeOT(OTDetalle d) {
+  void _toggleArticuloDeOT(OTDetalle d) {
     if (_articulosAnadidos.contains(d.codigo)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${d.descr} ya está agregado'),
-          duration: const Duration(seconds: 1),
-        ),
-      );
+      final index = _items.indexWhere((i) => i.articulo.codigo == d.codigo);
+      if (index != -1) _removeItem(index);
       return;
     }
     if (widget.ordenTrabajoDetalle != null) {
-      final pool = _poolParaTipo(widget.ordenTrabajoDetalle!, _tipoSeleccionado);
+      final pool = _poolParaTipo(
+        widget.ordenTrabajoDetalle!,
+        _tipoSeleccionado,
+      );
       final enPool = pool.any((p) => p.codigo == d.codigo);
       if (!enPool) {
         final msg = _tipoSeleccionado == TipoRegistro.parteEntrada
-            ? 'Este ítem no proviene de Orden de Recepción'
-            : 'Este ítem no es consumible directo del OT';
+            ? 'Este ítem no es producto a generar'
+            : 'Este ítem no corresponde a consumo';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
         );
@@ -185,9 +150,7 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
       }
     }
     final cant = _cantidadSugerida(d, _tipoSeleccionado);
-    final cantStr = cant.toStringAsFixed(
-      cant == cant.roundToDouble() ? 0 : 2,
-    );
+    final cantStr = cant.toStringAsFixed(cant == cant.roundToDouble() ? 0 : 2);
     final nuevoItem = _LineaItem(
       articulo: Articulo(codigo: d.codigo, descr: d.descr, um: ''),
       cantidadInicial: cantStr,
@@ -318,7 +281,7 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
     }
 
     if (_items.isEmpty) {
-      setState(() => _error = 'Debe agregar al menos un artículo');
+      setState(() => _error = 'Debe seleccionar al menos un artículo');
       return;
     }
 
@@ -335,12 +298,14 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
     final detalles = <RegistroDetalle>[];
     for (final item in _items) {
       final cant = double.parse(item.cantidadController.text);
-      detalles.add(RegistroDetalle(
-        articuloCodigo: item.articulo.codigo,
-        articuloDescr: item.articulo.descr,
-        cantidad: cant,
-        observacion: item.observacionController.text.trim(),
-      ));
+      detalles.add(
+        RegistroDetalle(
+          articuloCodigo: item.articulo.codigo,
+          articuloDescr: item.articulo.descr,
+          cantidad: cant,
+          observacion: item.observacionController.text.trim(),
+        ),
+      );
     }
 
     final syncService = SyncService();
@@ -361,11 +326,12 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
 
       setState(() => _loading = false);
 
-      final message = 'Registro ${saved.folio != null ? 'N° ${saved.folio}' : 'local'} creado exitosamente';
+      final message =
+          'Registro ${saved.folio != null ? 'N° ${saved.folio}' : 'local'} creado exitosamente';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       Navigator.of(context).pop(true);
     } catch (e, stack) {
       print('Error saving: $e');
@@ -385,8 +351,8 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
     if (pool.isEmpty) return const SizedBox.shrink();
 
     final origenLabel = _tipoSeleccionado == TipoRegistro.parteEntrada
-        ? 'desde Orden de Recepción'
-        : 'del OT';
+        ? 'para crear Parte de Entrada'
+        : 'para consumir en Vale de Consumo';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -396,7 +362,9 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             InkWell(
-              onTap: () => setState(() => _otArticulosExpandido = !_otArticulosExpandido),
+              onTap: () => setState(
+                () => _otArticulosExpandido = !_otArticulosExpandido,
+              ),
               borderRadius: BorderRadius.circular(10),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
@@ -406,7 +374,7 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Ítems disponibles $origenLabel  ·  ${pool.length}',
+                        'Seleccione ítems $origenLabel  ·  ${pool.length}',
                         style: theme.textTheme.titleSmall?.copyWith(
                           color: cs.primary,
                           fontWeight: FontWeight.w600,
@@ -414,7 +382,9 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                       ),
                     ),
                     Icon(
-                      _otArticulosExpandido ? Icons.expand_less : Icons.expand_more,
+                      _otArticulosExpandido
+                          ? Icons.expand_less
+                          : Icons.expand_more,
                       color: cs.primary,
                     ),
                   ],
@@ -430,12 +400,15 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                   cant == cant.roundToDouble() ? 0 : 2,
                 );
                 final subtitle = _tipoSeleccionado == TipoRegistro.parteEntrada
-                    ? '${d.codigo} · OR ref ${d.docref!.toInt()} · $cantTxt'
-                    : '${d.codigo} · pendiente $cantTxt';
+                    ? '${d.codigo} · cantidad $cantTxt'
+                    : '${d.codigo} · doc ref ${d.docref!.toInt()} · $cantTxt';
                 return InkWell(
-                  onTap: () => _anadirArticuloDeOT(d),
+                  onTap: () => _toggleArticuloDeOT(d),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     child: Row(
                       children: [
                         Expanded(
@@ -447,7 +420,9 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: isDark ? ArayaColors.darkText : ArayaColors.lightText,
+                                  color: isDark
+                                      ? ArayaColors.darkText
+                                      : ArayaColors.lightText,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -455,15 +430,17 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                 subtitle,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                                  color: isDark
+                                      ? ArayaColors.darkMuted
+                                      : ArayaColors.lightMuted,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        Icon(
-                          agregado ? Icons.check_circle : Icons.add_circle_outline,
-                          color: agregado ? Colors.green : cs.primary,
+                        Checkbox(
+                          value: agregado,
+                          onChanged: (_) => _toggleArticuloDeOT(d),
                         ),
                       ],
                     ),
@@ -486,7 +463,9 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.ordenTrabajo != null ? 'Registro desde OT' : 'Nuevo Registro'),
+        title: Text(
+          widget.ordenTrabajo != null ? 'Registro desde OT' : 'Nuevo Registro',
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -503,7 +482,10 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Tipo de Registro', style: theme.textTheme.titleSmall),
+                            Text(
+                              'Tipo de Registro',
+                              style: theme.textTheme.titleSmall,
+                            ),
                             const SizedBox(height: 8),
                             Row(
                               children: TipoRegistro.values.map((tipo) {
@@ -517,16 +499,17 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                       onSelected: (val) {
                                         setState(() {
                                           _tipoSeleccionado = tipo;
+                                          _limpiarItemsSeleccionados();
                                           if (_tipoAutoDetectado != null &&
                                               tipo != _tipoAutoDetectado) {
-                                            _tipoRazon = 'Selección manual del operador';
+                                            _tipoRazon =
+                                                'Selección manual del operador';
                                           }
                                         });
-                                        if (widget.ordenTrabajoDetalle != null) {
-                                          _precargarArticulosDeOT();
-                                        }
                                       },
-                                      selectedColor: cs.primary.withValues(alpha: 0.2),
+                                      selectedColor: cs.primary.withValues(
+                                        alpha: 0.2,
+                                      ),
                                     ),
                                   ),
                                 );
@@ -541,7 +524,9 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                         ? Icons.auto_awesome
                                         : Icons.edit_note,
                                     size: 14,
-                                    color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                                    color: isDark
+                                        ? ArayaColors.darkMuted
+                                        : ArayaColors.lightMuted,
                                   ),
                                   const SizedBox(width: 4),
                                   Expanded(
@@ -549,7 +534,9 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                       _tipoRazon!,
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                                        color: isDark
+                                            ? ArayaColors.darkMuted
+                                            : ArayaColors.lightMuted,
                                       ),
                                     ),
                                   ),
@@ -577,7 +564,9 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                           'Encargado *',
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                            color: isDark
+                                ? ArayaColors.darkMuted
+                                : ArayaColors.lightMuted,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -592,7 +581,9 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                     child: SizedBox(
                                       width: 20,
                                       height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     ),
                                   )
                                 : null,
@@ -607,29 +598,54 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: _empleadosResults.length,
                               separatorBuilder: (_, __) => Divider(
-                                  height: 1, color: isDark ? ArayaColors.darkBorder : ArayaColors.lightBorder),
+                                height: 1,
+                                color: isDark
+                                    ? ArayaColors.darkBorder
+                                    : ArayaColors.lightBorder,
+                              ),
                               itemBuilder: (context, i) {
                                 final emp = _empleadosResults[i];
                                 return ListTile(
                                   dense: true,
-                                  title: Text(emp.nombre, style: const TextStyle(fontSize: 14)),
-                                  subtitle: Text('Cod: ${emp.cod}', style: TextStyle(fontSize: 12, color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted)),
-                                  trailing: const Icon(Icons.add_circle_outline),
+                                  title: Text(
+                                    emp.nombre,
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                  subtitle: Text(
+                                    'Cod: ${emp.cod}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark
+                                          ? ArayaColors.darkMuted
+                                          : ArayaColors.lightMuted,
+                                    ),
+                                  ),
+                                  trailing: const Icon(
+                                    Icons.add_circle_outline,
+                                  ),
                                   onTap: () => _selectEncargado(emp),
                                 );
                               },
                             ),
                           ),
-                        if (_encargadoSeleccionado != null && _empleadosResults.isEmpty)
+                        if (_encargadoSeleccionado != null &&
+                            _empleadosResults.isEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Row(
                               children: [
-                                Icon(Icons.check_circle, size: 14, color: Colors.green),
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 14,
+                                  color: Colors.green,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Seleccionado: ${_encargadoSeleccionado!.nombre}',
-                                  style: TextStyle(fontSize: 12, color: Colors.green),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.green,
+                                  ),
                                 ),
                               ],
                             ),
@@ -638,8 +654,10 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Agregar Artículos',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      'Seleccionar Artículos',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     if (widget.ordenTrabajoDetalle != null)
@@ -656,7 +674,9 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                 child: SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 ),
                               )
                             : null,
@@ -668,9 +688,23 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                         padding: const EdgeInsets.only(top: 4),
                         child: Row(
                           children: [
-                            Icon(Icons.cloud_off, size: 14, color: isDark ? ArayaColors.darkAccent : ArayaColors.lightAccent),
+                            Icon(
+                              Icons.cloud_off,
+                              size: 14,
+                              color: isDark
+                                  ? ArayaColors.darkAccent
+                                  : ArayaColors.lightAccent,
+                            ),
                             const SizedBox(width: 4),
-                            Text('Resultados locales (sin conexión)', style: TextStyle(fontSize: 11, color: isDark ? ArayaColors.darkAccent : ArayaColors.lightAccent)),
+                            Text(
+                              'Resultados locales (sin conexión)',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDark
+                                    ? ArayaColors.darkAccent
+                                    : ArayaColors.lightAccent,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -681,13 +715,29 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _articulosResults.length,
-                          separatorBuilder: (_, __) => Divider(height: 1, color: isDark ? ArayaColors.darkBorder : ArayaColors.lightBorder),
+                          separatorBuilder: (_, __) => Divider(
+                            height: 1,
+                            color: isDark
+                                ? ArayaColors.darkBorder
+                                : ArayaColors.lightBorder,
+                          ),
                           itemBuilder: (context, i) {
                             final a = _articulosResults[i];
                             return ListTile(
                               dense: true,
-                              title: Text(a.descr, style: const TextStyle(fontSize: 14)),
-                              subtitle: Text('${a.codigo} · ${a.um}', style: TextStyle(fontSize: 12, color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted)),
+                              title: Text(
+                                a.descr,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              subtitle: Text(
+                                '${a.codigo} · ${a.um}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? ArayaColors.darkMuted
+                                      : ArayaColors.lightMuted,
+                                ),
+                              ),
                               trailing: IconButton(
                                 icon: const Icon(Icons.add_circle_outline),
                                 color: cs.primary,
@@ -708,7 +758,9 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                               child: Text(
                                 'Artículos seleccionados (${_items.length})',
                                 style: theme.textTheme.titleSmall?.copyWith(
-                                  color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
+                                  color: isDark
+                                      ? ArayaColors.darkMuted
+                                      : ArayaColors.lightMuted,
                                 ),
                               ),
                             ),
@@ -717,7 +769,10 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                               final idx = entry.key;
                               final item = entry.value;
                               return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -726,11 +781,16 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                         Expanded(
                                           child: Text(
                                             '${idx + 1}. ${item.articulo.descr}',
-                                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.remove_circle_outline),
+                                          icon: const Icon(
+                                            Icons.remove_circle_outline,
+                                          ),
                                           iconSize: 20,
                                           color: Colors.red,
                                           onPressed: () => _removeItem(idx),
@@ -742,7 +802,12 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       '${item.articulo.codigo} · ${item.articulo.um}',
-                                      style: TextStyle(fontSize: 12, color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isDark
+                                            ? ArayaColors.darkMuted
+                                            : ArayaColors.lightMuted,
+                                      ),
                                     ),
                                     const SizedBox(height: 8),
                                     Row(
@@ -752,12 +817,19 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                           child: TextField(
                                             controller: item.cantidadController,
                                             focusNode: item.cantidadFocus,
-                                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                            keyboardType:
+                                                const TextInputType.numberWithOptions(
+                                                  decimal: true,
+                                                ),
                                             decoration: const InputDecoration(
                                               labelText: 'Cantidad *',
                                               hintText: 'Editable',
                                               isDense: true,
-                                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 10,
+                                                  ),
                                             ),
                                           ),
                                         ),
@@ -765,11 +837,16 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                                         Expanded(
                                           flex: 3,
                                           child: TextField(
-                                            controller: item.observacionController,
+                                            controller:
+                                                item.observacionController,
                                             decoration: const InputDecoration(
                                               labelText: 'Observación',
                                               isDense: true,
-                                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 10,
+                                                  ),
                                             ),
                                           ),
                                         ),
@@ -786,9 +863,14 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
-                          'Busque más artículos arriba o presione Guardar',
+                          'Revise las cantidades y presione Guardar',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark
+                                ? ArayaColors.darkMuted
+                                : ArayaColors.lightMuted,
+                          ),
                         ),
                       ),
                     if (_error != null) ...[
@@ -796,15 +878,31 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.red.shade900 : Colors.red.shade50,
+                          color: isDark
+                              ? Colors.red.shade900
+                              : Colors.red.shade50,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.error_outline, size: 18, color: isDark ? Colors.red.shade300 : Colors.red.shade700),
+                            Icon(
+                              Icons.error_outline,
+                              size: 18,
+                              color: isDark
+                                  ? Colors.red.shade300
+                                  : Colors.red.shade700,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(_error!, style: TextStyle(color: isDark ? Colors.red.shade300 : Colors.red.shade700, fontSize: 13)),
+                              child: Text(
+                                _error!,
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.red.shade300
+                                      : Colors.red.shade700,
+                                  fontSize: 13,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -820,19 +918,34 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                 width: double.infinity,
                 height: 48,
                 child: FilledButton.icon(
-                  onPressed: (_loading || _items.isEmpty || _encargadoSeleccionado == null) ? null : _submit,
+                  onPressed:
+                      (_loading ||
+                          _items.isEmpty ||
+                          _encargadoSeleccionado == null)
+                      ? null
+                      : _submit,
                   icon: _loading
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Icon(Icons.save),
                   label: Text(
                     _items.isEmpty
-                        ? 'Agregue al menos un artículo'
-                        : (_encargadoSeleccionado == null ? 'Seleccione un encargado' : (_loading ? 'Guardando...' : 'Guardar Registro')),
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                        ? 'Seleccione al menos un artículo'
+                        : (_encargadoSeleccionado == null
+                              ? 'Seleccione un encargado'
+                              : (_loading
+                                    ? 'Guardando...'
+                                    : 'Guardar Registro')),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -851,9 +964,9 @@ class _LineaItem {
   final FocusNode cantidadFocus;
 
   _LineaItem({required this.articulo, String? cantidadInicial})
-      : cantidadController = TextEditingController(text: cantidadInicial ?? ''),
-        observacionController = TextEditingController(),
-        cantidadFocus = FocusNode();
+    : cantidadController = TextEditingController(text: cantidadInicial ?? ''),
+      observacionController = TextEditingController(),
+      cantidadFocus = FocusNode();
 }
 
 class _TipoDeteccion {

@@ -988,19 +988,19 @@ function renderizarDetalleOt() {
         totalPeso += pesoTotal;
 
         tr.innerHTML = `
-            <td class="px-1 py-1 text-aq-text truncate">${d.nombre || ''}</td>
-            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate">${d.docref || ''}</td>
-            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate">${d.tipo || ''}</td>
-            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate">${fechaFmt}</td>
-            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate">${d.rut || ''}</td>
-            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate">${d.codigo || ''}</td>
-            <td class="px-1 py-1 text-aq-text text-right whitespace-nowrap">${d.cantidad || 0}</td>
-            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate">${d.bodega || ''}</td>
-            <td class="px-1 py-1 text-aq-text text-right whitespace-nowrap">${d.canttotal || 0}</td>
-            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate">${d.estado || ''}</td>
-            <td class="px-1 py-1 text-aq-text text-right whitespace-nowrap">${d.punit ? d.punit.toFixed(0) : 0}</td>
-            <td class="px-1 py-1 text-aq-text text-right whitespace-nowrap">${pesoTotal ? pesoTotal.toFixed(2) : 0}</td>
-            <td class="px-1 py-1 text-center whitespace-nowrap">
+            <td class="px-1 py-1 text-aq-text truncate border border-aq-border">${d.nombre || ''}</td>
+            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate border border-aq-border">${d.docref || ''}</td>
+            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate border border-aq-border">${d.tipo || ''}</td>
+            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate border border-aq-border">${fechaFmt}</td>
+            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate border border-aq-border">${d.rut || ''}</td>
+            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate border border-aq-border">${d.codigo || ''}</td>
+            <td class="px-1 py-1 text-aq-text text-right whitespace-nowrap border border-aq-border">${d.cantidad || 0}</td>
+            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate border border-aq-border">${d.bodega || ''}</td>
+            <td class="px-1 py-1 text-aq-text text-right whitespace-nowrap border border-aq-border">${d.canttotal || 0}</td>
+            <td class="px-1 py-1 text-aq-text whitespace-nowrap truncate border border-aq-border">${d.estado || ''}</td>
+            <td class="px-1 py-1 text-aq-text text-right whitespace-nowrap border border-aq-border">${d.punit ? d.punit.toFixed(0) : 0}</td>
+            <td class="px-1 py-1 text-aq-text text-right whitespace-nowrap border border-aq-border">${pesoTotal ? pesoTotal.toFixed(2) : 0}</td>
+            <td class="px-1 py-1 text-center whitespace-nowrap border border-aq-border">
                 ${modoEdicionOt ? '<button onclick="eliminarArticuloOt(' + index + ')" class="text-red-500 hover:text-red-700" title="Eliminar"><i class="bx bx-trash"></i></button>' : ''}
             </td>
         `;
@@ -1010,14 +1010,14 @@ function renderizarDetalleOt() {
     const trTotal = document.createElement('tr');
     trTotal.className = 'bg-aq-primary-soft font-bold text-xs border-t-2 border-aq-primary';
     trTotal.innerHTML = `
-        <td colspan="6" class="px-1 py-1.5 text-aq-primary text-left">Totales</td>
-        <td class="px-1 py-1.5 text-aq-text text-right font-bold">${totalCant}</td>
-        <td class="px-1 py-1.5 text-aq-text"></td>
-        <td class="px-1 py-1.5 text-aq-text text-right font-bold">${totalCantTotal}</td>
-        <td class="px-1 py-1.5 text-aq-text"></td>
-        <td class="px-1 py-1.5 text-aq-text text-right font-bold">${totalPUnit.toFixed(0)}</td>
-        <td class="px-1 py-1.5 text-aq-text text-right font-bold">${totalPeso.toFixed(2)}</td>
-        <td class="px-1 py-1.5 text-aq-text"></td>
+        <td colspan="6" class="px-1 py-1.5 text-aq-primary text-left border border-aq-border">Totales</td>
+        <td class="px-1 py-1.5 text-aq-text text-right font-bold border border-aq-border">${totalCant}</td>
+        <td class="px-1 py-1.5 text-aq-text border border-aq-border"></td>
+        <td class="px-1 py-1.5 text-aq-text text-right font-bold border border-aq-border">${totalCantTotal}</td>
+        <td class="px-1 py-1.5 text-aq-text border border-aq-border"></td>
+        <td class="px-1 py-1.5 text-aq-text text-right font-bold border border-aq-border">${totalPUnit.toFixed(0)}</td>
+        <td class="px-1 py-1.5 text-aq-text text-right font-bold border border-aq-border">${totalPeso.toFixed(2)}</td>
+        <td class="px-1 py-1.5 text-aq-text border border-aq-border"></td>
     `;
     tbody.appendChild(trTotal);
 

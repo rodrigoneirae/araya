@@ -1,4 +1,5 @@
 import io
+import json
 from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -8,6 +9,7 @@ from openpyxl import load_workbook
 from reportlab.platypus import Table
 
 from modulos.inventario.views.informes.saldo_inventario import IndexInformeSaldoInvetarioView
+from modulos.inventario.views.informes.aux_existencia_articulo import IndexInformeAuxExistenciaArticuloView
 
 
 class SaldoInventarioTests(SimpleTestCase):
@@ -101,3 +103,82 @@ class SaldoInventarioTests(SimpleTestCase):
     def test_vale_ya_negativo_no_se_suma_al_saldo(self):
         self.movimientos[1].cantidad = -3
         self.assertEqual(self.view._cantidad_movimiento(self.movimientos[1]), -3)
+
+
+class AuxExistenciaTests(SimpleTestCase):
+    def setUp(self):
+        self.view = IndexInformeAuxExistenciaArticuloView()
+        articulo = SimpleNamespace(codigo='ART-1', descr='Artículo', um='UN')
+        self.movimientos = [
+            SimpleNamespace(tipo_id=1, tipo=SimpleNamespace(signo=1, nombre='Entrada'),
+                            cantidad=10, codigo=articulo, punit=20, fecha=datetime(2026, 1, 1),
+                            bodega=1, numero=1),
+            SimpleNamespace(tipo_id=10, tipo=SimpleNamespace(signo=-1, nombre='Vale de Consumo - Producción'),
+                            cantidad=3, codigo=articulo, punit=20, fecha=datetime(2026, 1, 2),
+                            bodega=1, numero=2),
+            SimpleNamespace(tipo_id=12, tipo=SimpleNamespace(signo=1, nombre='Vale de Consumo'),
+                            cantidad=2, codigo=articulo, punit=20, fecha=datetime(2026, 1, 3),
+                            bodega=1, numero=3),
+        ]
+
+    def _mock_movimientos(self):
+        qs = MagicMock()
+        qs.filter.return_value = qs
+        qs.exclude.return_value = qs
+        qs.distinct.return_value = qs
+        qs.order_by.return_value = qs
+        qs.iterator.return_value = iter(self.movimientos)
+        return qs
+
+    def test_consulta_devuelve_salidas_negativas_para_saldo_anterior(self):
+        qs = self._mock_movimientos()
+        with (patch('modulos.inventario.views.informes.aux_existencia_articulo.Movs.objects') as objects,
+              patch('modulos.inventario.views.informes.aux_existencia_articulo.Bodegas.objects') as bodegas):
+            objects.select_related.return_value = qs
+            bodegas.values.return_value = []
+            response = self.view._consultar({'codigo': 'ART-1', 'fecha_desde': ''})
+
+        datos = json.loads(response.content)['data']
+        self.assertEqual([m['cantidad'] for m in datos], [10, -3, -2])
+        self.assertEqual([m['signo'] for m in datos], [1, -1, -1])
+        self.assertEqual(sum(m['cantidad'] for m in datos), 5)
+
+    def test_excel_descuenta_salidas_del_saldo_final(self):
+        qs = self._mock_movimientos()
+        request = SimpleNamespace(POST={'codigo': 'ART-1', 'fecha_desde': '',
+                                        'fecha_corte': '', 'saldo_ant': '5'})
+        with (patch('modulos.inventario.views.informes.aux_existencia_articulo.Movs.objects') as objects,
+              patch('modulos.inventario.views.informes.aux_existencia_articulo.Bodegas.objects') as bodegas):
+            objects.select_related.return_value = qs
+            bodegas.values.return_value = []
+            response = self.view._generar_excel(request)
+
+        ws = load_workbook(io.BytesIO(response.content)).active
+        self.assertEqual(ws['B3'].value, -3)
+        self.assertEqual(ws['B4'].value, -2)
+        self.assertEqual(ws['B3'].font.color.rgb, '00B91C1C')
+        self.assertIn('Salidas: 5   |   Saldo Final: 10', ws['A6'].value)
+
+    def test_pdf_descuenta_salidas_del_saldo_final(self):
+        qs = self._mock_movimientos()
+        request = SimpleNamespace(POST={'codigo': 'ART-1', 'fecha_desde': '',
+                                        'fecha_corte': '', 'saldo_ant': '5'}, user='test')
+        tablas = []
+
+        def crear_tabla(*args, **kwargs):
+            tablas.append([list(fila) for fila in args[0]])
+            return Table(*args, **kwargs)
+
+        with (patch('modulos.inventario.views.informes.aux_existencia_articulo.Movs.objects') as objects,
+              patch('modulos.inventario.views.informes.aux_existencia_articulo.Bodegas.objects') as bodegas,
+              patch('modulos.inventario.views.informes.aux_existencia_articulo.Articulos.objects') as articulos,
+              patch('modulos.inventario.views.informes.aux_existencia_articulo.Table', side_effect=crear_tabla)):
+            objects.select_related.return_value = qs
+            bodegas.values.return_value = []
+            articulos.get.return_value = self.movimientos[0].codigo
+            response = self.view._generar_pdf(request)
+
+        self.assertTrue(response.content.startswith(b'%PDF'))
+        self.assertIn('-3', tablas[0][2][1].text)
+        self.assertEqual(tablas[0][2][1].style.textColor.hexval(), '0xb91c1c')
+        self.assertIn('10', tablas[1][0][3].text)

@@ -4,6 +4,7 @@ from typing import Any
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.http import HttpRequest, HttpResponseRedirect, HttpResponse, JsonResponse
 from django.views.generic import TemplateView
 from reportlab.lib import colors
@@ -22,6 +23,15 @@ from modulos.maestros.models.bodegas import Bodegas
 
 class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
     template_name = 'modulos/inventario/informes/aux_existencia_articulo.html'
+
+    @staticmethod
+    def _es_salida(m):
+        return m.tipo_id == 12 or (m.tipo is not None and m.tipo.signo is not None and m.tipo.signo < 0)
+
+    @classmethod
+    def _cantidad_movimiento(cls, m):
+        cantidad = m.cantidad or 0
+        return -abs(cantidad) if cls._es_salida(m) else cantidad
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         action = request.POST.get("action", "")
@@ -84,10 +94,8 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
                     "%Y-%m-%d"
                 )
 
-                print("fc:", fc)
-
-            except Exception as e:
-                print("ERROR FECHA:", e)
+            except ValueError:
+                pass
 
         qs = (
             Movs.objects
@@ -95,22 +103,16 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
             .filter(
                 codigo__codigo=codigo,
                 tipo__isnull=False,
-                tipo__signo__isnull=False,
                 linea__isnull=False,
             )
-            .exclude(tipo__signo=0)
+            .filter(Q(tipo__cod=12) | (Q(tipo__signo__isnull=False) & ~Q(tipo__signo=0)))
             .exclude(linea=0)
         )
 
-        # IMPORTANTE: aplicar fecha aquí
         if fc:
-            print(fc)
             qs = qs.filter(fecha__lt=fc)
 
         qs = qs.distinct().order_by("fecha")
-
-        print("Registros:", qs.count())
-        print(qs.query)
 
         bodegas_map = {
             b['cod']: b['nombre']
@@ -129,9 +131,9 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
                     m.bodega,
                     f"Bodega {m.bodega}" if m.bodega else ""
                 ),
-                "cantidad": m.cantidad or 0,
+                "cantidad": self._cantidad_movimiento(m),
                 "tipo": m.tipo.nombre if m.tipo else "",
-                "signo": m.tipo.signo if m.tipo else 0,
+                "signo": -1 if self._es_salida(m) else m.tipo.signo,
             })
 
         return JsonResponse({
@@ -167,8 +169,9 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
 
         qs = (
             Movs.objects.select_related("tipo", "codigo")
-            .filter(codigo__codigo=codigo, tipo__isnull=False, tipo__signo__isnull=False, linea__isnull=False)
-            .exclude(tipo__signo=0).exclude(linea=0)
+            .filter(codigo__codigo=codigo, tipo__isnull=False, linea__isnull=False)
+            .filter(Q(tipo__cod=12) | (Q(tipo__signo__isnull=False) & ~Q(tipo__signo=0)))
+            .exclude(linea=0)
         )
         if fd: qs = qs.filter(fecha__gte=fd)
         if fc: qs = qs.filter(fecha__lte=fc.replace(hour=23, minute=59, second=59))
@@ -177,12 +180,16 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
         bodegas_map = {b["cod"]: b["nombre"] for b in Bodegas.objects.values("cod", "nombre")}
 
         rows = []
+        salida_rows = set()
         total_entradas = total_salidas = 0
         for m in qs.iterator():
             signo = m.tipo.signo if m.tipo else 0
-            cantidad = m.cantidad or 0
-            if signo > 0: total_entradas += cantidad
-            if signo < 0: total_salidas += abs(cantidad)
+            cantidad = self._cantidad_movimiento(m)
+            if self._es_salida(m):
+                salida_rows.add(len(rows) + 2)
+                total_salidas += abs(cantidad)
+            elif signo > 0:
+                total_entradas += cantidad
             rows.append([
                 m.fecha.strftime("%d-%m-%Y") if m.fecha else "",
                 cantidad,
@@ -192,8 +199,7 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
                 m.punit or 0,
             ])
 
-        saldo_final = saldo_ant
-        total_linea = total_entradas + saldo_final
+        total_linea = saldo_ant + total_entradas - total_salidas
 
         wb = Workbook()
         ws = wb.active
@@ -219,6 +225,8 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
             cell.border = thin_border
 
         data_font = Font(name="Calibri", size=10)
+        salida_font = Font(name="Calibri", size=10, bold=True, color="B91C1C")
+        salida_fill = PatternFill(start_color="FEF2F2", end_color="FEF2F2", fill_type="solid")
         num_align = Alignment(horizontal="left", vertical="center")
         center_align = Alignment(horizontal="center", vertical="center")
 
@@ -229,6 +237,9 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
                 cell = ws.cell(row=row_num, column=col_idx)
                 cell.font = data_font
                 cell.border = thin_border
+                if row_num in salida_rows and col_idx in (2, 5):
+                    cell.font = salida_font
+                    cell.fill = salida_fill
                 if col_idx in (2, 6):
                     cell.alignment = num_align
                     cell.number_format = '#,##0'
@@ -245,17 +256,14 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
         ws.append([])
         res_font = Font(name="Calibri", bold=True, size=10)
         res_align = Alignment(horizontal="center", vertical="center")
-        green_font = Font(name="Calibri", bold=True, size=10, color="16a34a")
-        blue_font = Font(name="Calibri", bold=True, size=10, color="2563eb")
-        dark_font = Font(name="Calibri", bold=True, size=10, color="1f2937")
-
         def cl(v):
             return f"{float(v):,.0f}".replace(",", ".")
 
-        ws.append([f"Total Entradas: {cl(total_entradas)}   |   Saldo Final: {cl(saldo_final)}   |   Total: {cl(total_linea)}"])
+        ws.append([f"Saldo Anterior: {cl(saldo_ant)}   |   Entradas: {cl(total_entradas)}   |   Salidas: {cl(total_salidas)}   |   Saldo Final: {cl(total_linea)}"])
         cell = ws.cell(row=ws.max_row, column=1)
         cell.font = res_font
         cell.alignment = res_align
+        ws.append(["Las salidas (en rojo) se descuentan del saldo."])
 
         buf = io.BytesIO()
         wb.save(buf)
@@ -319,10 +327,9 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
             .filter(
                 codigo__codigo=codigo,
                 tipo__isnull=False,
-                tipo__signo__isnull=False,
                 linea__isnull=False,
             )
-            .exclude(tipo__signo=0)
+            .filter(Q(tipo__cod=12) | (Q(tipo__signo__isnull=False) & ~Q(tipo__signo=0)))
             .exclude(linea=0)
         )
 
@@ -346,6 +353,7 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
         }
 
         rows = []
+        salida_rows = set()
 
         total_entradas = 0
         total_salidas = 0
@@ -354,13 +362,13 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
 
             signo = m.tipo.signo if m.tipo else 0
 
-            cantidad = m.cantidad or 0
+            cantidad = self._cantidad_movimiento(m)
 
-            if signo > 0:
-                total_entradas += cantidad
-
-            if signo < 0:
+            if self._es_salida(m):
+                salida_rows.add(len(rows) + 1)
                 total_salidas += abs(cantidad)
+            elif signo > 0:
+                total_entradas += cantidad
 
             rows.append([
                 m.fecha.strftime("%d-%m-%Y")
@@ -382,7 +390,6 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
                 m.punit or 0,
             ])
 
-        saldo_final = saldo_ant
         total_linea = saldo_ant + total_entradas - total_salidas
 
         try:
@@ -454,12 +461,18 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
                 parent=cell_style,
                 alignment=2,
             )
+            salida_right_style = ParagraphStyle(
+                "SalidaRight", parent=right_style, textColor=colors.HexColor("#b91c1c"),
+            )
 
             # CENTRO
             center_style = ParagraphStyle(
                 "CenterStyle",
                 parent=cell_style,
                 alignment=1,
+            )
+            salida_center_style = ParagraphStyle(
+                "SalidaCenter", parent=center_style, textColor=colors.HexColor("#b91c1c"),
             )
 
             resumen_style = ParagraphStyle(
@@ -498,6 +511,8 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
                     )
                 )
 
+            elems.append(Paragraph("Las salidas (en rojo) se descuentan del saldo.", subtitle_style))
+
             elems.append(Spacer(1, 3 * mm))
 
             header = [
@@ -511,7 +526,8 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
 
             table_data = [header]
 
-            for r in rows:
+            for row_num, r in enumerate(rows, start=1):
+                es_salida = row_num in salida_rows
                 table_data.append([
 
                     # FECHA
@@ -523,7 +539,7 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
                     # CANTIDAD DERECHA
                     Paragraph(
                         f"<b>{cl(r[1])}</b>",
-                        right_style
+                        salida_right_style if es_salida else right_style
                     ),
 
                     # BODEGA
@@ -541,7 +557,7 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
                     # DOCUMENTO CENTRADO
                     Paragraph(
                         str(r[4]),
-                        center_style
+                        salida_center_style if es_salida else center_style
                     ),
 
                     # P.UNITARIO DERECHA
@@ -602,6 +618,9 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
                 ("ALIGN", (0, 0), (-1, 0),
                  "CENTER"),
 
+            ] + [
+                ("BACKGROUND", (0, row_num), (-1, row_num), colors.HexColor("#fef2f2"))
+                for row_num in salida_rows
             ]))
 
             elems.append(tbl)
@@ -618,12 +637,18 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
 
                 Paragraph(
                     f'<b>Saldo Anterior</b><br/>'
-                    f'<font color="#2563eb">{cl(saldo_final)}</font>',
+                    f'<font color="#2563eb">{cl(saldo_ant)}</font>',
                     resumen_style
                 ),
 
                 Paragraph(
-                    f'<b>Total Final</b><br/>'
+                    f'<b>Total Salidas</b><br/>'
+                    f'<font color="#dc2626">{cl(total_salidas)}</font>',
+                    resumen_style
+                ),
+
+                Paragraph(
+                    f'<b>Saldo Final</b><br/>'
                     f'<font color="#111827">{cl(total_linea)}</font>',
                     resumen_style
                 ),
@@ -632,9 +657,10 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
             resumen_tbl = Table(
                 resumen_data,
                 colWidths=[
-                    42 * mm,
-                    42 * mm,
-                    42 * mm
+                    32 * mm,
+                    32 * mm,
+                    32 * mm,
+                    32 * mm
                 ],
                 hAlign="CENTER"
             )

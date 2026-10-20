@@ -111,7 +111,7 @@ function actualizarResumen(data, saldoFinal) {
         }
 
         if (m.signo < 0) {
-            totalSalidas += Number(m.cantidad) || 0;
+            totalSalidas += Math.abs(Number(m.cantidad) || 0);
         }
     });
 
@@ -278,9 +278,7 @@ function consultar() {
 
             if (data.data.length === 0) {
 
-                document
-                    .getElementById('resumenAux')
-                    .classList.add('hidden');
+                actualizarResumen([], 0);
 
                 return;
             }
@@ -363,10 +361,12 @@ function consultar() {
                                 return '';
                             }
 
-                            return Number(val).toLocaleString('es-CL', {
+                            const cantidad = Number(val);
+                            const texto = cantidad.toLocaleString('es-CL', {
                                 minimumFractionDigits: 0,
                                 maximumFractionDigits: 0
                             });
+                            return cantidad < 0 ? `<span class="text-red-600 font-semibold">${texto}</span>` : texto;
                         },
                     },
 

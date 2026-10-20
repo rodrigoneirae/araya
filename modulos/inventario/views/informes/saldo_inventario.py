@@ -23,6 +23,12 @@ from modulos.maestros.models.auxiliares import TipoArticulo
 class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
     template_name = 'modulos/inventario/informes/saldo_inventario.html'
 
+    @staticmethod
+    def _cantidad_movimiento(m):
+        cantidad = m.cantidad or 0
+        # Los vales de consumo se registran positivos, pero son salidas de stock.
+        return -abs(cantidad) if m.tipo_id == 12 else cantidad
+
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         action = request.POST.get("action", "")
         if action == "buscar_articulo":
@@ -113,7 +119,7 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
                     "ultimo_precio": m.codigo.cup or 0,
                     "tipo_nombre": tipo_nombre,
                 }
-            data[cod]["saldo"] += m.cantidad or 0
+            data[cod]["saldo"] += self._cantidad_movimiento(m)
 
         resultados = []
         for codigo, info in data.items():
@@ -177,14 +183,16 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
         ultimo_precio = 0
         for m in qs.iterator():
             signo = m.tipo.signo if m.tipo else 0
-            cantidad = m.cantidad or 0
-            if signo > 0:
+            cantidad = self._cantidad_movimiento(m)
+            if m.tipo_id == 12:
+                total_salidas += abs(cantidad)
+            elif signo > 0:
                 total_entradas += cantidad
-            if signo < 0:
+            elif signo < 0:
                 total_salidas += abs(cantidad)
             if m.punit:
                 ultimo_precio = m.punit
-            c_stock = (m.cantidad or 0) * (m.punit or 0)
+            c_stock = cantidad * (m.punit or 0)
             rows.append([
                 m.fecha.strftime("%d-%m-%Y") if m.fecha else "",
                 cantidad,
@@ -293,14 +301,16 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
 
         for m in qs.iterator():
             signo = m.tipo.signo if m.tipo else 0
-            cantidad = m.cantidad or 0
-            if signo > 0:
+            cantidad = self._cantidad_movimiento(m)
+            if m.tipo_id == 12:
+                total_salidas += abs(cantidad)
+            elif signo > 0:
                 total_entradas += cantidad
-            if signo < 0:
+            elif signo < 0:
                 total_salidas += abs(cantidad)
             if m.punit:
                 ultimo_precio = m.punit
-            c_stock = (m.cantidad or 0) * (m.punit or 0)
+            c_stock = cantidad * (m.punit or 0)
             rows.append([
                 m.fecha.strftime("%d-%m-%Y") if m.fecha else "",
                 cantidad,

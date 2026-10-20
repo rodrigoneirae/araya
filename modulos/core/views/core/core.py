@@ -115,7 +115,7 @@ class IndexCoreView( LoginRequiredMixin,TemplateView):
             movimientos
             .values('codigo__codigo', 'codigo__descr', 'codigo__um')
             .annotate(saldo=Sum(Case(
-                When(Q(tipo__signo__lt=0) | Q(tipo__cod=12), then=-Abs(F('cantidad'))),
+                When(Q(tipo__signo__lt=0) , then=-Abs(F('cantidad'))),
                 default=F('cantidad'),
                 output_field=FloatField(),
             )))

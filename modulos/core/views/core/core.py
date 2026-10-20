@@ -2,8 +2,8 @@ import json
 from datetime import datetime, timedelta
 from typing import Any
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count, Sum, Q
-from django.db.models.functions import ExtractYear, ExtractMonth
+from django.db.models import Case, Count, F, FloatField, Sum, Q, When
+from django.db.models.functions import Abs, ExtractYear, ExtractMonth
 from django.http import HttpRequest, HttpResponseRedirect, HttpResponse, JsonResponse
 from django.views.generic import TemplateView
 from django.conf import settings
@@ -97,25 +97,34 @@ class IndexCoreView( LoginRequiredMixin,TemplateView):
         bodega_val = data.get('bodega', '').strip()
         if not bodega_val:
             return JsonResponse({'success': False, 'message': 'Bodega requerida'})
-        try:
-            bodega_cod = int(bodega_val)
-        except ValueError:
-            return JsonResponse({'success': False, 'message': 'Bodega inválida'})
-        articulos = (
+        movimientos = (
             Movs.objects
-            .filter(bodega=bodega_cod, codigo__isnull=False, tipo__isnull=False)
+            .filter(codigo__isnull=False, tipo__isnull=False)
             .exclude(tipo__cod__in=[8, 15])
             .exclude(codigo__tipo='Servicio')
             .exclude(codigo__codigo='')
+        )
+        if bodega_val != 'all':
+            try:
+                bodega_cod = int(bodega_val)
+            except ValueError:
+                return JsonResponse({'success': False, 'message': 'Bodega inválida'})
+            movimientos = movimientos.filter(bodega=bodega_cod)
+
+        articulos = (
+            movimientos
             .values('codigo__codigo', 'codigo__descr', 'codigo__um')
-            .annotate(saldo=Sum('cantidad'))
+            .annotate(saldo=Sum(Case(
+                When(Q(tipo__signo__lt=0) | Q(tipo__cod=12), then=-Abs(F('cantidad'))),
+                default=F('cantidad'),
+                output_field=FloatField(),
+            )))
             .order_by('-saldo')
         )
 
         resultados = []
         for a in articulos:
             saldo = float(a['saldo'] or 0)
-            # if saldo != 0:
             resultados.append({
                     'codigo': a['codigo__codigo'],
                     'nombre': a['codigo__descr'] or 'Sin nombre',

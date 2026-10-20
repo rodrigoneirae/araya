@@ -73,6 +73,7 @@
             <div class="flex items-center gap-3 mb-4 flex-wrap">
                 <select id="selectBodega" class="w-full max-w-xs px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-sm focus:outline-none focus:ring-2 focus:ring-aq-primary/40">
                     <option value="">Seleccione bodega...</option>
+                    <option value="all">Todas las bodegas</option>
                 </select>
                 <input type="text" id="stockBuscar" placeholder="Buscar artículo..." disabled
                        class="flex-1 min-w-[160px] px-3 py-2 rounded-lg border border-aq-border bg-aq-bg text-aq-text text-sm focus:outline-none focus:ring-2 focus:ring-aq-primary/40 disabled:opacity-50">
@@ -81,7 +82,7 @@
                 </div>
             </div>
             <div id="stockTableWrap" class="hidden" style="height:280px"></div>
-            <div id="stockEmpty" class="hidden text-sm text-aq-muted text-center py-10">Seleccione una bodega para ver su stock.</div>
+            <div id="stockEmpty" class="hidden text-sm text-aq-muted text-center py-10">Seleccione una bodega o todas para ver el stock.</div>
         </div>
     </div>
 

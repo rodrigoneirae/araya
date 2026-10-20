@@ -64,15 +64,16 @@ const loader = document.getElementById('stockLoader');
 
 let stockTable = null;
 
-if (selBodega && data.bodegas_opciones?.length) {
-    data.bodegas_opciones.forEach(b => {
+if (selBodega) {
+    (data.bodegas_opciones || []).forEach(b => {
         const opt = document.createElement('option');
         opt.value = b.cod;
         opt.textContent = b.nombre;
         selBodega.appendChild(opt);
     });
 
-    selBodega.value = data.bodega_default || 1;
+    selBodega.value = data.bodega_default || 'all';
+    if (!selBodega.value) selBodega.value = 'all';
 
     async function cargarStock(cod) {
         empty.classList.add('hidden');
@@ -118,7 +119,7 @@ if (selBodega && data.bodegas_opciones?.length) {
                 }
                 tWrap.classList.remove('hidden');
             } else {
-                empty.textContent = 'Sin artículos con stock en esta bodega.';
+                empty.textContent = cod === 'all' ? 'Sin artículos con stock en las bodegas.' : 'Sin artículos con stock en esta bodega.';
                 empty.classList.remove('hidden');
             }
         } catch (e) {

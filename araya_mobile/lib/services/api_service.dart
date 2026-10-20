@@ -228,9 +228,12 @@ class ApiService {
     throw Exception('Error al buscar empleados');
   }
 
-  Future<List<Proceso>> fetchProcesosOT() async {
+  Future<List<Proceso>> fetchProcesosOT({String? estado}) async {
+    final uri = Uri.parse('${_otUrl}procesos/').replace(
+      queryParameters: estado == null ? null : {'estado': estado},
+    );
     final response = await _client
-        .get(Uri.parse('${_otUrl}procesos/'), headers: _headers())
+        .get(uri, headers: _headers())
         .timeout(const Duration(seconds: 10));
 
     if (response.statusCode == 200) {

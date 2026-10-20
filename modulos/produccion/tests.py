@@ -86,6 +86,9 @@ class FiltrosOrdenTrabajoTests(TestCase):
         cls.tipo_ot = Docs.objects.create(cod=8, nombre='OT')
         cls.reparacion = Procesos.objects.create(cod=10, nombre='Reparación')
         cls.produccion = Procesos.objects.create(cod=11, nombre='Producción')
+        cls.desmontado = Procesos.objects.create(cod=12, nombre='Desmontado')
+        cls.ajeno = Procesos.objects.create(cod=13, nombre='Proceso ajeno')
+        Procesos.objects.create(cod=14, nombre='Sin OT')
 
         Movs.objects.create(
             numero=1, tipo=cls.tipo_ot, linea=0, fecha=timezone.now(),
@@ -98,7 +101,11 @@ class FiltrosOrdenTrabajoTests(TestCase):
             )
         Movs.objects.create(
             numero=100, tipo=cls.tipo_ot, linea=0, fecha=timezone.now(),
-            estado='Abierto', proceso=cls.reparacion.cod, codencargado=99,
+            estado='Abierto', proceso=cls.ajeno.cod, codencargado=99,
+        )
+        Movs.objects.create(
+            numero=101, tipo=cls.tipo_ot, linea=0, fecha=timezone.now(),
+            estado='Cerrado', proceso=cls.desmontado.cod, codencargado=cls.empleado.cod,
         )
 
     def setUp(self):
@@ -122,5 +129,15 @@ class FiltrosOrdenTrabajoTests(TestCase):
         respuesta = self.client.get('/api/ot/procesos/')
         self.assertEqual(respuesta.status_code, 200)
         self.assertEqual({p['cod'] for p in respuesta.data}, {10, 11})
+        cerradas = self.client.get('/api/ot/procesos/', {'estado': 'Cerrado'})
+        self.assertEqual({p['cod'] for p in cerradas.data}, {12})
         self.assertEqual(self.client.get('/api/ot/', {'numero': 'abc'}).status_code, 400)
         self.assertEqual(self.client.get('/api/ot/', {'proceso': 'abc'}).status_code, 400)
+
+    def test_catalogo_vacio_si_el_encargado_no_tiene_ot(self):
+        usuario = get_user_model().objects.create_user(
+            username='sin_ordenes', email='sin_ordenes@example.com', password='prueba',
+        )
+        Empleados.objects.create(cod=50, nombre='Sin órdenes', user=usuario)
+        self.client.force_authenticate(user=usuario)
+        self.assertEqual(self.client.get('/api/ot/procesos/').data, [])

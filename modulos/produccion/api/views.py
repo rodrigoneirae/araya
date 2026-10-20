@@ -22,27 +22,23 @@ class OTFiltroPorEncargadoMixin:
                 pass
         return None
 
+    def get_ots_visibles(self, request, docs_ot):
+        qs = Movs.objects.filter(tipo=docs_ot, linea=0)
+        cod_encargado = self.get_encargado_cod(request)
+        if cod_encargado is not None:
+            qs = qs.filter(codencargado=cod_encargado)
+        return qs.filter(estado__iexact=request.query_params.get('estado') or 'Abierto')
+
 
 class OTListAPIView(OTFiltroPorEncargadoMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        cod_encargado = self.get_encargado_cod(request)
-
         docs_ot = Docs.objects.filter(cod=8).first()
         if not docs_ot:
             return Response({'error': 'Tipo documento OT no encontrado'}, status=404)
 
-        qs = Movs.objects.filter(tipo=docs_ot, linea=0)
-
-        if cod_encargado is not None:
-            qs = qs.filter(codencargado=cod_encargado)
-
-        estado = self.request.query_params.get('estado')
-        if estado:
-            qs = qs.filter(estado__iexact=estado)
-        else:
-            qs = qs.filter(estado__iexact='Abierto')
+        qs = self.get_ots_visibles(request, docs_ot)
 
         numero = request.query_params.get('numero', '').strip()
         if numero:
@@ -70,11 +66,18 @@ class OTListAPIView(OTFiltroPorEncargadoMixin, APIView):
         return Response(serializer.data)
 
 
-class OTProcesosAPIView(APIView):
+class OTProcesosAPIView(OTFiltroPorEncargadoMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        procesos = Procesos.objects.order_by('nombre')
+        docs_ot = Docs.objects.filter(cod=8).first()
+        if not docs_ot:
+            return Response([])
+
+        codigos = self.get_ots_visibles(request, docs_ot).exclude(
+            proceso__isnull=True
+        ).values_list('proceso', flat=True).distinct()
+        procesos = Procesos.objects.filter(cod__in=codigos).order_by('nombre')
         return Response(ProcesoSimpleSerializer(procesos, many=True).data)
 
 

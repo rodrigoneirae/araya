@@ -28,6 +28,7 @@ class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver
   Timer? _searchTimer;
   Timer? _refreshTimer;
   int _requestId = 0;
+  int _procesosRequestId = 0;
 
   static const _estados = ['Abierto', 'Cerrado'];
 
@@ -67,10 +68,17 @@ class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver
   }
 
   Future<void> _fetchProcesos() async {
+    final requestId = ++_procesosRequestId;
     try {
-      final procesos = await widget.apiService.fetchProcesosOT();
-      if (!mounted) return;
-      setState(() => _procesos = procesos);
+      final procesos = await widget.apiService.fetchProcesosOT(estado: _estadoFiltro);
+      if (!mounted || requestId != _procesosRequestId) return;
+      final procesoYaNoExiste = _procesoFiltro != null &&
+          !procesos.any((p) => p.cod == _procesoFiltro);
+      setState(() {
+        _procesos = procesos;
+        if (procesoYaNoExiste) _procesoFiltro = null;
+      });
+      if (procesoYaNoExiste) _fetch();
     } catch (_) {
       // El listado de OT sigue disponible si falla la carga del catálogo.
     }
@@ -156,8 +164,14 @@ class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver
                   return Expanded(
                     child: GestureDetector(
                       onTap: () {
-                        setState(() => _estadoFiltro = e);
+                        if (_estadoFiltro == e) return;
+                        setState(() {
+                          _estadoFiltro = e;
+                          _procesoFiltro = null;
+                          _procesos = [];
+                        });
                         _fetch();
+                        _fetchProcesos();
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -221,30 +235,32 @@ class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver
                       _fetch();
                     },
                   ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<int?>(
-                    key: ValueKey(_procesoFiltro),
-                    initialValue: _procesoFiltro,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Proceso',
-                      prefixIcon: Icon(Icons.tune),
-                    ),
-                    items: [
-                      const DropdownMenuItem<int?>(
-                        value: null,
-                        child: Text('Todos los procesos'),
+                  if (_procesos.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<int?>(
+                      key: ValueKey(_procesoFiltro),
+                      initialValue: _procesoFiltro,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Proceso',
+                        prefixIcon: Icon(Icons.tune),
                       ),
-                      ..._procesos.map((proceso) => DropdownMenuItem<int?>(
-                            value: proceso.cod,
-                            child: Text(proceso.nombre, overflow: TextOverflow.ellipsis),
-                          )),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _procesoFiltro = value);
-                      _fetch();
-                    },
-                  ),
+                      items: [
+                        const DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text('Todos los procesos'),
+                        ),
+                        ..._procesos.map((proceso) => DropdownMenuItem<int?>(
+                              value: proceso.cod,
+                              child: Text(proceso.nombre, overflow: TextOverflow.ellipsis),
+                            )),
+                      ],
+                      onChanged: (value) {
+                        setState(() => _procesoFiltro = value);
+                        _fetch();
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),

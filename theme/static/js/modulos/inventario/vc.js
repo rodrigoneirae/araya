@@ -3,6 +3,27 @@ const urlVC = (document.currentScript?.dataset.url) || '/';
 let detallesVC = [];
 let modoEdicionVC = false;
 
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('vcArtCod').addEventListener('input', function() {
+        document.getElementById('vcArtNombre').value = '';
+        document.getElementById('vcArtUM').value = '';
+        document.getElementById('vcArtTipo').value = '';
+    });
+    document.getElementById('vcArtCod').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') buscarArticuloVCInput();
+    });
+    buscarXHRVC('listar_bodegas', {}, function(data) {
+        const select = document.getElementById('vcArtBodega');
+        (data.bodegas || []).forEach(b => {
+            const option = document.createElement('option');
+            option.value = b.cod;
+            option.textContent = b.nombre;
+            select.appendChild(option);
+        });
+    });
+    nuevaVC();
+});
+
 function buscarXHRVC(action, datos, callback) {
     function getCookie(name) {
         let cookieValue = null;
@@ -47,12 +68,14 @@ function buscarXHRVC(action, datos, callback) {
 function agregarArticuloVC() {
     const cod = document.getElementById('vcArtCod').value.trim();
     const nombre = document.getElementById('vcArtNombre').value.trim();
+    const um = document.getElementById('vcArtUM').value.trim();
+    const tipo = document.getElementById('vcArtTipo').value.trim();
     const cant = parseFloat(document.getElementById('vcArtCant').value) || 0;
     const bodega = document.getElementById('vcArtBodega').value;
     const fecha = document.getElementById('vcArtFecha').value;
 
-    if (!cod) {
-        Toastify({text: 'Ingrese código de artículo', style: {background: '#f44336'}}).showToast();
+    if (!cod || !nombre) {
+        Toastify({text: 'Seleccione un artículo válido', style: {background: '#f44336'}}).showToast();
         return;
     }
     if (cant <= 0) {
@@ -63,6 +86,8 @@ function agregarArticuloVC() {
     detallesVC.push({
         codigo__codigo: cod,
         codigo__descr: nombre,
+        codigo__um: um,
+        codigo__tipo: tipo,
         cantidad: cant,
         bodega: bodega,
         fecha: fecha,
@@ -111,13 +136,22 @@ function setCamposVCEditable(editable) {
 
 function nuevaVC() {
     document.getElementById('vcForm').reset();
+    ['vcArtCod', 'vcArtNombre', 'vcArtUM', 'vcArtTipo', 'vcArtCant'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('vcArtBodega').value = '';
+    if (window.tablaHistorialVC) {
+        window.tablaHistorialVC.destroy();
+        window.tablaHistorialVC = null;
+    }
+    document.getElementById('historialArticulo').replaceChildren();
     detallesVC = [];
     modoEdicionVC = true;
     renderizarDetalleVC();
     const fecha = new Date().toISOString().split('T')[0];
     document.getElementById('vcFecha').value = fecha;
     document.getElementById('vcArtFecha').value = fecha;
-    document.getElementById('tab-detalle').classList.add('hidden');
+    document.getElementById('tab-detalle').classList.remove('hidden');
     document.getElementById('contenido-detalle').classList.add('hidden');
     document.getElementById('tab-encabezado').classList.add('active');
     document.getElementById('contenido-encabezado').classList.remove('hidden');
@@ -215,7 +249,73 @@ function cargarVC(numero) {
 }
 
 function buscarArticuloVCInput() {
-    buscarArticuloVC();
+    const codigo = document.getElementById('vcArtCod').value.trim();
+    const nombre = document.getElementById('vcArtNombre');
+    nombre.value = '';
+    document.getElementById('vcArtUM').value = '';
+    document.getElementById('vcArtTipo').value = '';
+    if (window.tablaHistorialVC) {
+        window.tablaHistorialVC.destroy();
+        window.tablaHistorialVC = null;
+    }
+    document.getElementById('historialArticulo').replaceChildren();
+    if (!codigo) return;
+
+    buscarXHRVC('buscar_articulo', {codigo: codigo}, function(data) {
+        if (document.getElementById('vcArtCod').value.trim() !== codigo) return;
+        if (data.success) {
+            nombre.value = data.data.nombre || '';
+            document.getElementById('vcArtUM').value = data.data.um || '';
+            document.getElementById('vcArtTipo').value = data.data.tipo || '';
+            cargarHistorialArticuloVC(codigo);
+        } else {
+            Toastify({text: data.message || 'Artículo no encontrado', style: {background: '#f44336'}}).showToast();
+        }
+    });
+}
+
+function cargarHistorialArticuloVC(codigo) {
+    buscarXHRVC('historial_articulo', {codigo: codigo}, function(data) {
+        if (document.getElementById('vcArtCod').value.trim() !== codigo) return;
+        const contenedor = document.getElementById('historialArticulo');
+        if (window.tablaHistorialVC) window.tablaHistorialVC.destroy();
+        if (!data.success) return;
+        window.tablaHistorialVC = new Tabulator(contenedor, {
+            data: data.historial || [],
+            layout: 'fitColumns',
+            height: '160px',
+            columns: [
+                {title: 'Fecha', field: 'fecha', formatter: cell => (cell.getValue() || '').split('T')[0]},
+                {title: 'Número', field: 'numero'},
+                {title: 'Tipo', field: 'tipo'},
+                {title: 'Bodega', field: 'bodega'},
+                {title: 'Cant', field: 'cantidad', hozAlign: 'right'},
+            ],
+        });
+    });
+}
+
+function abrirListaArticulosVC() {
+    buscarXHRVC('listar_articulos', {}, function(data) {
+        abrirModalBusqueda({
+            titulo: 'Buscar Artículo',
+            columnas: [
+                {title: 'Código', field: 'codigo', width: 100},
+                {title: 'Nombre', field: 'descr', width: 200},
+                {title: 'UM', field: 'um', width: 70},
+                {title: 'Tipo', field: 'tipo', width: 100},
+            ],
+            data: data.articulos || [],
+            filtroCampos: ['codigo', 'descr', 'tipo'],
+            onSelect: function(row) {
+                document.getElementById('vcArtCod').value = row.codigo;
+                document.getElementById('vcArtNombre').value = row.descr || '';
+                document.getElementById('vcArtUM').value = row.um || '';
+                document.getElementById('vcArtTipo').value = row.tipo || '';
+                cargarHistorialArticuloVC(row.codigo);
+            }
+        });
+    });
 }
 
 function cambiarTabVC(tab) {

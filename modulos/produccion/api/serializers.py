@@ -1,9 +1,41 @@
 from rest_framework import serializers
 from django.db.models import Sum
+import unicodedata
 from modulos.inventario.models.movs import Movs
 from modulos.maestros.models.empleados import Empleados
 from modulos.maestros.models.procesos import Procesos
 from modulos.maestros.models.prov_cliente import Provclientes
+
+
+def es_proceso_por_carga(obj, context):
+    """Reparación y desmontado se miden por carga, no por código producido."""
+    if obj.proceso is None:
+        return False
+    codigo = int(obj.proceso)
+    cache = context.setdefault('procesos_por_carga', {})
+    if codigo not in cache:
+        nombre = Procesos.objects.filter(cod=codigo).values_list('nombre', flat=True).first() or ''
+        nombre = ''.join(
+            char for char in unicodedata.normalize('NFD', nombre.upper().strip())
+            if unicodedata.category(char) != 'Mn'
+        )
+        cache[codigo] = nombre in {'REPARACION', 'DESMONTADO'}
+    return cache[codigo]
+
+
+def total_cargas_referenciadas(numero):
+    cargas = Movs.objects.filter(
+        numero=numero, tipo__cod=8, linea__gt=0,
+        docref__isnull=False, tipodocref__isnull=False,
+    ).exclude(docref=0).exclude(tipodocref=0)
+    return sum(abs(cantidad or 0) for cantidad in cargas.values_list('cantidad', flat=True))
+
+
+def total_partes_entrada(numero):
+    registrado = Movs.objects.filter(
+        numero=numero, tipo__cod=6, linea__gt=0,
+    ).aggregate(total=Sum('cantidad'))['total'] or 0
+    return abs(registrado)
 
 
 def get_cliente_nombre(rut):
@@ -139,18 +171,15 @@ class OTListSerializer(serializers.Serializer):
         return detalles.count()
 
     def get_total_cantidad(self, obj):
+        if es_proceso_por_carga(obj, self.context):
+            return total_cargas_referenciadas(obj.numero)
         detalles = Movs.objects.filter(
             numero=obj.numero, tipo__cod=8, linea__gt=0, docref__isnull=True
         )
         return sum(d.cantidad or 0 for d in detalles)
 
     def get_registrado_cantidad(self, obj):
-        registrado = Movs.objects.filter(
-            numero=obj.numero,
-            tipo__cod=6,
-            linea__gt=0,
-        ).aggregate(total=Sum('cantidad'))['total'] or 0
-        return abs(registrado)
+        return total_partes_entrada(obj.numero)
 
     def get_pendiente_cantidad(self, obj):
         total = self.get_total_cantidad(obj)
@@ -170,6 +199,7 @@ class OTDetailSerializer(serializers.Serializer):
     cliente_nombre = serializers.SerializerMethodField()
     estado = serializers.CharField()
     glosa = serializers.CharField(allow_blank=True, allow_null=True)
+    pendiente_por_carga = serializers.SerializerMethodField()
     detalles = serializers.SerializerMethodField()
     parte_entrada = serializers.SerializerMethodField()
     vale_consumo = serializers.SerializerMethodField()
@@ -196,6 +226,9 @@ class OTDetailSerializer(serializers.Serializer):
                 pass
         return None
 
+    def get_pendiente_por_carga(self, obj):
+        return es_proceso_por_carga(obj, self.context)
+
     def get_detalles(self, obj):
         detalles = Movs.objects.filter(
             numero=obj.numero, tipo__cod=8, linea__gt=0
@@ -215,6 +248,15 @@ class OTDetailSerializer(serializers.Serializer):
         return MovsSubitemSerializer(qs, many=True).data
 
     def get_stats(self, obj):
+        if es_proceso_por_carga(obj, self.context):
+            total = total_cargas_referenciadas(obj.numero)
+            return {
+                'total_detalle': Movs.objects.filter(
+                    numero=obj.numero, tipo__cod=8, linea__gt=0,
+                ).count(),
+                'total_cantidad': total,
+                'total_pendiente': max(0, total - total_partes_entrada(obj.numero)),
+            }
         detalles = Movs.objects.filter(numero=obj.numero, tipo__cod=8, linea__gt=0)
         total_cantidad = sum(d.cantidad or 0 for d in detalles)
         total_pendiente = 0

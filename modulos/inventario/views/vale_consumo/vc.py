@@ -52,14 +52,15 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
                 "data": {
                     "cod": articulo.codigo,
                     "nombre": articulo.descr or "",
-                    "um": articulo.um or ""
+                    "um": articulo.um or "",
+                    "tipo": articulo.tipo or ""
                 }
             })
         except Exception as e:
             return JsonResponse({"success": False, "message": "Artículo no encontrado"})
 
     def _listar_articulos(self) -> JsonResponse:
-        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").exclude(tipo='Inactivo').order_by("descr")[:100]
+        articulos = Articulos.objects.values("codigo", "descr", "um", "tipo").exclude(tipo='Inactivo').order_by("descr")
         return JsonResponse({"articulos": list(articulos)})
 
     def _listar_bodegas(self) -> JsonResponse:

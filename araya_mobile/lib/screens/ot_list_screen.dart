@@ -340,7 +340,7 @@ class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver
                                                       borderRadius: BorderRadius.circular(4),
                                                     ),
                                                     child: Text(
-                                                      'Pendiente: ${ot.pendienteCantidad.toInt()}',
+                                                      'Pendiente: ${ot.pendienteCantidad.toStringAsFixed(ot.pendienteCantidad == ot.pendienteCantidad.roundToDouble() ? 0 : 2)}',
                                                       style: TextStyle(
                                                         fontSize: 11,
                                                         fontWeight: FontWeight.w600,

@@ -168,6 +168,7 @@ class OrdenTrabajoDetalle {
   final String? clienteNombre;
   final String estado;
   final String? glosa;
+  final bool pendientePorCarga;
   final List<OTDetalle> detalles;
   final List<MovsSubitem> parteEntrada;
   final List<MovsSubitem> valeConsumo;
@@ -184,6 +185,7 @@ class OrdenTrabajoDetalle {
     this.clienteNombre,
     required this.estado,
     this.glosa,
+    this.pendientePorCarga = false,
     required this.detalles,
     this.parteEntrada = const [],
     this.valeConsumo = const [],
@@ -204,6 +206,7 @@ class OrdenTrabajoDetalle {
       clienteNombre: json['cliente_nombre'] as String?,
       estado: json['estado'] as String? ?? 'Abierto',
       glosa: json['glosa'] as String?,
+      pendientePorCarga: json['pendiente_por_carga'] as bool? ?? false,
       detalles: (json['detalles'] as List<dynamic>?)
               ?.map((e) => OTDetalle.fromJson(e as Map<String, dynamic>))
               .toList() ??

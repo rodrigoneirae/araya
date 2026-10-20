@@ -313,7 +313,7 @@ class _OTDetailScreenState extends State<OTDetailScreen> with WidgetsBindingObse
                     ),
                     const SizedBox(height: 12),
                     const Divider(),
-                    ...ot.detalles.map((d) => _detalleItem(d, isDark)),
+                    ...ot.detalles.map((d) => _detalleItem(d, isDark, ot.pendientePorCarga)),
                   ],
                 ),
               ),
@@ -649,7 +649,7 @@ class _OTDetailScreenState extends State<OTDetailScreen> with WidgetsBindingObse
     );
   }
 
-  Widget _detalleItem(OTDetalle d, bool isDark) {
+  Widget _detalleItem(OTDetalle d, bool isDark, bool pendientePorCarga) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -675,7 +675,7 @@ class _OTDetailScreenState extends State<OTDetailScreen> with WidgetsBindingObse
                     color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,
                   ),
                 ),
-                if (d.docref == null) ...[
+                if (!pendientePorCarga && d.docref == null) ...[
                   const SizedBox(height: 4),
                   Row(
                     children: [

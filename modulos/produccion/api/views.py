@@ -1,3 +1,5 @@
+import math
+
 from rest_framework import permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -5,8 +7,9 @@ from rest_framework.response import Response
 from modulos.inventario.models.movs import Movs
 from modulos.maestros.models.docs import Docs
 from modulos.maestros.models.empleados import Empleados
+from modulos.maestros.models.procesos import Procesos
 
-from .serializers import OTListSerializer, OTDetailSerializer
+from .serializers import OTListSerializer, OTDetailSerializer, ProcesoSimpleSerializer
 
 
 class OTFiltroPorEncargadoMixin:
@@ -41,10 +44,38 @@ class OTListAPIView(OTFiltroPorEncargadoMixin, APIView):
         else:
             qs = qs.filter(estado__iexact='Abierto')
 
+        numero = request.query_params.get('numero', '').strip()
+        if numero:
+            try:
+                numero_ot = float(numero)
+                if not math.isfinite(numero_ot) or numero_ot <= 0:
+                    raise ValueError
+            except ValueError:
+                return Response({'error': 'Número de OT inválido'}, status=400)
+            qs = qs.filter(numero=numero_ot)
+
+        proceso = request.query_params.get('proceso', '').strip()
+        if proceso:
+            try:
+                codigo_proceso = int(proceso)
+                if codigo_proceso <= 0:
+                    raise ValueError
+            except ValueError:
+                return Response({'error': 'Proceso inválido'}, status=400)
+            qs = qs.filter(proceso=codigo_proceso)
+
         qs = qs.order_by('-fecha')[:50]
 
         serializer = OTListSerializer(qs, many=True)
         return Response(serializer.data)
+
+
+class OTProcesosAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        procesos = Procesos.objects.order_by('nombre')
+        return Response(ProcesoSimpleSerializer(procesos, many=True).data)
 
 
 class OTDetailAPIView(OTFiltroPorEncargadoMixin, APIView):

@@ -21,8 +21,13 @@ class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver
   bool _loading = true;
   String? _error;
   List<OrdenTrabajo> _ots = [];
+  List<Proceso> _procesos = [];
   String _estadoFiltro = 'Abierto';
+  int? _procesoFiltro;
+  final _numeroController = TextEditingController();
+  Timer? _searchTimer;
   Timer? _refreshTimer;
+  int _requestId = 0;
 
   static const _estados = ['Abierto', 'Cerrado'];
 
@@ -41,6 +46,7 @@ class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _fetch();
+    _fetchProcesos();
     _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _fetch(silent: true));
   }
 
@@ -54,11 +60,30 @@ class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _searchTimer?.cancel();
     _refreshTimer?.cancel();
+    _numeroController.dispose();
     super.dispose();
   }
 
+  Future<void> _fetchProcesos() async {
+    try {
+      final procesos = await widget.apiService.fetchProcesosOT();
+      if (!mounted) return;
+      setState(() => _procesos = procesos);
+    } catch (_) {
+      // El listado de OT sigue disponible si falla la carga del catálogo.
+    }
+  }
+
+  void _onNumeroChanged(String value) {
+    _searchTimer?.cancel();
+    if (value.trim().isNotEmpty && int.tryParse(value.trim()) == null) return;
+    _searchTimer = Timer(const Duration(milliseconds: 350), _fetch);
+  }
+
   Future<void> _fetch({bool silent = false}) async {
+    final requestId = ++_requestId;
     if (!silent) {
       setState(() {
         _loading = true;
@@ -67,14 +92,19 @@ class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver
     }
 
     try {
-      final ots = await widget.apiService.fetchOTs(estado: _estadoFiltro);
-      if (!mounted) return;
+      final ots = await widget.apiService.fetchOTs(
+        estado: _estadoFiltro,
+        numero: _numeroController.text.trim(),
+        proceso: _procesoFiltro,
+      );
+      if (!mounted || requestId != _requestId) return;
       setState(() {
         _ots = ots;
         _loading = false;
+        _error = null;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || requestId != _requestId) return;
       if (!silent) {
         setState(() {
           _loading = false;
@@ -106,7 +136,10 @@ class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _fetch,
+            onPressed: () {
+              _fetch();
+              _fetchProcesos();
+            },
             tooltip: 'Refrescar',
           ),
         ],
@@ -155,6 +188,66 @@ class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver
                 }).toList(),
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _numeroController,
+                    keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      labelText: 'Buscar por N° de OT',
+                      hintText: 'Número exacto',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _numeroController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: 'Limpiar búsqueda',
+                              icon: const Icon(Icons.close),
+                              onPressed: () {
+                                _searchTimer?.cancel();
+                                setState(() => _numeroController.clear());
+                                _fetch();
+                              },
+                            ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {});
+                      _onNumeroChanged(value);
+                    },
+                    onSubmitted: (_) {
+                      _searchTimer?.cancel();
+                      _fetch();
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<int?>(
+                    key: ValueKey(_procesoFiltro),
+                    initialValue: _procesoFiltro,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Proceso',
+                      prefixIcon: Icon(Icons.tune),
+                    ),
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('Todos los procesos'),
+                      ),
+                      ..._procesos.map((proceso) => DropdownMenuItem<int?>(
+                            value: proceso.cod,
+                            child: Text(proceso.nombre, overflow: TextOverflow.ellipsis),
+                          )),
+                    ],
+                    onChanged: (value) {
+                      setState(() => _procesoFiltro = value);
+                      _fetch();
+                    },
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: _loading
                   ? Center(child: CircularProgressIndicator(color: cs.primary))
@@ -185,7 +278,9 @@ class _OTListScreenState extends State<OTListScreen> with WidgetsBindingObserver
                                   Icon(Icons.assignment_outlined, size: 48,
                                       color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted),
                                   const SizedBox(height: 8),
-                                  Text('Sin órdenes de trabajo',
+                                   Text(_numeroController.text.isNotEmpty || _procesoFiltro != null
+                                       ? 'Sin órdenes para estos filtros'
+                                       : 'Sin órdenes de trabajo',
                                       style: TextStyle(color: isDark
                                           ? ArayaColors.darkMuted
                                           : ArayaColors.lightMuted)),

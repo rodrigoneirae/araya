@@ -1,9 +1,12 @@
 from django.test import TestCase
+from django.contrib.auth import get_user_model
 from django.utils import timezone
+from rest_framework.test import APIClient
 
 from modulos.inventario.models.movs import Movs
 from modulos.maestros.models.articulos import Articulos
 from modulos.maestros.models.docs import Docs
+from modulos.maestros.models.empleados import Empleados
 from modulos.maestros.models.procesos import Procesos
 from modulos.produccion.api.serializers import OTDetailSerializer, OTListSerializer
 
@@ -73,3 +76,51 @@ class PendienteOrdenTrabajoTests(TestCase):
 
         self.assertEqual(OTListSerializer(encabezado).data['pendiente_cantidad'], 0)
         self.assertEqual(OTDetailSerializer(encabezado).data['stats']['total_pendiente'], 0)
+
+
+class FiltrosOrdenTrabajoTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.usuario = get_user_model().objects.create_user(username='operador', password='prueba')
+        cls.empleado = Empleados.objects.create(cod=25, nombre='Operador', user=cls.usuario)
+        cls.tipo_ot = Docs.objects.create(cod=8, nombre='OT')
+        cls.reparacion = Procesos.objects.create(cod=10, nombre='Reparación')
+        cls.produccion = Procesos.objects.create(cod=11, nombre='Producción')
+
+        Movs.objects.create(
+            numero=1, tipo=cls.tipo_ot, linea=0, fecha=timezone.now(),
+            estado='Abierto', proceso=cls.reparacion.cod, codencargado=cls.empleado.cod,
+        )
+        for numero in range(2, 53):
+            Movs.objects.create(
+                numero=numero, tipo=cls.tipo_ot, linea=0, fecha=timezone.now(),
+                estado='Abierto', proceso=cls.produccion.cod, codencargado=cls.empleado.cod,
+            )
+        Movs.objects.create(
+            numero=100, tipo=cls.tipo_ot, linea=0, fecha=timezone.now(),
+            estado='Abierto', proceso=cls.reparacion.cod, codencargado=99,
+        )
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.usuario)
+
+    def test_buscar_ot_fuera_de_las_50_mas_recientes(self):
+        respuesta = self.client.get('/api/ot/', {'numero': '1'})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual([ot['numero'] for ot in respuesta.data], [1])
+
+    def test_filtrar_por_proceso_respetando_encargado_y_estado(self):
+        respuesta = self.client.get('/api/ot/', {'proceso': str(self.reparacion.cod)})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual([ot['numero'] for ot in respuesta.data], [1])
+
+        respuesta = self.client.get('/api/ot/', {'numero': '2', 'proceso': str(self.reparacion.cod)})
+        self.assertEqual(respuesta.data, [])
+
+    def test_catalogo_de_procesos_y_parametros_invalidos(self):
+        respuesta = self.client.get('/api/ot/procesos/')
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual({p['cod'] for p in respuesta.data}, {10, 11})
+        self.assertEqual(self.client.get('/api/ot/', {'numero': 'abc'}).status_code, 400)
+        self.assertEqual(self.client.get('/api/ot/', {'proceso': 'abc'}).status_code, 400)

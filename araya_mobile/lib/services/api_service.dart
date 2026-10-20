@@ -228,10 +228,30 @@ class ApiService {
     throw Exception('Error al buscar empleados');
   }
 
-  Future<List<OrdenTrabajo>> fetchOTs({String? estado}) async {
+  Future<List<Proceso>> fetchProcesosOT() async {
+    final response = await _client
+        .get(Uri.parse('${_otUrl}procesos/'), headers: _headers())
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body) as List<dynamic>;
+      return data
+          .map((e) => Proceso.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    throw Exception('Error al cargar procesos');
+  }
+
+  Future<List<OrdenTrabajo>> fetchOTs({String? estado, String? numero, int? proceso}) async {
     final params = <String, String>{};
     if (estado != null && estado.isNotEmpty) {
       params['estado'] = estado;
+    }
+    if (numero != null && numero.isNotEmpty) {
+      params['numero'] = numero;
+    }
+    if (proceso != null) {
+      params['proceso'] = proceso.toString();
     }
     final uri = Uri.parse(_otUrl).replace(queryParameters: params);
     final response = await _client

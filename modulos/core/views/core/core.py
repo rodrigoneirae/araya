@@ -100,8 +100,8 @@ class IndexCoreView( LoginRequiredMixin,TemplateView):
         movimientos = (
             Movs.objects
             .filter(codigo__isnull=False, tipo__isnull=False)
-            .exclude(tipo__cod__in=[8, 15])
-            .exclude(codigo__tipo='Servicio')
+            # .exclude(tipo__cod__in=[8, 15])
+            # .exclude(codigo__tipo='Servicio')
             .exclude(codigo__codigo='')
         )
         if bodega_val != 'all':

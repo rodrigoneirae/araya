@@ -49,10 +49,25 @@ class SaldoInventarioTests(SimpleTestCase):
             bodegas.values.return_value = [{'cod': 1, 'nombre': 'Bodega'}]
             response = self.view._generar_excel(request)
 
-        ws = load_workbook(io.BytesIO(response.content), read_only=True).active
+        ws = load_workbook(io.BytesIO(response.content)).active
         self.assertEqual(ws['B3'].value, -3)
         self.assertEqual(ws['G3'].value, -30)
+        self.assertEqual(ws['B3'].font.color.rgb, '00B91C1C')
+        self.assertEqual(ws['E3'].fill.fgColor.rgb, '00FEF2F2')
+        self.assertIsNone(ws['B2'].font.color)
         self.assertIn('Total Entradas: 10  |  Total Salidas: 5  |  Saldo Final: 5', ws['A6'].value)
+
+    def test_excel_global_destaca_saldo_negativo(self):
+        datos = [dict(codigo='ART-1', nombre='Artículo', um='UN', saldo=-3,
+                      ultimo_precio=10, costo=-30, tipo_nombre='Material')]
+        request = SimpleNamespace(POST={'fecha_corte': '', 'tipo': '', 'solo_con_stock': 'false'})
+        with patch.object(self.view, '_get_datos_globales', return_value=datos):
+            response = self.view._generar_excel_global(request)
+
+        ws = load_workbook(io.BytesIO(response.content)).active
+        self.assertEqual(ws['D3'].value, -3)
+        self.assertEqual(ws['D3'].font.color.rgb, '00B91C1C')
+        self.assertEqual(ws['F3'].fill.fgColor.rgb, '00FEF2F2')
 
     def test_vale_ya_negativo_no_se_suma_al_saldo(self):
         self.movimientos[1].cantidad = -3

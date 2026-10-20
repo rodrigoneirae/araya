@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Any
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Case, Count, F, FloatField, Sum, Q, When
-from django.db.models.functions import Abs, ExtractYear, ExtractMonth
+from django.db.models.functions import Abs, Coalesce, ExtractYear, ExtractMonth
 from django.http import HttpRequest, HttpResponseRedirect, HttpResponse, JsonResponse
 from django.views.generic import TemplateView
 from django.conf import settings
@@ -13,7 +13,7 @@ from modulos.core.models.config.config import AppConfig
 from araya.base import WEB
 from modulos.core.models.usuario import Usuarios
 from modulos.core.models.usuario import User
-from modulos.maestros.models import TipoArticulo, UnidadMedida
+from modulos.maestros.models import Articulos, TipoArticulo, UnidadMedida
 from modulos.inventario.models import Movs
 from modulos.maestros.models.docs import Docs
 from modulos.maestros.models.empleados import Empleados
@@ -97,38 +97,34 @@ class IndexCoreView( LoginRequiredMixin,TemplateView):
         bodega_val = data.get('bodega', '').strip()
         if not bodega_val:
             return JsonResponse({'success': False, 'message': 'Bodega requerida'})
-        movimientos = (
-            Movs.objects
-            .filter(codigo__isnull=False, tipo__isnull=False)
-            # .exclude(tipo__cod__in=[8, 15])
-            # .exclude(codigo__tipo='Servicio')
-            .exclude(codigo__codigo='')
-        )
+        movimientos = Q(movs__tipo__isnull=False)
         if bodega_val != 'all':
             try:
                 bodega_cod = int(bodega_val)
             except ValueError:
                 return JsonResponse({'success': False, 'message': 'Bodega inválida'})
-            movimientos = movimientos.filter(bodega=bodega_cod)
+            movimientos &= Q(movs__bodega=bodega_cod)
 
         articulos = (
-            movimientos
-            .values('codigo__codigo', 'codigo__descr', 'codigo__um')
-            .annotate(saldo=Sum(Case(
-                When(Q(tipo__signo__lt=0) , then=-Abs(F('cantidad'))),
-                default=F('cantidad'),
+            Articulos.objects
+            .exclude(codigo='')
+            .values('codigo', 'descr', 'um')
+            .annotate(saldo=Coalesce(Sum(Case(
+                When(Q(movs__tipo__signo__lt=0) | Q(movs__tipo__cod=12),
+                     then=-Abs(F('movs__cantidad'))),
+                default=F('movs__cantidad'),
                 output_field=FloatField(),
-            )))
-            .order_by('-saldo')
+            ), filter=movimientos), 0.0))
+            .order_by('-saldo', 'codigo')
         )
 
         resultados = []
         for a in articulos:
             saldo = float(a['saldo'] or 0)
             resultados.append({
-                    'codigo': a['codigo__codigo'],
-                    'nombre': a['codigo__descr'] or 'Sin nombre',
-                    'um': a['codigo__um'] or '',
+                    'codigo': a['codigo'],
+                    'nombre': a['descr'] or 'Sin nombre',
+                    'um': a['um'] or '',
                     'saldo': saldo,
                 })
         return JsonResponse({'success': True, 'articulos': resultados})
@@ -243,7 +239,7 @@ class IndexCoreView( LoginRequiredMixin,TemplateView):
             'ot_abierto_count': count_Abierto,
             'ot_cerrado_count': count_Cerrado,
             'bodegas_opciones': bodegas_opciones,
-            'bodega_default': 1,
+            'bodega_default': 'all',
             'prod_labels': prod_labels,
             'prod_qty': prod_qty,
             'vc_prod_labels': vc_prod_labels,

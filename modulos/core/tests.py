@@ -12,38 +12,38 @@ class StockArticulosTests(SimpleTestCase):
 
     def test_todas_las_bodegas_agrupa_sin_filtrar_bodega(self):
         qs = MagicMock()
-        qs.filter.return_value = qs
         qs.exclude.return_value = qs
         qs.values.return_value = qs
         qs.annotate.return_value = qs
         qs.order_by.return_value = [
-            {'codigo__codigo': 'ART-1', 'codigo__descr': 'Artículo',
-             'codigo__um': 'UN', 'saldo': 7},
+            {'codigo': 'BP-1', 'descr': 'Artículo con stock', 'um': 'UN', 'saldo': 7},
+            {'codigo': 'BP-2', 'descr': 'Artículo sin movimientos', 'um': 'UN', 'saldo': 0},
         ]
-        with patch('modulos.core.views.core.core.Movs.objects') as objects:
-            objects.filter.return_value = qs
+        with patch('modulos.core.views.core.core.Articulos.objects') as objects:
+            objects.exclude.return_value = qs
             response = self.view._stock_articulos({'bodega': 'all'})
 
-        self.assertEqual(json.loads(response.content)['articulos'][0]['saldo'], 7)
-        qs.filter.assert_not_called()
+        articulos = json.loads(response.content)['articulos']
+        self.assertEqual([a['codigo'] for a in articulos], ['BP-1', 'BP-2'])
+        self.assertEqual(articulos[1]['saldo'], 0)
         self.assertIn('saldo', qs.annotate.call_args.kwargs)
+        self.assertNotIn('bodega', str(qs.annotate.call_args))
 
     def test_bodega_individual_filtra_movimientos(self):
         qs = MagicMock()
         qs.exclude.return_value = qs
-        qs.filter.return_value = qs
         qs.values.return_value = qs
         qs.annotate.return_value = qs
         qs.order_by.return_value = []
-        with patch('modulos.core.views.core.core.Movs.objects') as objects:
-            objects.filter.return_value = qs
+        with patch('modulos.core.views.core.core.Articulos.objects') as objects:
+            objects.exclude.return_value = qs
             response = self.view._stock_articulos({'bodega': '2'})
 
         self.assertTrue(json.loads(response.content)['success'])
-        qs.filter.assert_called_once_with(bodega=2)
+        self.assertIn('movs__bodega', str(qs.annotate.call_args))
+        self.assertIn('2', str(qs.annotate.call_args))
 
     def test_bodega_invalida(self):
-        with patch('modulos.core.views.core.core.Movs.objects'):
-            response = self.view._stock_articulos({'bodega': 'invalida'})
+        response = self.view._stock_articulos({'bodega': 'invalida'})
 
         self.assertFalse(json.loads(response.content)['success'])

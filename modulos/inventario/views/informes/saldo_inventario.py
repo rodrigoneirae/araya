@@ -24,10 +24,14 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
     template_name = 'modulos/inventario/informes/saldo_inventario.html'
 
     @staticmethod
-    def _cantidad_movimiento(m):
+    def _es_salida(m):
+        return m.tipo_id == 12 or (m.tipo is not None and m.tipo.signo is not None and m.tipo.signo < 0)
+
+    @classmethod
+    def _cantidad_movimiento(cls, m):
         cantidad = m.cantidad or 0
-        # Los vales de consumo se registran positivos, pero son salidas de stock.
-        return -abs(cantidad) if m.tipo_id == 12 else cantidad
+        # Las salidas pueden venir registradas con cantidad positiva o negativa.
+        return -abs(cantidad) if cls._es_salida(m) else cantidad
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         action = request.POST.get("action", "")
@@ -178,21 +182,19 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
         bodegas_map = {b["cod"]: b["nombre"] for b in Bodegas.objects.values("cod", "nombre")}
 
         rows = []
-        vale_rows = set()
+        salida_rows = set()
         total_entradas = 0
         total_salidas = 0
         ultimo_precio = 0
         for m in qs.iterator():
-            if m.tipo_id == 12:
-                vale_rows.add(len(rows) + 2)
+            if self._es_salida(m):
+                salida_rows.add(len(rows) + 2)
             signo = m.tipo.signo if m.tipo else 0
             cantidad = self._cantidad_movimiento(m)
-            if m.tipo_id == 12:
+            if self._es_salida(m):
                 total_salidas += abs(cantidad)
             elif signo > 0:
                 total_entradas += cantidad
-            elif signo < 0:
-                total_salidas += abs(cantidad)
             if m.punit:
                 ultimo_precio = m.punit
             c_stock = cantidad * (m.punit or 0)
@@ -233,8 +235,8 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
             cell.border = thin_border
 
         data_font = Font(name="Calibri", size=10)
-        vale_font = Font(name="Calibri", size=10, bold=True, color="B91C1C")
-        vale_fill = PatternFill(start_color="FEF2F2", end_color="FEF2F2", fill_type="solid")
+        salida_font = Font(name="Calibri", size=10, bold=True, color="B91C1C")
+        salida_fill = PatternFill(start_color="FEF2F2", end_color="FEF2F2", fill_type="solid")
         num_align = Alignment(horizontal="left", vertical="center")
         center_align = Alignment(horizontal="center", vertical="center")
 
@@ -245,9 +247,9 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
                 cell = ws.cell(row=row_num, column=col_idx)
                 cell.font = data_font
                 cell.border = thin_border
-                if row_num in vale_rows and col_idx in (2, 5, 7):
-                    cell.font = vale_font
-                    cell.fill = vale_fill
+                if row_num in salida_rows and col_idx in (2, 5, 7):
+                    cell.font = salida_font
+                    cell.fill = salida_fill
                 if col_idx in (2, 6, 7):
                     cell.alignment = num_align
                     if col_idx == 2:
@@ -277,7 +279,7 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
         cell = ws.cell(row=ws.max_row, column=1)
         cell.font = Font(name="Calibri", bold=True, size=10)
         cell.alignment = Alignment(horizontal="center", vertical="center")
-        ws.append(["Los vales de consumo (en rojo) se descuentan del saldo."])
+        ws.append(["Las salidas (en rojo) se descuentan del saldo."])
 
         buf = io.BytesIO()
         wb.save(buf)
@@ -304,22 +306,20 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
         bodegas_map = {b["cod"]: b["nombre"] for b in Bodegas.objects.values("cod", "nombre")}
 
         rows = []
-        vale_rows = set()
+        salida_rows = set()
         total_entradas = 0
         total_salidas = 0
         ultimo_precio = 0
 
         for m in qs.iterator():
-            if m.tipo_id == 12:
-                vale_rows.add(len(rows) + 1)
+            if self._es_salida(m):
+                salida_rows.add(len(rows) + 1)
             signo = m.tipo.signo if m.tipo else 0
             cantidad = self._cantidad_movimiento(m)
-            if m.tipo_id == 12:
+            if self._es_salida(m):
                 total_salidas += abs(cantidad)
             elif signo > 0:
                 total_entradas += cantidad
-            elif signo < 0:
-                total_salidas += abs(cantidad)
             if m.punit:
                 ultimo_precio = m.punit
             c_stock = cantidad * (m.punit or 0)
@@ -383,11 +383,11 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
             resumen_style = ParagraphStyle(
                 "Resumen", parent=styles["Normal"], fontSize=8, leading=11, alignment=1,
             )
-            vale_right_style = ParagraphStyle(
-                "ValeRight", parent=right_style, textColor=colors.HexColor("#b91c1c"),
+            salida_right_style = ParagraphStyle(
+                "SalidaRight", parent=right_style, textColor=colors.HexColor("#b91c1c"),
             )
-            vale_center_style = ParagraphStyle(
-                "ValeCenter", parent=center_style, textColor=colors.HexColor("#b91c1c"),
+            salida_center_style = ParagraphStyle(
+                "SalidaCenter", parent=center_style, textColor=colors.HexColor("#b91c1c"),
             )
 
             elems = []
@@ -400,7 +400,7 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
             ))
             if fecha_inf:
                 elems.append(Paragraph(f"<b>Corte:</b> {fecha_inf}", subtitle_style))
-            elems.append(Paragraph("Los vales de consumo (en rojo) se descuentan del saldo.", subtitle_style))
+            elems.append(Paragraph("Las salidas (en rojo) se descuentan del saldo.", subtitle_style))
 
             elems.append(Spacer(1, 3 * mm))
 
@@ -408,15 +408,15 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
             table_data = [header]
 
             for row_num, r in enumerate(rows, start=1):
-                es_vale = row_num in vale_rows
+                es_salida = row_num in salida_rows
                 table_data.append([
                     Paragraph(str(r[0]), center_style),
-                    Paragraph(f"<b>{clq(r[1])}</b>", vale_right_style if es_vale else right_style),
+                    Paragraph(f"<b>{clq(r[1])}</b>", salida_right_style if es_salida else right_style),
                     Paragraph(str(r[2]), cell_style),
                     Paragraph(str(r[3]), center_style),
-                    Paragraph(str(r[4]), vale_center_style if es_vale else center_style),
+                    Paragraph(str(r[4]), salida_center_style if es_salida else center_style),
                     Paragraph(cl(r[5]), right_style),
-                    Paragraph(cl(r[6]), vale_right_style if es_vale else right_style),
+                    Paragraph(cl(r[6]), salida_right_style if es_salida else right_style),
                 ])
 
             col_widths = [26 * mm, 20 * mm, 42 * mm, 22 * mm, 40 * mm, 20 * mm, 22 * mm]
@@ -435,7 +435,7 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
                 ("ALIGN", (0, 0), (-1, 0), "CENTER"),
             ] + [
                 ("BACKGROUND", (0, row_num), (-1, row_num), colors.HexColor("#fef2f2"))
-                for row_num in vale_rows
+                for row_num in salida_rows
             ]))
 
             elems.append(tbl)
@@ -611,7 +611,7 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
         cell = ws.cell(row=ws.max_row, column=1)
         cell.font = Font(name="Calibri", bold=True, size=10)
         cell.alignment = Alignment(horizontal="center", vertical="center")
-        ws.append(["Los vales de consumo se descuentan del saldo; los saldos negativos se muestran en rojo."])
+        ws.append(["Las salidas se descuentan del saldo; los saldos negativos se muestran en rojo."])
 
         buf = io.BytesIO()
         wb.save(buf)
@@ -690,7 +690,7 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
             elems.append(Paragraph("Saldo de Inventario Global por Artículo", title_style))
             if fecha_inf:
                 elems.append(Paragraph(f"<b>Corte:</b> {fecha_inf}", subtitle_style))
-            elems.append(Paragraph("Los vales de consumo se descuentan del saldo; los saldos negativos se muestran en rojo.", subtitle_style))
+            elems.append(Paragraph("Las salidas se descuentan del saldo; los saldos negativos se muestran en rojo.", subtitle_style))
 
             if tipo_art_id:
                 tipo_nombre = ""

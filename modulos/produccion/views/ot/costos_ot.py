@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import connection
+from django.db import connections
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.views.generic import TemplateView
 from reportlab.lib import colors
@@ -42,8 +42,8 @@ class IndexCostosOTView(LoginRequiredMixin, TemplateView):
         if desde is None or hasta is None:
             return JsonResponse({"success": False, "error": "Debe ingresar OT Desde y OT Hasta"})
         try:
-            with connection.cursor() as cursor:
-                cursor.execute("EXEC spCostosOT %s, %s", [desde, hasta])
+            with connections["softland"].cursor() as cursor:
+                cursor.execute("EXEC PROD.dbo.spCostosOT %s, %s", [desde, hasta])
             return JsonResponse({"success": True})
         except Exception as e:
             return JsonResponse({"success": False, "error": str(e)})

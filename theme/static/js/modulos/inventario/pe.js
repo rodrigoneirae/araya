@@ -109,6 +109,8 @@ function nuevaPE() {
     document.getElementById('tab-encabezado').classList.add('active');
     document.getElementById('contenido-encabezado').classList.remove('hidden');
     document.getElementById('btnGuardarPE').classList.remove('hidden');
+    document.getElementById('btnEliminarPE').classList.add('hidden');
+    document.getElementById('btnEditarPE').classList.add('hidden');
     setCamposPEEditable(true);
 }
 
@@ -140,13 +142,15 @@ function setCamposPEEditable(editable) {
 }
 
 function editarPE() {
-    const btn = document.getElementById('btnEditarPE');
-    if (btn.classList.contains('bg-amber-500')) {
-        setCamposPEEditable(true);
-        document.getElementById('btnGuardarPE').classList.remove('hidden');
-        document.getElementById('btnEliminarPE').classList.add('hidden');
-        btn.classList.add('hidden');
+    if (!document.getElementById('peNumero').value.trim()) {
+        Toastify({text: 'No hay Parte de Entrada seleccionada', style: {background: '#f44336'}}).showToast();
+        return;
     }
+    setCamposPEEditable(true);
+    document.getElementById('btnGuardarPE').classList.remove('hidden');
+    document.getElementById('btnEliminarPE').classList.add('hidden');
+    document.getElementById('btnEditarPE').classList.add('hidden');
+    if (document.getElementById('peTipoDoc').value) cambiarTabPE('detalle');
 }
 
 function eliminarPE() {
@@ -283,6 +287,26 @@ function eliminarArticuloPE(index) {
     renderizarDetallePE();
 }
 
+function editarDetallePE(index) {
+    detallesPE[index]._editing = true;
+    renderizarDetallePE();
+}
+
+function guardarEditDetallePE(index) {
+    const det = detallesPE[index];
+    det.cantidad = parseFloat(document.getElementById(`edit-cantidad-${index}`).value) || 0;
+    det.punit = parseFloat(document.getElementById(`edit-punit-${index}`).value) || 0;
+    det.bodega = document.getElementById(`edit-bodega-${index}`).value;
+    det.fecha = document.getElementById(`edit-fecha-${index}`).value;
+    delete det._editing;
+    renderizarDetallePE();
+}
+
+function cancelarEditDetallePE(index) {
+    delete detallesPE[index]._editing;
+    renderizarDetallePE();
+}
+
 function renderizarDetallePE() {
     const tbody = document.getElementById('peDetalle');
     tbody.innerHTML = '';
@@ -308,18 +332,44 @@ function renderizarDetallePE() {
         totalNeto += subtotal;
         totalCant += d.cantidad || 0;
 
-        tr.innerHTML = `
-            <td class="px-1 py-1 text-aq-text">${fechaFmt}</td>
-            <td class="px-1 py-1 text-aq-text">${d.codigo || ''}</td>
-            <td class="px-1 py-1 text-aq-text">${d.nombre || ''}</td>
-            <td class="px-1 py-1 text-aq-text text-right">${d.cantidad || 0}</td>
-            <td class="px-1 py-1 text-aq-text">${d.bodega || ''}</td>
-            <td class="px-1 py-1 text-aq-text text-right">${d.punit ? d.punit.toFixed(0) : 0}</td>
-            <td class="px-1 py-1 text-aq-text text-right">${d.cup || 0}</td>
-            <td class="px-1 py-1 text-center">
-                ${modoEdicionPE ? `<button onclick="eliminarArticuloPE(${index})" class="text-red-500 hover:text-red-700"><i class="bx bx-trash"></i></button>` : ''}
-            </td>
-        `;
+        if (d._editing === true) {
+            tr.innerHTML = `
+                <td class="px-1 py-1">
+                    <input type="date" id="edit-fecha-${index}" value="${(d.fecha || '').split('T')[0]}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">
+                </td>
+                <td class="px-1 py-1 text-aq-text">${d.codigo || ''}</td>
+                <td class="px-1 py-1 text-aq-text">${d.nombre || ''}</td>
+                <td class="px-1 py-1">
+                    <input type="number" id="edit-cantidad-${index}" value="${d.cantidad || ''}" step="any" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs text-right">
+                </td>
+                <td class="px-1 py-1">
+                    <select id="edit-bodega-${index}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">${document.getElementById('peArtBodega').innerHTML}</select>
+                </td>
+                <td class="px-1 py-1">
+                    <input type="number" id="edit-punit-${index}" value="${d.punit || ''}" step="any" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs text-right">
+                </td>
+                <td class="px-1 py-1 text-aq-text text-right">${d.cup || 0}</td>
+                <td class="px-1 py-1 text-center whitespace-nowrap">
+                    <button type="button" onclick="guardarEditDetallePE(${index})" class="text-green-500 hover:text-green-700" title="Guardar"><i class="bx bx-check"></i></button>
+                    <button type="button" onclick="cancelarEditDetallePE(${index})" class="text-gray-500 hover:text-gray-700" title="Cancelar"><i class="bx bx-x"></i></button>
+                </td>
+            `;
+            const bodegaSel = tr.querySelector(`#edit-bodega-${index}`);
+            if (bodegaSel && d.bodega) bodegaSel.value = d.bodega;
+        } else {
+            tr.innerHTML = `
+                <td class="px-1 py-1 text-aq-text">${fechaFmt}</td>
+                <td class="px-1 py-1 text-aq-text">${d.codigo || ''}</td>
+                <td class="px-1 py-1 text-aq-text">${d.nombre || ''}</td>
+                <td class="px-1 py-1 text-aq-text text-right">${d.cantidad || 0}</td>
+                <td class="px-1 py-1 text-aq-text">${d.bodega || ''}</td>
+                <td class="px-1 py-1 text-aq-text text-right">${d.punit ? d.punit.toFixed(0) : 0}</td>
+                <td class="px-1 py-1 text-aq-text text-right">${d.cup || 0}</td>
+                <td class="px-1 py-1 text-center whitespace-nowrap">
+                    ${modoEdicionPE ? `<button type="button" onclick="editarDetallePE(${index})" class="text-blue-500 hover:text-blue-700 mr-1" title="Editar"><i class="bx bx-edit"></i></button><button type="button" onclick="eliminarArticuloPE(${index})" class="text-red-500 hover:text-red-700" title="Eliminar"><i class="bx bx-trash"></i></button>` : '<span class="text-aq-muted text-xs">-</span>'}
+                </td>
+            `;
+        }
         tbody.appendChild(tr);
     });
 }
@@ -366,6 +416,7 @@ function cargarPE(numero) {
             document.getElementById('tab-detalle').classList.remove('hidden');
             document.getElementById('btnGuardarPE').classList.add('hidden');
             document.getElementById('btnEliminarPE').classList.remove('hidden');
+            document.getElementById('btnEditarPE').classList.remove('hidden');
 
             const docSelect = document.getElementById('peTipoDoc');
             if (data.data.tipodocref) {

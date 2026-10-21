@@ -92,7 +92,7 @@ class ArticuloSearchAPIView(APIView):
             return Response([])
         articulos = Articulos.objects.filter(
             Q(descr__icontains=query) | Q(codigo__icontains=query)
-        ).distinct()[:20]
+        ).exclude(tipo='Inactivo').distinct()[:20]
         serializer = ArticuloSerializer(articulos, many=True)
         return Response(serializer.data)
 

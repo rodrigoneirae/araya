@@ -110,6 +110,25 @@ function eliminarArticuloVC(index) {
     renderizarDetalleVC();
 }
 
+function editarDetalleVC(index) {
+    detallesVC[index]._editing = true;
+    renderizarDetalleVC();
+}
+
+function guardarEditDetalleVC(index) {
+    const det = detallesVC[index];
+    det.cantidad = parseFloat(document.getElementById(`edit-cantidad-${index}`).value) || 0;
+    det.bodega = document.getElementById(`edit-bodega-${index}`).value;
+    det.fecha = document.getElementById(`edit-fecha-${index}`).value;
+    delete det._editing;
+    renderizarDetalleVC();
+}
+
+function cancelarEditDetalleVC(index) {
+    delete detallesVC[index]._editing;
+    renderizarDetalleVC();
+}
+
 function setCamposVCEditable(editable) {
     const inputs = ['vcFecha', 'vcArtCod', 'vcArtCant', 'vcArtFecha'];
     inputs.forEach(id => {
@@ -157,7 +176,39 @@ function nuevaVC() {
     document.getElementById('contenido-encabezado').classList.remove('hidden');
     document.getElementById('btnGuardarVC').classList.remove('hidden');
     document.getElementById('btnEliminarVC').classList.add('hidden');
+    document.getElementById('btnEditarVC').classList.add('hidden');
     setCamposVCEditable(true);
+}
+
+function editarVC() {
+    if (!document.getElementById('vcNumero').value.trim()) {
+        Toastify({text: 'No hay Vale de Consumo seleccionado', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+    setCamposVCEditable(true);
+    document.getElementById('btnGuardarVC').classList.remove('hidden');
+    document.getElementById('btnEliminarVC').classList.add('hidden');
+    document.getElementById('btnEditarVC').classList.add('hidden');
+    cambiarTabVC('detalle');
+}
+
+function eliminarVC() {
+    const numero = document.getElementById('vcNumero').value.trim();
+    if (!numero) {
+        Toastify({text: 'No hay Vale de Consumo seleccionado', style: {background: '#f44336'}}).showToast();
+        return;
+    }
+    if (!confirm('¿Está seguro de eliminar este Vale de Consumo?')) {
+        return;
+    }
+    buscarXHRVC('eliminar', {numero: numero}, function(data) {
+        if (data.success) {
+            Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+            nuevaVC();
+        } else {
+            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+        }
+    });
 }
 
 function renderizarDetalleVC() {
@@ -177,19 +228,43 @@ function renderizarDetalleVC() {
             const f = d.fecha.split('T')[0];
             if (f) fechaFmt = f.split('-').reverse().join('-');
         }
-        
-        tr.innerHTML = `
-            <td class="px-1 py-1 text-aq-text">${fechaFmt}</td>
-            <td class="px-1 py-1 text-aq-text">${d.codigo__codigo || ''}</td>
-            <td class="px-1 py-1 text-aq-text">${d.codigo__descr || ''}</td>
-            <td class="px-1 py-1 text-aq-text text-right">${d.cantidad || 0}</td>
-            <td class="px-1 py-1 text-aq-text">${d.bodega || ''}</td>
-            <td class="px-1 py-1 text-aq-text">${d.codigo__um || ''}</td>
-            <td class="px-1 py-1 text-aq-text">${d.codigo__tipo || ''}</td>
-            <td class="px-1 py-1 text-center">
-                ${modoEdicionVC ? `<button onclick="eliminarArticuloVC(${index})" class="text-red-500 hover:text-red-700"><i class="bx bx-trash"></i></button>` : ''}
-            </td>
-        `;
+
+        if (d._editing === true) {
+            tr.innerHTML = `
+                <td class="px-1 py-1">
+                    <input type="date" id="edit-fecha-${index}" value="${(d.fecha || '').split('T')[0]}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">
+                </td>
+                <td class="px-1 py-1 text-aq-text">${d.codigo__codigo || ''}</td>
+                <td class="px-1 py-1 text-aq-text">${d.codigo__descr || ''}</td>
+                <td class="px-1 py-1">
+                    <input type="number" id="edit-cantidad-${index}" value="${d.cantidad || ''}" step="any" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs text-right">
+                </td>
+                <td class="px-1 py-1">
+                    <select id="edit-bodega-${index}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">${document.getElementById('vcArtBodega').innerHTML}</select>
+                </td>
+                <td class="px-1 py-1 text-aq-text">${d.codigo__um || ''}</td>
+                <td class="px-1 py-1 text-aq-text">${d.codigo__tipo || ''}</td>
+                <td class="px-1 py-1 text-center whitespace-nowrap">
+                    <button type="button" onclick="guardarEditDetalleVC(${index})" class="text-green-500 hover:text-green-700" title="Guardar"><i class="bx bx-check"></i></button>
+                    <button type="button" onclick="cancelarEditDetalleVC(${index})" class="text-gray-500 hover:text-gray-700" title="Cancelar"><i class="bx bx-x"></i></button>
+                </td>
+            `;
+            const bodegaSel = tr.querySelector(`#edit-bodega-${index}`);
+            if (bodegaSel && d.bodega) bodegaSel.value = d.bodega;
+        } else {
+            tr.innerHTML = `
+                <td class="px-1 py-1 text-aq-text">${fechaFmt}</td>
+                <td class="px-1 py-1 text-aq-text">${d.codigo__codigo || ''}</td>
+                <td class="px-1 py-1 text-aq-text">${d.codigo__descr || ''}</td>
+                <td class="px-1 py-1 text-aq-text text-right">${d.cantidad || 0}</td>
+                <td class="px-1 py-1 text-aq-text">${d.bodega || ''}</td>
+                <td class="px-1 py-1 text-aq-text">${d.codigo__um || ''}</td>
+                <td class="px-1 py-1 text-aq-text">${d.codigo__tipo || ''}</td>
+                <td class="px-1 py-1 text-center whitespace-nowrap">
+                    ${modoEdicionVC ? `<button type="button" onclick="editarDetalleVC(${index})" class="text-blue-500 hover:text-blue-700 mr-1" title="Editar"><i class="bx bx-edit"></i></button><button type="button" onclick="eliminarArticuloVC(${index})" class="text-red-500 hover:text-red-700" title="Eliminar"><i class="bx bx-trash"></i></button>` : '<span class="text-aq-muted text-xs">-</span>'}
+                </td>
+            `;
+        }
         tbody.appendChild(tr);
     });
 }
@@ -230,6 +305,7 @@ function cargarVC(numero) {
             document.getElementById('tab-detalle').classList.remove('hidden');
             document.getElementById('btnGuardarVC').classList.add('hidden');
             document.getElementById('btnEliminarVC').classList.remove('hidden');
+            document.getElementById('btnEditarVC').classList.remove('hidden');
 
         detallesVC = (data.data.detalles || []).map(d => ({
             codigo__codigo: d.codigo__codigo || d.codigo || '',

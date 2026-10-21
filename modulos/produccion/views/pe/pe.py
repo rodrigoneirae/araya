@@ -193,7 +193,7 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
         return JsonResponse({"articulos": resultado})
 
     def _listar_pe(self) -> JsonResponse:
-        movs = Movs.objects.filter(linea=0, tipo=6).values(
+        movs = Movs.objects.filter(linea=0, tipo=6).exclude(estado__iexact="Cerrado").values(
             "numero", "fecha", "docref", "tipodocref", "proceso", "estado", "codencargado"
         ).order_by("-numero")
         resultado = []

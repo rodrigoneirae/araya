@@ -148,7 +148,9 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
         if not codigo:
             return JsonResponse({"success": False})
         try:
-            articulo = Articulos.objects.get(codigo=codigo)
+            articulo = Articulos.objects.filter(codigo=codigo).exclude(tipo="Inactivo").first()
+            if not articulo:
+                return JsonResponse({"success": False, "message": "Artículo no encontrado"})
             return JsonResponse({
                 "success": True,
                 "data": {
@@ -159,15 +161,15 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
                     "prc": articulo.prc or ""
                 }
             })
-        except Articulos.DoesNotExist:
-            return JsonResponse({"success": False, "message": "Artículo no encontrado"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
 
     def _listar_articulos(self) -> JsonResponse:
-        articulos = Articulos.objects.values("codigo", "descr", "um", "precio").order_by("descr")
+        articulos = Articulos.objects.exclude(tipo="Inactivo").values("codigo", "descr", "um", "precio").order_by("descr")
         return JsonResponse({"articulos": list(articulos)})
 
     def _listar_articulos_produccion(self) -> JsonResponse:
-        articulos = Articulos.objects.exclude(tipo="Insumo").values(
+        articulos = Articulos.objects.exclude(tipo="Insumo").exclude(tipo="Inactivo").values(
             "codigo", "descr", "tipo", "um", "precio", "prc"
         ).order_by("codigo")
 
@@ -193,7 +195,7 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
         return JsonResponse({"articulos": resultado})
 
     def _listar_pe(self) -> JsonResponse:
-        movs = Movs.objects.filter(linea=0, tipo=6).exclude(estado__iexact="Cerrado").values(
+        movs = Movs.objects.filter(linea=0, tipo=6).values(
             "numero", "fecha", "docref", "tipodocref", "proceso", "estado", "codencargado"
         ).order_by("-numero")
         resultado = []

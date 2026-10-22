@@ -52,7 +52,7 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
         return JsonResponse({"proximo_numero": numero})
 
     def _listar_encargados(self) -> JsonResponse:
-        empleados = Empleados.objects.values("cod", "nombre").order_by("nombre")
+        empleados = Empleados.objects.filter(estado="Activo").values("cod", "nombre").order_by("nombre")
         return JsonResponse({"encargados": list(empleados)})
 
     def _listar_procesos(self) -> JsonResponse:

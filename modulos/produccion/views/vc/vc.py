@@ -208,7 +208,7 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
         return JsonResponse({"articulos": list(articulos)})
 
     def _listar_articulos_produccion(self) -> JsonResponse:
-        articulos = Articulos.objects.exclude(tipo="Insumo").values(
+        articulos = Articulos.objects.exclude(tipo="Insumo").exclude(tipo__iexact="Inactivo").values(
             "codigo", "descr", "tipo", "um", "precio", "prc"
         ).order_by("codigo")
 

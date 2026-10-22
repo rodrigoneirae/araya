@@ -669,7 +669,7 @@ class _OTDetailScreenState extends State<OTDetailScreen> with WidgetsBindingObse
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${d.codigo} · P.Unit: \$${d.punit.toStringAsFixed(2)}',
+                  '${d.codigo} · Doc. Ref.: ${d.docref?.toStringAsFixed(0) ?? '—'}',
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? ArayaColors.darkMuted : ArayaColors.lightMuted,

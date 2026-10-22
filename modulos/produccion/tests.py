@@ -32,8 +32,8 @@ class PendienteOrdenTrabajoTests(TestCase):
             cantidad=cantidad, codigo=codigo, **kwargs,
         )
 
-    def test_reparacion_y_desmontado_suman_cargas_y_partes_sin_comparar_codigos(self):
-        for numero, nombre in [(101, 'REPARACIÓN'), (102, 'Desmontado')]:
+    def test_procesos_por_carga_suman_partes_sin_comparar_codigos(self):
+        for numero, nombre in [(101, 'REPARACIÓN'), (102, 'Desmontado'), (105, 'DESARME')]:
             proceso = Procesos.objects.create(cod=numero, nombre=nombre)
             encabezado = self.movimiento(numero, self.ot, 0, proceso=proceso.cod)
             self.movimiento(numero, self.ot, 1, 60, self.articulo_carga, docref=11, tipodocref=7)

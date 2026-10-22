@@ -8,7 +8,7 @@ from modulos.maestros.models.prov_cliente import Provclientes
 
 
 def es_proceso_por_carga(obj, context):
-    """Reparación y desmontado se miden por carga, no por código producido."""
+    """Reparación, desarme y desmontado se miden por carga, no por código producido."""
     if obj.proceso is None:
         return False
     codigo = int(obj.proceso)
@@ -19,7 +19,7 @@ def es_proceso_por_carga(obj, context):
             char for char in unicodedata.normalize('NFD', nombre.upper().strip())
             if unicodedata.category(char) != 'Mn'
         )
-        cache[codigo] = nombre in {'REPARACION', 'DESMONTADO'}
+        cache[codigo] = nombre in {'REPARACION', 'DESARME', 'DESMONTADO'}
     return cache[codigo]
 
 

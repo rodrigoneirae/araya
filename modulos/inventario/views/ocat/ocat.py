@@ -164,7 +164,9 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             detalles = list(movs.exclude(linea=0).filter(tipo=7).values(
                 "codigo", "cantidad", "punit", "total", "bodega", "linea",
                 "canttotal", "neto", "iva", "proceso", "fecha", "estado", "cup",
-                "peso", "categoria", "tratamiento", "sucursal_id"
+                "peso", "categoria", "tratamiento", "sucursal_id",
+                nombre=models.F("codigo__descr"),
+                um=models.F("codigo__um"),
             ))
 
             procesos_map = {float(p.cod): p.nombre for p in Procesos.objects.all()}

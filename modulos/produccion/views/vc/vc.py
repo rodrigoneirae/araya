@@ -5,6 +5,7 @@ from django.http import HttpRequest, HttpResponseRedirect, HttpResponse, JsonRes
 from django.views.generic import TemplateView
 from django.utils import timezone
 from django.db.models import Q
+from django.db import transaction
 
 from modulos.inventario.models.movs import Movs
 from modulos.maestros.models.docs import Docs
@@ -129,7 +130,7 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
                 if m.codigo:
                     tipo_art = m.codigo.tipo or ""
                     um_art = m.codigo.um or ""
-                    cup_val = m.codigo.cup or ""
+                    cup_val = m.cup if m.cup is not None else (m.punit or 0)
 
                 resultado.append({
                     "fecha": fecha_str,
@@ -197,6 +198,7 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
                     "nombre": articulo.descr or "",
                     "um": articulo.um or "",
                     "precio": articulo.precio or 0,
+                    "cup": articulo.cup or 0,
                     "prc": articulo.prc or ""
                 }
             })
@@ -209,7 +211,7 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
 
     def _listar_articulos_produccion(self) -> JsonResponse:
         articulos = Articulos.objects.exclude(tipo="Insumo").exclude(tipo__iexact="Inactivo").values(
-            "codigo", "descr", "tipo", "um", "precio", "prc"
+            "codigo", "descr", "tipo", "um", "precio", "prc", "cup"
         ).order_by("codigo")
 
         procesos_map = {int(p.cod): p.nombre for p in Procesos.objects.all()}
@@ -228,6 +230,7 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
                 "tipo": a["tipo"] or "",
                 "um": a["um"] or "",
                 "precio": a["precio"] or 0,
+                "cup": a["cup"] or 0,
                 "proceso": proceso_nombre,
             })
 
@@ -339,7 +342,7 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
                 encabezado = movs.first()
 
             detalles = list(movs.exclude(linea=0).values(
-                "codigo", "cantidad", "punit", "bodega", "linea",
+                "id", "codigo", "cantidad", "punit", "cup", "bodega", "linea",
                 "fecha", "estado", "codencargado"
             ))
 
@@ -428,11 +431,15 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
+    @transaction.atomic
     def _guardar_vc(self, data: dict[str, Any]) -> JsonResponse:
         try:
             numero_existente = data.get("numero", "")
+            anteriores = {}
             if numero_existente:
                 numero = float(numero_existente)
+                anteriores = {m.id: m for m in Movs.objects.select_for_update().filter(
+                    numero=numero, tipo=10, linea__gt=0)}
                 Movs.objects.filter(numero=numero, tipo=10).delete()
             else:
                 ultimo = Movs.objects.filter(tipo=10, linea=0).order_by("-numero").first()
@@ -467,7 +474,13 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
             for i, det in enumerate(detalles, start=1):
                 codigo_art = None
                 if det.get("codigo"):
-                    codigo_art = Articulos.objects.filter(codigo=det.get("codigo")).first()
+                    codigo_art = Articulos.objects.select_for_update().get(codigo=det.get("codigo"))
+
+                anterior = anteriores.get(det.get('id'))
+                if anterior and anterior.codigo_id == det.get('codigo'):
+                    costo = anterior.cup if anterior.cup is not None else (anterior.punit or 0)
+                else:
+                    costo = float(codigo_art.cup or 0) if codigo_art else 0
 
                 codigo_str = det.get("codigo", "")
                 if codigo_str.upper().startswith("P"):
@@ -484,7 +497,9 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
                     proceso=proceso,
                     codigo=codigo_art,
                     cantidad=float(det.get("cantidad", 0)),
-                    punit=float(det.get("punit", 0)) if det.get("punit") else 0,
+                    punit=costo,
+                    cup=costo,
+                    total=abs(float(det.get("cantidad", 0))) * costo,
                     bodega=float(det.get("bodega")) if det.get("bodega") else None,
                     tipodocref=8,
                     docref=ot_numero,
@@ -495,6 +510,7 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
 
             return JsonResponse({"success": True, "message": f"VC {int(numero)} guardado correctamente", "numero": int(numero)})
         except Exception as e:
+            transaction.set_rollback(True)
             return JsonResponse({"success": False, "message": str(e)})
 
     def _historial_articulo(self, codigo: str) -> JsonResponse:

@@ -255,6 +255,7 @@ function guardarVC() {
     buscarXHRVC('nuevo_vc', datos, function(data) {
         if (data.success) {
             Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+            buscarVCInput();
             modoEdicionVC = true;
             document.getElementById('btnEditarVC').classList.remove('hidden');
             document.getElementById('btnEliminarVC').classList.remove('hidden');
@@ -340,6 +341,7 @@ function cargarVC(data) {
     if (data.detalles) {
         data.detalles.forEach(d => {
             detallesVC.push({
+                id: d.id,
                 fecha: d.fecha ? new Date(d.fecha).toISOString().split('T')[0] : '',
                 codigo: d.codigo || '',
                 nombre: d.nombre || '',
@@ -623,7 +625,7 @@ function renderizarDetallesVC() {
                 </td>
                 <td class="px-1 py-1 text-xs">${det.nombre || ''}</td>
                 <td class="px-1 py-1 text-xs">
-                    <input type="number" id="edit-punit-${index}" value="${det.punit || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs text-right" step="any">
+                    <input type="number" id="edit-punit-${index}" value="${det.punit ?? 0}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs text-right" step="any" readonly>
                 </td>
                 <td class="px-1 py-1 text-xs">
                     <input type="date" id="edit-fecha-${index}" value="${det.fecha || ''}" class="w-full px-1 py-1 border border-aq-border bg-aq-bg text-aq-text text-xs">
@@ -780,9 +782,7 @@ function buscarArticuloVCInput() {
                 document.getElementById('vcArtNombre').value = data.data.nombre || '';
             }
             document.getElementById('vcArtUM').value = data.data.um || '';
-            if (!document.getElementById('vcArtPUnit').value) {
-                document.getElementById('vcArtPUnit').value = data.data.precio || 0;
-            }
+            document.getElementById('vcArtPUnit').value = data.data.cup || 0;
             cargarHistorialArticulo(codigo);
         } else {
             Toastify({text: 'Artículo no encontrado', style: {background: '#f44336'}}).showToast();
@@ -844,8 +844,7 @@ function abrirListaArticulosVC() {
                     document.getElementById('vcArtNombre').value = row.descr || '';
                 }
                 document.getElementById('vcArtUM').value = row.um || '';
-                document.getElementById('vcArtPUnit').value = row.precio || 0;
-                cargarHistorialArticulo(row.codigo);
+                buscarArticuloVCInput();
             }
         });
     });

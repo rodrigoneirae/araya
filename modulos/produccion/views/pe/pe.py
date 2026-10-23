@@ -5,8 +5,10 @@ from django.http import HttpRequest, HttpResponseRedirect, HttpResponse, JsonRes
 from django.views.generic import TemplateView
 from django.utils import timezone
 from django.db.models import Q
+from django.db import transaction
 
 from modulos.inventario.models.movs import Movs
+from modulos.inventario.costos import actualizar_cup_ingreso
 from modulos.maestros.models.docs import Docs
 from modulos.maestros.models.empleados import Empleados
 from modulos.maestros.models.procesos import Procesos
@@ -127,7 +129,7 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
                 if m.codigo:
                     tipo_art = m.codigo.tipo or ""
                     um_art = m.codigo.um or ""
-                    cup_val = m.codigo.cup or ""
+                    cup_val = m.cup if m.cup is not None else (m.punit or 0)
 
                 resultado.append({
                     "fecha": fecha_str,
@@ -383,22 +385,25 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
+    @transaction.atomic
     def _eliminar_pe(self, numero) -> JsonResponse:
         try:
             if not numero:
                 return JsonResponse({"success": False, "message": "Número de PE requerido"})
             
+            actualizar_cup_ingreso(float(numero), [], tipo=6)
             Movs.objects.filter(numero=float(numero), tipo=6).delete()
             return JsonResponse({"success": True, "message": f"PE {numero} eliminado correctamente"})
         except Exception as e:
+            transaction.set_rollback(True)
             return JsonResponse({"success": False, "message": str(e)})
 
+    @transaction.atomic
     def _guardar_pe(self, data: dict[str, Any]) -> JsonResponse:
         try:
             numero_existente = data.get("numero", "")
             if numero_existente:
                 numero = float(numero_existente)
-                Movs.objects.filter(numero=numero, tipo=6).delete()
             else:
                 ultimo = Movs.objects.filter(tipo=6, linea=0).order_by("-numero").first()
                 numero = (ultimo.numero + 1) if ultimo else 1
@@ -410,6 +415,8 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
 
             detalles_raw = data.get("detalles", "[]")
             detalles = json.loads(detalles_raw) if isinstance(detalles_raw, str) else detalles_raw
+            cups = actualizar_cup_ingreso(numero, detalles, tipo=6)
+            Movs.objects.filter(numero=numero, tipo=6).delete()
 
             usr = self.request.user.username if self.request.user.is_authenticated else ""
             time_user = timezone.now()
@@ -454,6 +461,7 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
                     codigo=codigo_art,
                     cantidad=float(det.get("cantidad", 0)),
                     punit=float(det.get("punit", 0)) if det.get("punit") else 0,
+                    cup=cups[det['codigo']],
                     bodega=float(det.get("bodega")) if det.get("bodega") else None,
                     tipodocref=8,
                     docref=ot_numero,
@@ -464,6 +472,7 @@ class IndexIngresoPEView(LoginRequiredMixin, TemplateView):
 
             return JsonResponse({"success": True, "message": f"PE {int(numero)} guardado correctamente", "numero": int(numero)})
         except Exception as e:
+            transaction.set_rollback(True)
             return JsonResponse({"success": False, "message": str(e)})
 
     def _historial_articulo(self, codigo: str) -> JsonResponse:

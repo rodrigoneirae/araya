@@ -1149,12 +1149,16 @@ function guardarCUP() {
         codigo: codigo,
         nuevo_punit: punit,
         nueva_cant: cantidad,
-        numero: numero
+        numero: numero,
+        detalles: JSON.stringify(detallesOcat.map((d, i) => i === indiceCUP
+            ? {...d, cantidad: cantidad, punit: punit} : d))
     }, function(data) {
         if (data.success) {
             detallesOcat[indiceCUP].cantidad = cantidad;
             detallesOcat[indiceCUP].punit = punit;
-            detallesOcat[indiceCUP].cup = data.cup;
+            detallesOcat.forEach(d => {
+                if (d.codigo === codigo) d.cup = data.cup;
+            });
             detallesOcat[indiceCUP].subtotal = cantidad * punit;
             detallesOcat[indiceCUP].total = cantidad * punit;
             detallesOcat[indiceCUP].canttotal = cantidad;

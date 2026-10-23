@@ -1,13 +1,13 @@
 from typing import Any
 import json
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import models
-from django.db.models import Sum
+from django.db import models, transaction
 from django.http import HttpRequest,HttpResponseRedirect, HttpResponse, JsonResponse
 from django.views.generic import TemplateView
 from django.utils import timezone
 
 from modulos.inventario.models.movs import Movs
+from modulos.inventario.costos import actualizar_cup_ingreso, cup_reemplazo, stock_actual
 from modulos.maestros.models.prov_cliente import Provclientes
 from modulos.maestros.models.docs import Docs
 from modulos.maestros.models.empleados import Empleados
@@ -258,6 +258,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
+    @transaction.atomic
     def _eliminar_ocat(self, numero) -> JsonResponse:
         import logging
         logger = logging.getLogger(__name__)
@@ -266,10 +267,12 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             if not numero:
                 return JsonResponse({"success": False, "message": "Número de OCAT requerido"})
 
+            actualizar_cup_ingreso(numero, [], tipo=7)
             Movs.objects.filter(numero=numero, tipo=7).delete()
             logger.info(f"OCAT {numero} eliminada")
             return JsonResponse({"success": True, "message": f"OCAT {numero} eliminada correctamente"})
         except Exception as e:
+            transaction.set_rollback(True)
             logger.error(f"Error al eliminar: {e}")
             return JsonResponse({"success": False, "message": str(e)})
 
@@ -285,13 +288,13 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": False, "message": str(e)})
             return JsonResponse({"success": False, "message": str(e)})
 
+    @transaction.atomic
     def _guardar_ocat(self, data: dict[str, Any]) -> JsonResponse:
         try:
 
             numero_existente = data.get("numero", "")
             if numero_existente:
                 numero = float(numero_existente)
-                Movs.objects.filter(numero=numero, tipo=7).delete()
             else:
                 ultimo = Movs.objects.filter(tipo=7, linea=0).order_by("-numero").first()
                 numero = (ultimo.numero + 1) if ultimo else 1
@@ -307,6 +310,8 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
 
             detalles_raw = data.get("detalles", "[]")
             detalles = json.loads(detalles_raw) if isinstance(detalles_raw, str) else detalles_raw
+            cups = actualizar_cup_ingreso(numero, detalles, tipo=7)
+            Movs.objects.filter(numero=numero, tipo=7).delete()
 
             cant_total = total
             punit = neto / cant_total if cant_total > 0 else 0
@@ -389,6 +394,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     cantidad=float(det.get("cantidad", 0)),
                     canttotal=cant_total,
                     punit=float(det.get("punit", 0)),
+                    cup=cups[det['codigo']],
                     neto=neto,
                     total=float(det.get("total", 0)),
                     estado=det.get("estado", estado),
@@ -405,6 +411,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
 
             return JsonResponse({"success": True, "message": f"OCAT {int(numero)} guardada correctamente", "numero": int(numero)})
         except Exception as e:
+            transaction.set_rollback(True)
             return JsonResponse({"success": False, "message": str(e)})
 
     def _calcular_cup(self, datos) -> JsonResponse:
@@ -418,33 +425,21 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                 return JsonResponse({"success": False, "message": "Código de artículo requerido"})
 
             articulo = Articulos.objects.get(codigo=codigo)
-            cup_actual = float(articulo.cup or 0)
-
-            stock_actual = Movs.objects.filter(codigo=codigo).aggregate(total=Sum("cantidad"))["total"] or 0
-
-            punit_anterior = 0
-            cant_anterior = 0
-            stock_anterior = stock_actual
-
-            mov = Movs.objects.filter(numero=numero, tipo=7, codigo=codigo, linea__gt=0).first()
-            if mov:
-                punit_anterior = float(mov.punit or 0)
-                cant_anterior = float(mov.cantidad or 0)
-                stock_anterior = stock_actual - cant_anterior
-
-            if stock_anterior == 0:
-                cup_anterior = cup_actual
-            else:
-                cup_anterior = (cup_actual * stock_actual - punit_anterior * cant_anterior) / stock_anterior
-
-            nuevo_cup = (nuevo_punit * nueva_cant + stock_anterior * cup_anterior) / (stock_anterior + nueva_cant) if (stock_anterior + nueva_cant) > 0 else nuevo_punit
+            if nueva_cant <= 0 or nuevo_punit < 0:
+                raise ValueError('Cantidad o precio inválidos')
+            anteriores = list(Movs.objects.filter(numero=numero, tipo=7, codigo=codigo, linea__gt=0)) if numero else []
+            nuevos = [{"cantidad": nueva_cant, "punit": nuevo_punit}]
+            if datos.get('detalles'):
+                nuevos = [d for d in json.loads(datos['detalles']) if d.get('codigo') == codigo]
+            nuevo_cup = cup_reemplazo(articulo, anteriores, nuevos)
+            stock = float(stock_actual(codigo))
 
             return JsonResponse({
                 "success": True,
                 "cup": round(nuevo_cup, 2),
-                "stock_actual": stock_actual,
-                "stock_anterior": stock_anterior,
-                "cup_anterior": round(cup_anterior, 2) if stock_anterior > 0 else cup_actual
+                "stock_actual": stock,
+                "stock_anterior": stock - sum(m.cantidad or 0 for m in anteriores),
+                "cup_anterior": articulo.cup or 0
             })
         except Articulos.DoesNotExist:
             return JsonResponse({"success": False, "message": "Artículo no encontrado"})

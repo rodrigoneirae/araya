@@ -488,6 +488,7 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
                 else:
                     estado_detalle = "Abierto"
 
+                cantidad = -abs(float(det.get("cantidad", 0)))
                 Movs.objects.create(
                     numero=numero,
                     tipo=tipo,
@@ -496,10 +497,10 @@ class IndexIngresoVCView(LoginRequiredMixin, TemplateView):
                     codencargado=codencargado,
                     proceso=proceso,
                     codigo=codigo_art,
-                    cantidad=float(det.get("cantidad", 0)),
+                    cantidad=cantidad,
                     punit=costo,
                     cup=costo,
-                    total=abs(float(det.get("cantidad", 0))) * costo,
+                    total=abs(cantidad) * costo,
                     bodega=float(det.get("bodega")) if det.get("bodega") else None,
                     tipodocref=8,
                     docref=ot_numero,

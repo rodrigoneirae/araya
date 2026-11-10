@@ -62,6 +62,23 @@ class FlujoCUPTests(TestCase):
         self.ingreso(cantidad=20, precio=3000)
         self.assertEqual(self.articulo.cup, 2200)
 
+    def test_vc_guarda_consumos_en_negativo_independiente_del_signo_ingresado(self):
+        for cantidad in (10, -10, 0):
+            with self.subTest(cantidad=cantidad):
+                mov = self.consumo(detalles=[{'codigo': 'BASA', 'cantidad': cantidad}])
+                self.assertEqual(mov.cantidad, -abs(cantidad))
+                self.assertEqual(mov.total, abs(cantidad) * 2000)
+                self.assertEqual(stock_actual('BASA'), 100 - abs(cantidad))
+
+    def test_editar_vc_normaliza_cantidad_y_conserva_costo_original(self):
+        mov = self.consumo()
+        self.ingreso(cantidad=50, precio=2600)
+        mov = self.consumo(detalles=[{'id': mov.id, 'codigo': 'BASA', 'cantidad': 12}])
+        self.assertEqual(mov.cantidad, -12)
+        self.assertEqual(mov.cup, 2000)
+        self.assertEqual(mov.total, 24000)
+        self.assertEqual(Movs.objects.filter(numero=20, tipo_id=10, linea__gt=0).count(), 1)
+
     def test_editar_y_guardar_nuevamente_no_duplica_el_ingreso(self):
         self.ingreso()
         self.ingreso(precio=3200)

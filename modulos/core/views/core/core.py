@@ -97,7 +97,8 @@ class IndexCoreView( LoginRequiredMixin,TemplateView):
         bodega_val = data.get('bodega', '').strip()
         if not bodega_val:
             return JsonResponse({'success': False, 'message': 'Bodega requerida'})
-        movimientos = Q(movs__tipo__isnull=False)
+        # Solo detalles físicos: las OT y OC no modifican existencias.
+        movimientos = Q(movs__linea__gt=0) & ~Q(movs__tipo__cod__in=[8, 15])
         if bodega_val != 'all':
             try:
                 bodega_cod = int(bodega_val)
@@ -110,9 +111,11 @@ class IndexCoreView( LoginRequiredMixin,TemplateView):
             .exclude(codigo='')
             .values('codigo', 'descr', 'um')
             .annotate(saldo=Coalesce(Sum(Case(
-                When(Q(movs__tipo__signo__lt=0) | Q(movs__tipo__cod=12),
+                When(Q(movs__tipo__signo__lt=0) | Q(movs__tipo__cod__in=[10, 12]),
                      then=-Abs(F('movs__cantidad'))),
-                default=F('movs__cantidad'),
+                When(Q(movs__tipo__signo__gt=0) | Q(movs__tipo__cod__in=[6, 7, 11]),
+                     then=F('movs__cantidad')),
+                default=0.0,
                 output_field=FloatField(),
             ), filter=movimientos), 0.0))
             .order_by('-saldo', 'codigo')

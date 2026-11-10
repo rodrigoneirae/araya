@@ -54,6 +54,79 @@ class FlujoCUPTests(TestCase):
         self.assertEqual(mov.punit, 2600)
         self.assertEqual(stock_actual('BASA'), 150)
 
+    def test_ocat_precio_busqueda_y_modal_usan_ultimo_ingreso_si_maestro_vacio(self):
+        self.ingreso(precio=2600)
+        datos = json.loads(self.ocat._buscar_articulo('BASA').content)['data']
+        lista = json.loads(self.ocat._listar_articulos().content)['articulos']
+        self.assertEqual(datos['precio'], 2600)
+        self.assertEqual(lista[0]['precio'], 2600)
+        self.assertEqual(datos['cup'], 2200)
+        self.articulo.precio = 3000
+        self.articulo.save(update_fields=['precio'])
+        self.assertEqual(json.loads(self.ocat._buscar_articulo('BASA').content)['data']['precio'], 3000)
+
+    def test_previsualizar_cup_no_modifica_maestro_y_coincide_al_guardar(self):
+        data = {'codigo': 'BASA', 'nueva_cant': 50, 'nuevo_punit': 2600}
+        previo = json.loads(self.ocat._calcular_cup(data).content)
+        self.assertTrue(previo['success'], previo)
+        self.assertEqual(previo['cup'], 2200)
+        self.articulo.refresh_from_db()
+        self.assertEqual(self.articulo.cup, 2000)
+        self.assertEqual(self.ingreso().cup, previo['cup'])
+
+    def test_cup_manual_se_persiste_sin_revalorizar_consumos_anteriores(self):
+        consumo = self.consumo()
+        mov = self.ingreso(cup_manual=2500)
+        self.assertEqual(mov.cup, 2500)
+        self.assertEqual(self.articulo.cup, 2500)
+        self.assertEqual(mov.punit, 2600)
+        self.assertEqual(mov.total, 130000)
+        consumo.refresh_from_db()
+        self.assertEqual(consumo.cup, 2000)
+        self.assertEqual(consumo.total, 20000)
+
+    def test_cup_manual_en_previsualizacion_y_en_lineas_repetidas(self):
+        detalles = [{'codigo': 'BASA', 'cantidad': 25, 'punit': 2600, 'cup_manual': 2400},
+                    {'codigo': 'BASA', 'cantidad': 25, 'punit': 2600}]
+        previo = json.loads(self.ocat._calcular_cup({
+            'codigo': 'BASA', 'nuevo_punit': 2600, 'nueva_cant': 25,
+            'detalles': json.dumps(detalles)}).content)
+        self.assertEqual(previo['cup'], 2400)
+        response = json.loads(self.ocat._guardar_ocat({
+            'numero': '2', 'fecha': timezone.now().isoformat(), 'total': 50,
+            'detalles': detalles}).content)
+        self.assertTrue(response['success'], response)
+        self.assertEqual(list(Movs.objects.filter(numero=2, tipo_id=7, linea__gt=0)
+                              .values_list('cup', flat=True)), [2400, 2400])
+
+    def test_cup_manual_invalido_no_modifica_articulo_ni_movimientos(self):
+        for manual in [-1, 'NaN', 'Infinity', '1e999', 'incorrecto']:
+            with self.subTest(manual=manual):
+                detalles = [{'codigo': 'BASA', 'cantidad': 50, 'punit': 2600, 'cup_manual': manual}]
+                response = json.loads(self.ocat._guardar_ocat({
+                    'numero': '2', 'fecha': timezone.now().isoformat(),
+                    'total': 50, 'detalles': detalles}).content)
+                self.assertFalse(response['success'])
+                self.articulo.refresh_from_db()
+                self.assertEqual(self.articulo.cup, 2000)
+                self.assertFalse(Movs.objects.filter(tipo_id=7).exists())
+
+    def test_cup_manual_contradictorio_entre_lineas_se_rechaza(self):
+        detalles = [{'codigo': 'BASA', 'cantidad': 25, 'punit': 2600, 'cup_manual': manual}
+                    for manual in [2400, 2500]]
+        response = json.loads(self.ocat._guardar_ocat({
+            'numero': '2', 'fecha': timezone.now().isoformat(),
+            'total': 50, 'detalles': detalles}).content)
+        self.assertFalse(response['success'])
+        self.articulo.refresh_from_db()
+        self.assertEqual(self.articulo.cup, 2000)
+
+    def test_editar_solo_cup_se_aplica_aunque_cantidad_y_precio_no_cambien(self):
+        self.ingreso()
+        self.ingreso(cup_manual=2300)
+        self.assertEqual(self.articulo.cup, 2300)
+        self.assertEqual(Movs.objects.get(numero=2, tipo_id=7, linea=1).cup, 2300)
+
     def test_stock_descuenta_salidas_positivas_y_negativas_e_ignora_ordenes(self):
         for tipo, cantidad in [(10, 10), (12, -10), (8, 1000), (15, 1000)]:
             Movs.objects.create(numero=99, tipo_id=tipo, linea=1, fecha=timezone.now(),

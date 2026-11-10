@@ -44,7 +44,17 @@ def cup_reemplazo(articulo, anteriores, nuevos):
     return float(articulo.cup or 0)
 
 
-def actualizar_cup_ingreso(numero, detalles, tipo):
+def cup_manual_ingreso(detalles):
+    valores = {decimal(d['cup_manual']) for d in detalles
+               if d.get('cup_manual') not in (None, '')}
+    if any(not valor.is_finite() or valor < 0 or not isfinite(float(valor)) for valor in valores):
+        raise ValueError('El CUP manual debe ser un número finito no negativo.')
+    if len(valores) > 1:
+        raise ValueError('Todas las líneas de un artículo deben usar el mismo CUP manual.')
+    return float(next(iter(valores))) if valores else None
+
+
+def actualizar_cup_ingreso(numero, detalles, tipo, permitir_cup_manual=False):
     anteriores = list(Movs.objects.filter(numero=numero, tipo_id=tipo, linea__gt=0))
     codigos = {m.codigo_id for m in anteriores if m.codigo_id}
     for det in detalles:
@@ -60,6 +70,12 @@ def actualizar_cup_ingreso(numero, detalles, tipo):
     for articulo in articulos:
         viejos = [m for m in anteriores if m.codigo_id == articulo.codigo]
         nuevos = [d for d in detalles if d['codigo'] == articulo.codigo]
+        cup_manual = cup_manual_ingreso(nuevos) if permitir_cup_manual else None
+        if cup_manual is not None:
+            articulo.cup = cup_manual
+            articulo.save(update_fields=['cup'])
+            cups[articulo.codigo] = cup_manual
+            continue
         # Guardar sin cambios no debe alterar el costo por redondeos.
         if sorted((m.cantidad or 0, m.punit or 0) for m in viejos) == sorted(
                 (float(d['cantidad']), float(d['punit'])) for d in nuevos):

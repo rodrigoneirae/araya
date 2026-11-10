@@ -1,13 +1,15 @@
 from typing import Any
 import json
+from math import isfinite
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import models, transaction
+from django.db.models.functions import Coalesce
 from django.http import HttpRequest,HttpResponseRedirect, HttpResponse, JsonResponse
 from django.views.generic import TemplateView
 from django.utils import timezone
 
 from modulos.inventario.models.movs import Movs
-from modulos.inventario.costos import actualizar_cup_ingreso, cup_reemplazo, stock_actual
+from modulos.inventario.costos import actualizar_cup_ingreso, cup_manual_ingreso, cup_reemplazo, stock_actual
 from modulos.maestros.models.prov_cliente import Provclientes
 from modulos.maestros.models.docs import Docs
 from modulos.maestros.models.empleados import Empleados
@@ -68,11 +70,23 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
         empleados = Empleados.objects.values("cod", "nombre").filter(estado='Activo').order_by("nombre")
         return JsonResponse({"encargados": list(empleados)})
 
+    @staticmethod
+    def _articulos_con_precio():
+        ultimo_ingreso = (Movs.objects.filter(
+            codigo_id=models.OuterRef('codigo'), tipo_id=7, linea__gt=0,
+            punit__isnull=False,
+        ).order_by('-fecha', '-id').values('punit')[:1])
+        return (Articulos.objects.select_related('categoria__tratamiento')
+                .exclude(tipo__iexact='Inactivo')
+                .annotate(precio_ingreso=Coalesce(
+                    'precio', models.Subquery(ultimo_ingreso), 0.0,
+                    output_field=models.FloatField())))
+
     def _buscar_articulo(self, codigo: str | None) -> JsonResponse:
         if not codigo:
             return JsonResponse({"success": False})
         try:
-            articulo = Articulos.objects.select_related("categoria__tratamiento").filter(codigo=codigo).exclude(tipo='Inactivo').first()
+            articulo = self._articulos_con_precio().filter(codigo=codigo.strip()).first()
             if not articulo:
                 return JsonResponse({"success": False, "message": "Artículo no encontrado"})
             return JsonResponse({
@@ -81,7 +95,8 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     "cod": articulo.codigo,
                     "nombre": articulo.descr or "",
                     "um": articulo.um or "",
-                    "precio": articulo.precio or 0,
+                    "precio": articulo.precio_ingreso,
+                    "cup": articulo.cup or 0,
                     "prc": articulo.prc,
                     "peso": articulo.peso or 0,
                     "categoria": articulo.categoria.codigo if articulo.categoria else "",
@@ -94,12 +109,13 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"success": False, "message": "Artículo no encontrado"})
 
     def _listar_articulos(self) -> JsonResponse:
-        articulos = Articulos.objects.select_related("categoria__tratamiento").exclude(tipo='Inactivo').order_by("descr")
+        articulos = self._articulos_con_precio().order_by("descr")
         resultado = [{
             "codigo": a.codigo,
             "descr": a.descr,
             "um": a.um,
-            "precio": a.precio,
+            "precio": a.precio_ingreso,
+            "cup": a.cup or 0,
             "prc": a.prc,
             "peso": a.peso or 0,
             "categoria": a.categoria.codigo if a.categoria else "",
@@ -310,7 +326,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
 
             detalles_raw = data.get("detalles", "[]")
             detalles = json.loads(detalles_raw) if isinstance(detalles_raw, str) else detalles_raw
-            cups = actualizar_cup_ingreso(numero, detalles, tipo=7)
+            cups = actualizar_cup_ingreso(numero, detalles, tipo=7, permitir_cup_manual=True)
             Movs.objects.filter(numero=numero, tipo=7).delete()
 
             cant_total = total
@@ -396,7 +412,7 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     punit=float(det.get("punit", 0)),
                     cup=cups[det['codigo']],
                     neto=neto,
-                    total=float(det.get("total", 0)),
+                    total=float(det.get("cantidad", 0)) * float(det.get("punit", 0)),
                     estado=det.get("estado", estado),
                     bodega=float(det.get("bodega")) if det.get("bodega") else None,
                     proceso=det.get("proceso"),
@@ -431,7 +447,16 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             nuevos = [{"cantidad": nueva_cant, "punit": nuevo_punit}]
             if datos.get('detalles'):
                 nuevos = [d for d in json.loads(datos['detalles']) if d.get('codigo') == codigo]
-            nuevo_cup = cup_reemplazo(articulo, anteriores, nuevos)
+            for detalle in nuevos:
+                cantidad, precio = float(detalle['cantidad']), float(detalle['punit'])
+                if not isfinite(cantidad) or not isfinite(precio) or cantidad <= 0 or precio < 0:
+                    raise ValueError('Cada ingreso requiere cantidad positiva y precio no negativo.')
+            manual = cup_manual_ingreso(nuevos)
+            sin_cambios = sorted((m.cantidad or 0, m.punit or 0) for m in anteriores) == sorted(
+                (float(d['cantidad']), float(d['punit'])) for d in nuevos)
+            nuevo_cup = (manual if manual is not None else
+                         (articulo.cup or 0) if sin_cambios else
+                         cup_reemplazo(articulo, anteriores, nuevos))
             stock = float(stock_actual(codigo))
 
             return JsonResponse({

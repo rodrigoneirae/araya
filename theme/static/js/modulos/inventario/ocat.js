@@ -470,6 +470,31 @@ function abrirListaArticulos() {
     });
 }
 
+function previsualizarCUPDetalle(codigo, candidatos, confirmar) {
+    const fila = candidatos.find(d => d.codigo === codigo);
+    const numero = document.getElementById('ocatNumero').value;
+    const estadoInicial = JSON.stringify(detallesOcat);
+    buscarXHROcat('calcular_cup', {
+        codigo: codigo,
+        nuevo_punit: fila.punit,
+        nueva_cant: fila.cantidad,
+        numero: numero,
+        detalles: JSON.stringify(candidatos),
+    }, function(data) {
+        if (numero !== document.getElementById('ocatNumero').value ||
+            estadoInicial !== JSON.stringify(detallesOcat)) {
+            Toastify({text: 'El detalle cambió durante el cálculo. Repita la operación.', style: {background: '#f44336'}}).showToast();
+            return;
+        }
+        if (!data.success) {
+            Toastify({text: data.message || 'No se pudo calcular el CUP', style: {background: '#f44336'}}).showToast();
+            return;
+        }
+        candidatos.forEach(d => { if (d.codigo === codigo) d.cup = data.cup; });
+        confirmar(candidatos);
+    });
+}
+
 function agregarArticuloOcat() {
     const cod = document.getElementById('ocatArtCod').value.trim();
     const nombre = document.getElementById('ocatArtNombre').value.trim();
@@ -490,6 +515,10 @@ function agregarArticuloOcat() {
         Toastify({text: 'Ingrese cantidad', style: {background: '#f44336'}}).showToast();
         return;
     }
+    if (!Number.isFinite(punit) || punit < 0) {
+        Toastify({text: 'El precio debe ser un número no negativo', style: {background: '#f44336'}}).showToast();
+        return;
+    }
 
     const totalEncabezado = parseFloat(document.getElementById('ocatTotal').value) || 0;
     const sumaCantDetalles = detallesOcat.reduce((sum, d) => sum + (d.cantidad || 0), 0);
@@ -499,7 +528,8 @@ function agregarArticuloOcat() {
     }
 
     const total = cant * punit;
-    detallesOcat.push({
+    const candidatos = detallesOcat.map(d => ({...d}));
+    candidatos.push({
         codigo: cod, 
         nombre: nombre,
         cantidad: cant, 
@@ -514,7 +544,6 @@ function agregarArticuloOcat() {
         estado: 'Abierto',
         subtotal: total,
         total: total,
-        cup: 0,
         peso: peso,
         categoria: categoria || null,
         categoria_nombre: categoria ? (document.getElementById('ocatArtCategoria').selectedOptions[0]?.text.split(' - ')[1] || '') : '',
@@ -522,28 +551,43 @@ function agregarArticuloOcat() {
         tratamiento_nombre: tratamiento ? (document.getElementById('ocatArtTratamiento').selectedOptions[0]?.text.split(' - ')[1] || '') : ''
     });
 
-    document.getElementById('ocatArtCod').value = '';
-    document.getElementById('ocatArtNombre').value = '';
-    document.getElementById('ocatArtUM').value = '';
-    document.getElementById('ocatArtCant').value = '';
-    document.getElementById('ocatArtPUnit').value = '';
-    document.getElementById('ocatArtPeso').value = '';
-    document.getElementById('ocatArtCategoria').value = '';
-    document.getElementById('ocatArtTratamiento').value = '';
-    document.getElementById('ocatArtBodega').value = 1;
-    actualizarSelect2(document.getElementById('ocatArtBodega'));
-    actualizarSelect2(document.getElementById('ocatArtCategoria'));
-    actualizarSelect2(document.getElementById('ocatArtTratamiento'));
-    document.getElementById('ocatArtCod').focus();
-
-    renderizarDetalleOcat();
-    calcularTotalesOcat();
+    previsualizarCUPDetalle(cod, candidatos, function(nuevos) {
+        detallesOcat = nuevos;
+        if (document.getElementById('ocatArtCod').value.trim() === cod &&
+            Number(document.getElementById('ocatArtCant').value) === cant &&
+            Number(document.getElementById('ocatArtPUnit').value) === punit) {
+            document.getElementById('ocatArtCod').value = '';
+            document.getElementById('ocatArtNombre').value = '';
+            document.getElementById('ocatArtUM').value = '';
+            document.getElementById('ocatArtCant').value = '';
+            document.getElementById('ocatArtPUnit').value = '';
+            document.getElementById('ocatArtPeso').value = '';
+            document.getElementById('ocatArtCategoria').value = '';
+            document.getElementById('ocatArtTratamiento').value = '';
+            document.getElementById('ocatArtBodega').value = 1;
+            actualizarSelect2(document.getElementById('ocatArtBodega'));
+            actualizarSelect2(document.getElementById('ocatArtCategoria'));
+            actualizarSelect2(document.getElementById('ocatArtTratamiento'));
+            document.getElementById('ocatArtCod').focus();
+        }
+        renderizarDetalleOcat();
+        calcularTotalesOcat();
+    });
 }
 
 function eliminarArticuloOcat(index) {
-    detallesOcat.splice(index, 1);
-    renderizarDetalleOcat();
-    calcularTotalesOcat();
+    const codigo = detallesOcat[index].codigo;
+    const candidatos = detallesOcat.filter((d, i) => i !== index).map(d => ({...d}));
+    const aplicar = nuevos => {
+        detallesOcat = nuevos;
+        renderizarDetalleOcat();
+        calcularTotalesOcat();
+    };
+    if (candidatos.some(d => d.codigo === codigo)) {
+        previsualizarCUPDetalle(codigo, candidatos, aplicar);
+    } else {
+        aplicar(candidatos);
+    }
 }
 
 function renderizarDetalleOcat() {
@@ -1032,6 +1076,8 @@ function abrirModalEditarDetalle(index) {
     document.getElementById('editArtNombre').value = d.nombre || '';
     document.getElementById('editArtCant').value = d.cantidad || 0;
     document.getElementById('editArtPUnit').value = d.punit || 0;
+    document.getElementById('editArtCUP').value = d.cup_manual ?? '';
+    document.getElementById('editArtCUP').placeholder = 'Automático: ' + (d.cup || 0);
     document.getElementById('editArtUM').value = d.um || '';
 
     const bodegaSel = document.getElementById('editArtBodega');
@@ -1079,39 +1125,56 @@ function guardarEditarDetalle() {
 
     const cantidad = parseFloat(document.getElementById('editArtCant').value) || 0;
     const punit = parseFloat(document.getElementById('editArtPUnit').value) || 0;
+    const cupTexto = document.getElementById('editArtCUP').value.trim();
+    const cupManual = cupTexto === '' ? null : Number(cupTexto);
 
     if (cantidad <= 0) {
         Toastify({text: 'La cantidad debe ser mayor a 0', style: {background: '#f44336'}}).showToast();
         return;
     }
-
-    detallesOcat[i].cantidad = cantidad;
-    detallesOcat[i].punit = punit;
-    detallesOcat[i].bodega = document.getElementById('editArtBodega').value;
-    detallesOcat[i].peso = parseFloat(document.getElementById('editArtPeso').value) || 0;
-    detallesOcat[i].categoria = document.getElementById('editArtCategoria').value || null;
-    const catOpt = document.getElementById('editArtCategoria').selectedOptions[0];
-    detallesOcat[i].categoria_nombre = catOpt && catOpt.value ? (catOpt.text.split(' - ')[1] || '') : '';
-    detallesOcat[i].tratamiento = document.getElementById('editArtTratamiento').value || null;
-    const tratOpt = document.getElementById('editArtTratamiento').selectedOptions[0];
-    detallesOcat[i].tratamiento_nombre = tratOpt && tratOpt.value ? (tratOpt.text.split(' - ')[1] || '') : '';
-
-    detallesOcat[i].estado = document.getElementById('editArtEstado').value;
-
-    detallesOcat[i].fecha = document.getElementById('editArtFecha').value || '';
-    detallesOcat[i].subtotal = cantidad * punit;
-    detallesOcat[i].total = cantidad * punit;
-
-    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
-        jQuery('#editArtBodega').select2('destroy');
-        jQuery('#editArtCategoria').select2('destroy');
-        jQuery('#editArtTratamiento').select2('destroy');
+    if (!Number.isFinite(punit) || punit < 0 ||
+        (cupManual !== null && (!Number.isFinite(cupManual) || cupManual < 0))) {
+        Toastify({text: 'El precio y el CUP deben ser números no negativos', style: {background: '#f44336'}}).showToast();
+        return;
     }
 
-    cerrarModalEditarDetalle();
-    renderizarDetalleOcat();
-    calcularTotalesOcat();
-    Toastify({text: 'Detalle actualizado', style: {background: '#4caf50'}}).showToast();
+    const candidatos = detallesOcat.map(d => ({...d}));
+    const detalle = candidatos[i];
+    candidatos.forEach(d => {
+        if (d.codigo === detalle.codigo) {
+            if (cupManual === null) delete d.cup_manual;
+            else d.cup_manual = cupManual;
+        }
+    });
+    detalle.cantidad = cantidad;
+    detalle.punit = punit;
+    detalle.bodega = document.getElementById('editArtBodega').value;
+    detalle.peso = parseFloat(document.getElementById('editArtPeso').value) || 0;
+    detalle.categoria = document.getElementById('editArtCategoria').value || null;
+    const catOpt = document.getElementById('editArtCategoria').selectedOptions[0];
+    detalle.categoria_nombre = catOpt && catOpt.value ? (catOpt.text.split(' - ')[1] || '') : '';
+    detalle.tratamiento = document.getElementById('editArtTratamiento').value || null;
+    const tratOpt = document.getElementById('editArtTratamiento').selectedOptions[0];
+    detalle.tratamiento_nombre = tratOpt && tratOpt.value ? (tratOpt.text.split(' - ')[1] || '') : '';
+
+    detalle.estado = document.getElementById('editArtEstado').value;
+
+    detalle.fecha = document.getElementById('editArtFecha').value || '';
+    detalle.subtotal = cantidad * punit;
+    detalle.total = cantidad * punit;
+
+    previsualizarCUPDetalle(detalle.codigo, candidatos, function(nuevos) {
+        detallesOcat = nuevos;
+        if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+            jQuery('#editArtBodega').select2('destroy');
+            jQuery('#editArtCategoria').select2('destroy');
+            jQuery('#editArtTratamiento').select2('destroy');
+        }
+        cerrarModalEditarDetalle();
+        renderizarDetalleOcat();
+        calcularTotalesOcat();
+        Toastify({text: 'Detalle actualizado', style: {background: '#4caf50'}}).showToast();
+    });
 }
 
 function cerrarModalCUP() {
@@ -1125,6 +1188,7 @@ function abrirModalCUP(index) {
     document.getElementById('cupCantidad').value = item.cantidad || 0;
     document.getElementById('cupPUnit').value = item.punit || 0;
     document.getElementById('cupActual').value = item.cup || 0;
+    document.getElementById('cupManual').value = item.cup_manual ?? '';
     document.getElementById('modalCUP').classList.remove('hidden');
 }
 
@@ -1133,46 +1197,36 @@ function guardarCUP() {
     
     const cantidad = parseFloat(document.getElementById('cupCantidad').value) || 0;
     const punit = parseFloat(document.getElementById('cupPUnit').value) || 0;
-    const numero = document.getElementById('ocatNumero').value;
     const codigo = detallesOcat[indiceCUP].codigo;
+    const cupTexto = document.getElementById('cupManual').value.trim();
+    const cupManual = cupTexto === '' ? null : Number(cupTexto);
     
     if (cantidad <= 0) {
         Toastify({text: 'La cantidad debe ser mayor a 0', style: {background: '#f44336'}}).showToast();
         return;
     }
-    if (punit <= 0) {
-        Toastify({text: 'El precio unitario debe ser mayor a 0', style: {background: '#f44336'}}).showToast();
+    if (!Number.isFinite(punit) || punit < 0 ||
+        (cupManual !== null && (!Number.isFinite(cupManual) || cupManual < 0))) {
+        Toastify({text: 'El precio y el CUP deben ser números no negativos', style: {background: '#f44336'}}).showToast();
         return;
     }
     
-    buscarXHROcat('calcular_cup', {
-        codigo: codigo,
-        nuevo_punit: punit,
-        nueva_cant: cantidad,
-        numero: numero,
-        detalles: JSON.stringify(detallesOcat.map((d, i) => i === indiceCUP
-            ? {...d, cantidad: cantidad, punit: punit} : d))
-    }, function(data) {
-        if (data.success) {
-            detallesOcat[indiceCUP].cantidad = cantidad;
-            detallesOcat[indiceCUP].punit = punit;
-            detallesOcat.forEach(d => {
-                if (d.codigo === codigo) d.cup = data.cup;
-            });
-            detallesOcat[indiceCUP].subtotal = cantidad * punit;
-            detallesOcat[indiceCUP].total = cantidad * punit;
-            detallesOcat[indiceCUP].canttotal = cantidad;
-            
-            const modal = document.getElementById('modalCUP');
-            modal.classList.add('hidden');
-            indiceCUP = null;
-            
-            renderizarDetalleOcat();
-            calcularTotalesOcat();
-            
-            Toastify({text: 'CUP calculado: ' + data.cup.toFixed(2), style: {background: '#4caf50'}}).showToast();
-        } else {
-            Toastify({text: data.message, style: {background: '#f44336'}}).showToast();
+    const candidatos = detallesOcat.map(d => ({...d}));
+    Object.assign(candidatos[indiceCUP], {
+        cantidad, punit, subtotal: cantidad * punit, total: cantidad * punit, canttotal: cantidad,
+    });
+    candidatos.forEach(d => {
+        if (d.codigo === codigo) {
+            if (cupManual === null) delete d.cup_manual;
+            else d.cup_manual = cupManual;
         }
+    });
+    previsualizarCUPDetalle(codigo, candidatos, function(nuevos) {
+        detallesOcat = nuevos;
+        cerrarModalCUP();
+        indiceCUP = null;
+        renderizarDetalleOcat();
+        calcularTotalesOcat();
+        Toastify({text: 'CUP actualizado. Guarde la OCAT para confirmar.', style: {background: '#4caf50'}}).showToast();
     });
 }

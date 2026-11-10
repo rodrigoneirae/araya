@@ -192,11 +192,7 @@ function buscarArticuloPE() {
                     height: "160px",
                     columns: [
                         {title: "Fecha", field: "fecha", formatter: function(cell) {
-                            const val = cell.getValue();
-                            if (val) {
-                                return val.split('T')[0].split('-').reverse().join('-');
-                            }
-                            return '';
+                            return ArayaFechas.mostrar(cell.getValue());
                         }},
                         {title: "Número", field: "numero"},
                         {title: "Tipo", field: "tipo"},

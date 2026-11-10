@@ -9,7 +9,7 @@
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
             <h1 class="text-xl font-bold text-aq-text">Dashboard Ventas</h1>
-            <p class="text-sm text-aq-muted mt-1">{{ fecha_desde_dt|date:"d M Y" }} - {{ fecha_hasta_dt|date:"d M Y" }}</p>
+            <p class="text-sm text-aq-muted mt-1">{{ fecha_desde_dt|date:"d-m-Y" }} - {{ fecha_hasta_dt|date:"d-m-Y" }}</p>
         </div>
         <form method="GET" class="flex items-center gap-2 flex-wrap">
             <input type="date" name="fecha_desde" value="{{ fecha_desde }}"

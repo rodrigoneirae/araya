@@ -134,7 +134,7 @@ class IndexCostosOTView(LoginRequiredMixin, TemplateView):
         qs = self._get_datos(request)
 
         procesos_map = {p["cod"]: p["nombre"] for p in Procesos.objects.values("cod", "nombre")}
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
 
         logo_path = os.path.join(settings.STATIC_ROOT, "assets/images/brand-logos/logo-home-grande.png")
         if not os.path.exists(logo_path):
@@ -327,7 +327,7 @@ class ImprimirOTView(TemplateView):
 
         numero = float(kwargs.get('numero'))
         usuario = str(request.user)
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
 
         logo_path = os.path.join(
             settings.STATIC_ROOT,

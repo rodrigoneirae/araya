@@ -194,8 +194,7 @@ function initSubTabulators(callback) {
             formatter: function(cell) {
                 const v = cell.getValue();
                 if (!v) return '-';
-                const parts = v.split('-');
-                return parts.length === 3 ? parts.reverse().join('-') : v;
+                return ArayaFechas.mostrar(v);
             }
         },
         { title: 'Cant', field: 'cantidad', width: 70, hozAlign: 'right', bottomCalc: 'sum',

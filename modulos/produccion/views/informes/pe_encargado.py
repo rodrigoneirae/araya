@@ -298,7 +298,7 @@ class IndexInformePEEncargadoView(LoginRequiredMixin, TemplateView):
             if ff:
                 fecha_inf += ff.strftime("%d-%m-%Y")
 
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
 
         logo_path = os.path.join(settings.STATIC_ROOT, "assets/images/brand-logos/logo-home-grande.png")
         if not os.path.exists(logo_path):

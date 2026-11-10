@@ -231,7 +231,7 @@ class IndexInformeOrArticuloView(LoginRequiredMixin, TemplateView):
 
         fi, fc = self._parse_fechas(data)
         usuario = str(request.user)
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
 
         art_nombre = ""
         try:
@@ -749,7 +749,7 @@ class IndexInformeOrArticuloView(LoginRequiredMixin, TemplateView):
                 super().save()
 
         usuario = str(request.user)
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
         buf = io.BytesIO()
 
         doc = SimpleDocTemplate(

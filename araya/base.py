@@ -123,6 +123,11 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 LANGUAGE_CODE = 'es-cl'
+FORMAT_MODULE_PATH = 'modulos.core.formats'
+DATE_FORMAT = 'd-m-Y'
+SHORT_DATE_FORMAT = 'd-m-Y'
+DATETIME_FORMAT = 'd-m-Y H:i'
+SHORT_DATETIME_FORMAT = 'd-m-Y H:i'
 
 TIME_ZONE = 'America/Santiago'
 

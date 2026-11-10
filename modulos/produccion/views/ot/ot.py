@@ -870,7 +870,7 @@ class IndexIngresoOTView(LoginRequiredMixin, TemplateView):
 
         numero = float(numero)
         usuario = str(request.user)
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
 
         logo_path = os.path.join(
             settings.STATIC_ROOT,
@@ -1150,7 +1150,7 @@ class ImprimirOTView(TemplateView):
         
         numero = float(kwargs.get('numero'))
         usuario = str(request.user)
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
         
         logo_path = os.path.join(
             settings.STATIC_ROOT,

@@ -209,7 +209,7 @@ class IndexInformeCompraProvedoresView(LoginRequiredMixin, TemplateView):
         rut = data.get("rut", "").strip()
         fi, fc = self._parse_fechas(data)
         usuario = str(request.user)
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
 
         proveedores_map = self._get_proveedores_map()
 
@@ -502,7 +502,7 @@ class IndexInformeCompraProvedoresView(LoginRequiredMixin, TemplateView):
         rut = data.get("rut", "").strip()
         fi, fc = self._parse_fechas(data)
         usuario = str(request.user)
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
         docs = self._agrupar_libro(rut, fi, fc)
 
         logo_path = os.path.join(settings.STATIC_ROOT, "assets/images/brand-logos/logo-home-grande.png")

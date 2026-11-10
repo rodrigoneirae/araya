@@ -522,7 +522,7 @@ function renderizarDetallesPE() {
                 <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.um || ''}</td>
                 <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.nombre || ''}</td>
                 <td class="px-1 py-1.5 text-aq-text text-right whitespace-nowrap text-xs">${formatNumberCL(det.punit)}</td>
-                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${det.fecha || ''}</td>
+                <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${ArayaFechas.mostrar(det.fecha)}</td>
                 <td class="px-1 py-1.5 text-aq-text whitespace-nowrap text-xs">${nombreEncargado || '-'}</td>
                 <td class="px-1 py-1.5 text-aq-text whitespace-nowrap">
                     <span class="px-1.5 py-0.5 rounded text-xs ${det.estado === 'Cerrado' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">

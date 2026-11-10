@@ -287,7 +287,7 @@ class IndexInformeOrProvedorView(LoginRequiredMixin, TemplateView):
 
         fi, fc = self._parse_fechas(data)
         usuario = str(request.user)
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
 
         prov_nombre = ""
         try:
@@ -659,7 +659,7 @@ class IndexInformeOrProvedorView(LoginRequiredMixin, TemplateView):
 
         fi, fc = self._parse_fechas(data)
         usuario = str(request.user)
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
 
         prov_nombre = ""
         try:

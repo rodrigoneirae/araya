@@ -348,7 +348,7 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
         if fc:
             fecha_inf = f"al {fc.strftime('%d-%m-%Y')}"
 
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
 
         logo_path = os.path.join(
             settings.STATIC_ROOT,
@@ -646,7 +646,7 @@ class IndexInformeSaldoInvetarioView(LoginRequiredMixin, TemplateView):
         if fc:
             fecha_inf = f"al {fc.strftime('%d-%m-%Y')}"
 
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
 
         logo_path = os.path.join(
             settings.STATIC_ROOT,

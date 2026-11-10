@@ -181,8 +181,7 @@ function formatEncargado(cell) {
 function formatFecha(cell) {
     const v = cell.getValue();
     if (!v) return '-';
-    const parts = v.split('-');
-    return parts.length === 3 ? parts.reverse().join('-') : v;
+    return ArayaFechas.mostrar(v);
 }
 
 function formatearNumero(cell) {

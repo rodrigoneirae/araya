@@ -63,7 +63,7 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
 
     def _listar_certificados(self) -> JsonResponse:
         def _fmt(dt):
-            return dt.strftime("%d/%m/%Y") if dt else ""
+            return dt.strftime("%d-%m-%Y") if dt else ""
 
         certs = []
         for c in CertificadoDestinoSustentable.objects.order_by("-folio"):
@@ -77,7 +77,7 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
                 "fecha_emision": _fmt(c.fecha_emision),
                 "periodo": periodo,
                 "total_kilos": c.total_kilos or 0,
-                "fec_crea": c.timeuser.strftime("%d/%m/%Y %H:%M") if c.timeuser else "",
+                "fec_crea": c.timeuser.strftime("%d-%m-%Y %H:%M") if c.timeuser else "",
             })
         return JsonResponse({"certificados": certs})
 
@@ -243,16 +243,16 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
             # --- Client info table ---
             periodo_str = ""
             if fi and fc:
-                periodo_str = f"{fi.strftime('%d/%m/%Y')} - {fc.strftime('%d/%m/%Y')}"
+                periodo_str = f"{fi.strftime('%d-%m-%Y')} - {fc.strftime('%d-%m-%Y')}"
             elif fc:
-                periodo_str = f"Hasta {fc.strftime('%d/%m/%Y')}"
+                periodo_str = f"Hasta {fc.strftime('%d-%m-%Y')}"
 
             cliente_data = [
                 ["RAZON SOCIAL", cliente.nombre or ""],
                 ["RUT", cliente.rut or ""],
                 ["DIRECCION", cliente.direccion or ""],
                 ["PERIODO", periodo_str],
-                ["FECHA EMISION", fe.strftime("%d/%m/%Y")],
+                ["FECHA EMISION", fe.strftime("%d-%m-%Y")],
             ]
             cliente_table_data = [[
                 Paragraph(f"<b>{r[0]}</b>", bold_style),
@@ -395,7 +395,7 @@ class IndexCertificadoDestinoSustentableView(LoginRequiredMixin, TemplateView):
             for d in detalles:
                 cat_nombre = d.categoria.descripcion if d.categoria else ""
                 trat_nombre = d.tratamiento.descripcion if d.tratamiento else ""
-                fecha_str = d.fecha.strftime("%d/%m/%Y") if d.fecha else ""
+                fecha_str = d.fecha.strftime("%d-%m-%Y") if d.fecha else ""
                 sucursal = d.sucursal.nombre if d.sucursal else (cliente.direccion or "")
                 doc_ref = str(int(d.numero)) if d.numero else ""
                 h = headers.get(d.numero)

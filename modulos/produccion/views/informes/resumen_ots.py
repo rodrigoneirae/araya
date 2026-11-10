@@ -399,7 +399,7 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
         procesos_map = {p["cod"]: p["nombre"] for p in Procesos.objects.values("cod", "nombre")}
         empleados_map = {e["cod"]: e["nombre"] for e in Empleados.objects.values("cod", "nombre")}
 
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
 
         logo_path = os.path.join(settings.STATIC_ROOT, "assets/images/brand-logos/logo-home-grande.png")
         if not os.path.exists(logo_path):
@@ -650,7 +650,7 @@ class IndexInformeResumenOtsView(LoginRequiredMixin, TemplateView):
         enc_nom = empleados_map.get(int(ot_info.codencargado), "") if ot_info and ot_info.codencargado else ""
         fecha_str = ot_info.fecha.strftime("%d-%m-%Y") if ot_info and ot_info.fecha else ""
 
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
 
         logo_path = os.path.join(settings.STATIC_ROOT, "assets/images/brand-logos/logo-home-grande.png")
         if not os.path.exists(logo_path):

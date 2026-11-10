@@ -378,7 +378,7 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
         elif fc:
             fecha_inf = f"hasta {fc.strftime('%d-%m-%Y')}"
 
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        now_str = datetime.now().strftime("%d-%m-%Y %H:%M")
 
         logo_path = os.path.join(
             settings.STATIC_ROOT,

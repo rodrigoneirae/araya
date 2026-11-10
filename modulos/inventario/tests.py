@@ -157,7 +157,8 @@ class AuxExistenciaTests(SimpleTestCase):
         self.assertEqual(ws['B3'].value, -3)
         self.assertEqual(ws['B4'].value, -2)
         self.assertEqual(ws['B3'].font.color.rgb, '00B91C1C')
-        self.assertIn('Salidas: 5   |   Saldo Final: 10', ws['A6'].value)
+        # Sin fecha inicial, el saldo anterior es cero; no se usa el enviado por el cliente.
+        self.assertIn('Saldo Anterior: 0   |   Entradas: 10   |   Salidas: 5   |   Saldo Final: 5', ws['A6'].value)
 
     def test_pdf_descuenta_salidas_del_saldo_final(self):
         qs = self._mock_movimientos()
@@ -181,4 +182,4 @@ class AuxExistenciaTests(SimpleTestCase):
         self.assertTrue(response.content.startswith(b'%PDF'))
         self.assertIn('-3', tablas[0][2][1].text)
         self.assertEqual(tablas[0][2][1].style.textColor.hexval(), '0xb91c1c')
-        self.assertIn('10', tablas[1][0][3].text)
+        self.assertIn('>5</font>', tablas[1][0][3].text)

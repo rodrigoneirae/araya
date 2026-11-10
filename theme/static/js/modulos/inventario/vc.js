@@ -361,7 +361,7 @@ function cargarHistorialArticuloVC(codigo) {
             layout: 'fitColumns',
             height: '160px',
             columns: [
-                {title: 'Fecha', field: 'fecha', formatter: cell => (cell.getValue() || '').split('T')[0]},
+                {title: 'Fecha', field: 'fecha', formatter: cell => ArayaFechas.mostrar(cell.getValue())},
                 {title: 'Número', field: 'numero'},
                 {title: 'Tipo', field: 'tipo'},
                 {title: 'Bodega', field: 'bodega'},

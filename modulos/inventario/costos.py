@@ -1,5 +1,6 @@
 """Costo promedio por artículo y valoración de ingresos OCAT y PE."""
 from decimal import Decimal
+from collections import Counter
 from math import isfinite
 
 from modulos.inventario.models.movs import Movs
@@ -23,7 +24,7 @@ def stock_actual(codigo):
     return saldo
 
 
-def cup_reemplazo(articulo, anteriores, nuevos):
+def cup_reemplazo(articulo, anteriores, nuevos, permitir_eliminacion=False, advertencias=None):
     """Reemplaza el valor del ingreso, sin revalorizar consumos ya registrados."""
     stock = stock_actual(articulo.codigo)
     cantidad_anterior = sum((decimal(m.cantidad) for m in anteriores), Decimal(0))
@@ -37,7 +38,15 @@ def cup_reemplazo(articulo, anteriores, nuevos):
     if saldo > 0:
         valor = stock * decimal(articulo.cup) - valor_anterior + valor_nuevo
         if valor < 0:
-            raise ValueError('La corrección deja una valoración negativa; revise los ingresos y consumos del artículo.')
+            mensaje = 'La corrección deja una valoración negativa; revise los ingresos y consumos del artículo.'
+            viejas_lineas = Counter((decimal(m.cantidad), decimal(m.punit)) for m in anteriores)
+            nuevas_lineas = Counter((decimal(d['cantidad']), decimal(d['punit'])) for d in nuevos)
+            # Solo quitar líneas existentes: no habilita cambios de precio/cantidad ni otros ingresos.
+            if permitir_eliminacion and nuevas_lineas < viejas_lineas:
+                if advertencias is not None:
+                    advertencias.append(f'{articulo.codigo}: {mensaje} Se conserva el CUP actual al eliminar.')
+                return float(articulo.cup or 0)
+            raise ValueError(mensaje)
         return float(valor / saldo)
     if cantidad_nueva > 0:
         return float(valor_nuevo / cantidad_nueva)
@@ -54,7 +63,8 @@ def cup_manual_ingreso(detalles):
     return float(next(iter(valores))) if valores else None
 
 
-def actualizar_cup_ingreso(numero, detalles, tipo, permitir_cup_manual=False):
+def actualizar_cup_ingreso(numero, detalles, tipo, permitir_cup_manual=False,
+                           permitir_eliminacion=False, advertencias=None):
     anteriores = list(Movs.objects.filter(numero=numero, tipo_id=tipo, linea__gt=0))
     codigos = {m.codigo_id for m in anteriores if m.codigo_id}
     for det in detalles:
@@ -81,7 +91,9 @@ def actualizar_cup_ingreso(numero, detalles, tipo, permitir_cup_manual=False):
                 (float(d['cantidad']), float(d['punit'])) for d in nuevos):
             cups[articulo.codigo] = articulo.cup or 0
             continue
-        articulo.cup = cup_reemplazo(articulo, viejos, nuevos)
+        articulo.cup = cup_reemplazo(
+            articulo, viejos, nuevos, permitir_eliminacion=permitir_eliminacion,
+            advertencias=advertencias)
         articulo.save(update_fields=['cup'])
         cups[articulo.codigo] = articulo.cup
     return cups

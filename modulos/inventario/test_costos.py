@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from django.test import TestCase
 from django.utils import timezone
 
-from modulos.inventario.costos import stock_actual
+from modulos.inventario.costos import cup_reemplazo, stock_actual
 from modulos.inventario.models.movs import Movs
 from modulos.inventario.views.ocat.ocat import IndexIngresoOCATView
 from modulos.inventario.views.parte_entrada.pe import IndexIngresoPEView as PEInventarioView
@@ -134,6 +134,71 @@ class FlujoCUPTests(TestCase):
         self.assertEqual(stock_actual('BASA'), 80)
         self.ingreso(cantidad=20, precio=3000)
         self.assertEqual(self.articulo.cup, 2200)
+
+    def test_eliminar_ultima_linea_del_articulo_advierte_y_guarda_sin_cup_negativo(self):
+        ingreso = self.ingreso(precio=10000)
+        self.consumo(detalles=[{'codigo': 'BASA', 'cantidad': 80}])
+        cup_anterior = self.articulo.cup
+        # Otra línea permanece en la OCAT.
+        Articulos.objects.create(codigo='OTRO', descr='Otro artículo', prc=1, cup=10)
+        restantes = [{'codigo': 'OTRO', 'cantidad': 5, 'punit': 10}]
+        previo = json.loads(self.ocat._calcular_cup({
+            'codigo': 'BASA', 'numero': '2', 'nuevo_punit': 10000, 'nueva_cant': 50,
+            'detalles': json.dumps(restantes)}).content)
+        self.assertTrue(previo['success'], previo)
+        self.assertIn('valoración negativa', previo['advertencias'][0])
+        self.articulo.refresh_from_db()
+        self.assertEqual(self.articulo.cup, cup_anterior)
+        self.assertTrue(Movs.objects.filter(id=ingreso.id).exists())
+
+        response = json.loads(self.ocat._guardar_ocat({
+            'numero': '2', 'fecha': timezone.now().isoformat(),
+            'total': 5, 'detalles': restantes}).content)
+        self.assertTrue(response['success'], response)
+        self.assertIn('valoración negativa', response['advertencias'][0])
+        self.assertFalse(Movs.objects.filter(numero=2, tipo_id=7, codigo_id='BASA').exists())
+        self.articulo.refresh_from_db()
+        self.assertEqual(self.articulo.cup, cup_anterior)
+        self.assertEqual(stock_actual('BASA'), 20)
+
+    def test_eliminar_una_linea_repetida_advierte_y_conserva_cup(self):
+        detalles = [{'codigo': 'BASA', 'cantidad': cantidad, 'punit': 10000}
+                    for cantidad in [20, 30]]
+        data = {'numero': '2', 'fecha': timezone.now().isoformat(), 'total': 50,
+                'detalles': detalles}
+        self.assertTrue(json.loads(self.ocat._guardar_ocat(data).content)['success'])
+        self.articulo.refresh_from_db()
+        cup_anterior = self.articulo.cup
+        self.consumo(detalles=[{'codigo': 'BASA', 'cantidad': 100}])
+        data.update(detalles=detalles[:1], total=20)
+        response = json.loads(self.ocat._guardar_ocat(data).content)
+        self.assertTrue(response['success'], response)
+        self.assertTrue(response['advertencias'])
+        restante = Movs.objects.get(numero=2, tipo_id=7, linea__gt=0)
+        self.assertEqual(restante.cantidad, 20)
+        self.assertEqual(restante.cup, cup_anterior)
+        self.articulo.refresh_from_db()
+        self.assertEqual(self.articulo.cup, cup_anterior)
+
+    def test_advertencia_no_habilita_cambios_de_precio_o_cantidad_con_valor_negativo(self):
+        ingreso = self.ingreso(precio=10000)
+        self.consumo(detalles=[{'codigo': 'BASA', 'cantidad': 80}])
+        for cantidad, precio in [(10, 10000), (50, 0)]:
+            with self.subTest(cantidad=cantidad, precio=precio):
+                response = json.loads(self.ocat._guardar_ocat({
+                    'numero': '2', 'fecha': timezone.now().isoformat(), 'total': cantidad,
+                    'detalles': [{'codigo': 'BASA', 'cantidad': cantidad, 'punit': precio}]}).content)
+                self.assertFalse(response['success'])
+                self.assertIn('valoración negativa', response['message'])
+                ingreso.refresh_from_db()
+                self.assertEqual(ingreso.cantidad, 50)
+                self.assertEqual(ingreso.punit, 10000)
+
+    def test_calculo_general_sigue_bloqueando_valoracion_negativa(self):
+        ingreso = self.ingreso(precio=10000)
+        self.consumo(detalles=[{'codigo': 'BASA', 'cantidad': 80}])
+        with self.assertRaisesMessage(ValueError, 'valoración negativa'):
+            cup_reemplazo(self.articulo, [ingreso], [])
 
     def test_vc_guarda_consumos_en_negativo_independiente_del_signo_ingresado(self):
         for cantidad in (10, -10, 0):

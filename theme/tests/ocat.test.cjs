@@ -6,6 +6,7 @@ const vm = require('node:vm');
 
 function pantalla() {
     const elementos = new Map();
+    const avisos = [];
     const campo = id => {
         if (!elementos.has(id)) elementos.set(id, {
             value: '', innerHTML: '', selectedOptions: [{value: '', text: ''}],
@@ -16,7 +17,7 @@ function pantalla() {
     const context = vm.createContext({
         document: {currentScript: {dataset: {url: '/inventario/ocat/'}},
             addEventListener() {}, getElementById: campo},
-        window: {}, Toastify: () => ({showToast() {}}),
+        window: {}, Toastify: options => ({showToast() { avisos.push(options.text); }}),
     });
     vm.runInContext(readFileSync(join(__dirname, '../static/js/modulos/inventario/ocat.js'), 'utf8'), context);
     vm.runInContext(`
@@ -31,7 +32,7 @@ function pantalla() {
         };
     `, context);
     return {
-        campo, context,
+        campo, context, avisos,
         ejecutar: code => vm.runInContext(code, context),
         detalles: () => JSON.parse(vm.runInContext('JSON.stringify(detallesOcat)', context)),
     };
@@ -86,4 +87,34 @@ test('el modal CUP acepta ajuste manual y vacío restaura el cálculo automátic
     p.ejecutar('guardarCUP()');
     assert.equal(p.detalles()[0].cup_manual, undefined);
     assert.equal(p.detalles()[0].cup, 2200);
+});
+
+test('eliminar muestra advertencia y permite quitar la última línea del artículo', () => {
+    const p = pantalla();
+    p.ejecutar(`detallesOcat = [
+        {codigo:'BASA', cantidad:50, punit:10000, cup:2200},
+        {codigo:'OTRO', cantidad:5, punit:10, cup:10}
+    ];`);
+    p.context.window.respuesta = {
+        success: true, cup: 2200,
+        advertencias: ['La corrección deja una valoración negativa. Se conserva el CUP actual.'],
+    };
+    p.ejecutar('eliminarArticuloOcat(0)');
+    assert.deepEqual(p.detalles().map(d => d.codigo), ['OTRO']);
+    assert.match(p.avisos[0], /valoración negativa/);
+    assert.equal(JSON.parse(p.context.window.ultimaConsulta.datos.detalles).length, 1);
+});
+
+test('eliminar una línea repetida actualiza el CUP sin bloquear por advertencia', () => {
+    const p = pantalla();
+    p.ejecutar(`detallesOcat = [
+        {codigo:'BASA', cantidad:20, punit:10000, cup:2200},
+        {codigo:'BASA', cantidad:30, punit:10000, cup:2200}
+    ];`);
+    p.context.window.respuesta = {success: true, cup: 2200, advertencias: ['Valoración negativa']};
+    p.ejecutar('eliminarArticuloOcat(1)');
+    assert.equal(p.detalles().length, 1);
+    assert.equal(p.detalles()[0].cantidad, 20);
+    assert.equal(p.detalles()[0].cup, 2200);
+    assert.equal(p.avisos.length, 1);
 });

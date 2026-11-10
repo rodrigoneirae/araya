@@ -326,7 +326,10 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
 
             detalles_raw = data.get("detalles", "[]")
             detalles = json.loads(detalles_raw) if isinstance(detalles_raw, str) else detalles_raw
-            cups = actualizar_cup_ingreso(numero, detalles, tipo=7, permitir_cup_manual=True)
+            advertencias = []
+            cups = actualizar_cup_ingreso(
+                numero, detalles, tipo=7, permitir_cup_manual=True,
+                permitir_eliminacion=True, advertencias=advertencias)
             Movs.objects.filter(numero=numero, tipo=7).delete()
 
             cant_total = total
@@ -425,7 +428,8 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
                     timeuser=time_user
                 )
 
-            return JsonResponse({"success": True, "message": f"OCAT {int(numero)} guardada correctamente", "numero": int(numero)})
+            return JsonResponse({"success": True, "message": f"OCAT {int(numero)} guardada correctamente",
+                                 "numero": int(numero), "advertencias": advertencias})
         except Exception as e:
             transaction.set_rollback(True)
             return JsonResponse({"success": False, "message": str(e)})
@@ -454,13 +458,16 @@ class IndexIngresoOCATView(LoginRequiredMixin, TemplateView):
             manual = cup_manual_ingreso(nuevos)
             sin_cambios = sorted((m.cantidad or 0, m.punit or 0) for m in anteriores) == sorted(
                 (float(d['cantidad']), float(d['punit'])) for d in nuevos)
+            advertencias = []
             nuevo_cup = (manual if manual is not None else
                          (articulo.cup or 0) if sin_cambios else
-                         cup_reemplazo(articulo, anteriores, nuevos))
+                         cup_reemplazo(articulo, anteriores, nuevos,
+                                       permitir_eliminacion=True, advertencias=advertencias))
             stock = float(stock_actual(codigo))
 
             return JsonResponse({
                 "success": True,
+                "advertencias": advertencias,
                 "cup": round(nuevo_cup, 2),
                 "stock_actual": stock,
                 "stock_anterior": stock - sum(m.cantidad or 0 for m in anteriores),

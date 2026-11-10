@@ -471,7 +471,7 @@ function abrirListaArticulos() {
 }
 
 function previsualizarCUPDetalle(codigo, candidatos, confirmar) {
-    const fila = candidatos.find(d => d.codigo === codigo);
+    const fila = candidatos.find(d => d.codigo === codigo) || detallesOcat.find(d => d.codigo === codigo);
     const numero = document.getElementById('ocatNumero').value;
     const estadoInicial = JSON.stringify(detallesOcat);
     buscarXHROcat('calcular_cup', {
@@ -491,6 +491,9 @@ function previsualizarCUPDetalle(codigo, candidatos, confirmar) {
             return;
         }
         candidatos.forEach(d => { if (d.codigo === codigo) d.cup = data.cup; });
+        (data.advertencias || []).forEach(mensaje => {
+            Toastify({text: mensaje, duration: 8000, style: {background: '#b45309'}}).showToast();
+        });
         confirmar(candidatos);
     });
 }
@@ -583,11 +586,7 @@ function eliminarArticuloOcat(index) {
         renderizarDetalleOcat();
         calcularTotalesOcat();
     };
-    if (candidatos.some(d => d.codigo === codigo)) {
-        previsualizarCUPDetalle(codigo, candidatos, aplicar);
-    } else {
-        aplicar(candidatos);
-    }
+    previsualizarCUPDetalle(codigo, candidatos, aplicar);
 }
 
 function renderizarDetalleOcat() {
@@ -757,6 +756,9 @@ function guardarOcat() {
         }, function(data) {
             if (data.success) {
                 Toastify({text: data.message, style: {background: '#4caf50'}}).showToast();
+                (data.advertencias || []).forEach(mensaje => {
+                    Toastify({text: mensaje, duration: 8000, style: {background: '#b45309'}}).showToast();
+                });
                 cargarOcat(data.numero);
             } else {
                 Toastify({text: data.message, style: {background: '#f44336'}}).showToast();

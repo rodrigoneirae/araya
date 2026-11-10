@@ -99,7 +99,7 @@ function abrirListaArticulos() {
     });
 }
 
-function actualizarResumen(data, saldoFinal) {
+function actualizarResumen(data, saldoFinal, saldoAnterior = 0) {
 
     let totalEntradas = 0;
     let totalSalidas = 0;
@@ -134,6 +134,8 @@ function actualizarResumen(data, saldoFinal) {
 
     document.getElementById('resumenSaldoFinal').textContent =
         formatoCL(saldoFinal);
+    document.getElementById('resumenSaldoAnterior').textContent =
+        formatoCL(saldoAnterior);
 
     document.getElementById('resumenAux').classList.remove('hidden');
 }
@@ -172,12 +174,6 @@ function generarPDF() {
     }
     const fecha_desde = document.getElementById('auxFechaDesde').value;
     const fecha_corte = document.getElementById('auxFechaCorte').value;
-    const saldo_ant =
-        document.getElementById('resumenSaldoFinal')
-        .textContent
-        .replace(/\./g, '')
-        .replace(',', '.')
-        .trim();
 
     function getCookie(name) {
         let cookieValue = null;
@@ -200,7 +196,6 @@ function generarPDF() {
     formData.append('codigo', codigo);
     formData.append('fecha_desde', fecha_desde);
     formData.append('fecha_corte', fecha_corte);
-    formData.append('saldo_ant', saldo_ant);
 
     _fetchYSumarAux(formData, `aux_existencia_${codigo}.pdf`);
 }
@@ -213,12 +208,6 @@ function generarEXCEL() {
     }
     const fecha_desde = document.getElementById('auxFechaDesde').value;
     const fecha_corte = document.getElementById('auxFechaCorte').value;
-    const saldo_ant =
-        document.getElementById('resumenSaldoFinal')
-        .textContent
-        .replace(/\./g, '')
-        .replace(',', '.')
-        .trim();
 
     function getCookie(name) {
         let cookieValue = null;
@@ -241,7 +230,6 @@ function generarEXCEL() {
     formData.append('codigo', codigo);
     formData.append('fecha_desde', fecha_desde);
     formData.append('fecha_corte', fecha_corte);
-    formData.append('saldo_ant', saldo_ant);
 
     _fetchYSumarAux(formData, `aux_existencia_${codigo}.xlsx`);
 }
@@ -278,7 +266,7 @@ function consultar() {
 
             if (data.data.length === 0) {
 
-                actualizarResumen([], 0);
+                actualizarResumen([], data.saldo_final, data.saldo_anterior);
 
                 return;
             }
@@ -289,17 +277,8 @@ function consultar() {
                 ...m,
             }));
 
-            // CALCULAR SALDO FINAL
-            let saldoFinal = 0;
-
-            tableData.forEach(m => {
-                saldoFinal += Number(m.cantidad) || 0;
-            });
-
-            // PONER EL MISMO SALDO FINAL EN TODAS LAS FILAS
-            tableData.forEach(m => {
-                m.saldo = saldoFinal;
-            });
+            // El servidor calcula el saldo anterior y el acumulado de cada fila.
+            const saldoFinal = data.saldo_final;
 
             tablaAux = new Tabulator("#auxDetalle", {
 
@@ -401,7 +380,7 @@ function consultar() {
                 placeholder: "Sin movimientos para el período seleccionado",
             });
 
-            actualizarResumen(data.data, saldoFinal);
+            actualizarResumen(data.data, saldoFinal, data.saldo_anterior);
 
         } else {
 

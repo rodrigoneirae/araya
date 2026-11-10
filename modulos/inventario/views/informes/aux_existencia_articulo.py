@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
+from django.utils import timezone
 from django.http import HttpRequest, HttpResponseRedirect, HttpResponse, JsonResponse
 from django.views.generic import TemplateView
 from reportlab.lib import colors
@@ -26,12 +27,38 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
 
     @staticmethod
     def _es_salida(m):
-        return m.tipo_id == 12 or (m.tipo is not None and m.tipo.signo is not None and m.tipo.signo < 0)
+        return m.tipo_id in (10, 12) or (m.tipo is not None and m.tipo.signo is not None and m.tipo.signo < 0)
 
     @classmethod
     def _cantidad_movimiento(cls, m):
         cantidad = m.cantidad or 0
         return -abs(cantidad) if cls._es_salida(m) else cantidad
+
+    def _movimientos_periodo(self, codigo, fecha_desde, fecha_corte):
+        def fecha(valor):
+            if not valor:
+                return None
+            return timezone.make_aware(datetime.strptime(valor, '%Y-%m-%d'))
+
+        fd, fc = fecha(fecha_desde), fecha(fecha_corte)
+        if fd and fc and fd > fc:
+            raise ValueError('La fecha inicial no puede ser posterior a la final')
+        qs = (Movs.objects.select_related('tipo', 'codigo')
+              .filter(codigo_id=codigo, linea__gt=0)
+              .exclude(tipo_id__in=[8, 15])
+              .filter(Q(tipo_id__in=[6, 7, 10, 11, 12]) |
+                      Q(tipo__signo__gt=0) | Q(tipo__signo__lt=0)))
+        saldo_anterior = 0
+        if fd:
+            saldo_anterior = sum(self._cantidad_movimiento(m)
+                                 for m in qs.filter(fecha__lt=fd).iterator())
+            qs = qs.filter(fecha__gte=fd)
+        if fc:
+            # Límite exclusivo: incluye todo el último día.
+            fin = timezone.make_aware(datetime.combine(
+                fc.date() + timedelta(days=1), datetime.min.time()))
+            qs = qs.filter(fecha__lt=fin)
+        return qs.order_by('fecha', 'id'), saldo_anterior
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         action = request.POST.get("action", "")
@@ -85,34 +112,11 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
                 "message": "Debe ingresar un código de artículo"
             })
 
-        fc = None
-
-        if fecha_desde:
-            try:
-                fc = datetime.strptime(
-                    fecha_desde.strip(),
-                    "%Y-%m-%d"
-                )
-
-            except ValueError:
-                pass
-
-        qs = (
-            Movs.objects
-            .select_related("tipo", "codigo")
-            .filter(
-                codigo__codigo=codigo,
-                tipo__isnull=False,
-                linea__isnull=False,
-            )
-            .filter(Q(tipo__cod=12) | (Q(tipo__signo__isnull=False) & ~Q(tipo__signo=0)))
-            .exclude(linea=0)
-        )
-
-        if fc:
-            qs = qs.filter(fecha__lt=fc)
-
-        qs = qs.distinct().order_by("fecha")
+        try:
+            qs, saldo_anterior = self._movimientos_periodo(
+                codigo, fecha_desde, data.get('fecha_corte', '').strip())
+        except ValueError:
+            return JsonResponse({'success': False, 'message': 'Rango de fechas inválido'})
 
         bodegas_map = {
             b['cod']: b['nombre']
@@ -120,8 +124,10 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
         }
 
         resultados = []
+        saldo = saldo_anterior
 
         for m in qs.iterator():
+            saldo += self._cantidad_movimiento(m)
             resultados.append({
                 "codigo": m.codigo.codigo if m.codigo else "",
                 "descr": m.codigo.descr if m.codigo else "",
@@ -132,13 +138,16 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
                     f"Bodega {m.bodega}" if m.bodega else ""
                 ),
                 "cantidad": self._cantidad_movimiento(m),
+                "saldo": saldo,
                 "tipo": m.tipo.nombre if m.tipo else "",
-                "signo": -1 if self._es_salida(m) else m.tipo.signo,
+                "signo": -1 if self._es_salida(m) else 1,
             })
 
         return JsonResponse({
             "success": True,
             "data": resultados,
+            "saldo_anterior": saldo_anterior,
+            "saldo_final": saldo,
         })
 
     def _generar_excel(self, request: HttpRequest) -> HttpResponse:
@@ -149,33 +158,13 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
         codigo = data.get("codigo", "").strip()
         fecha_desde = data.get("fecha_desde", "").strip()
         fecha_corte = data.get("fecha_corte", "").strip()
-        saldo_ant = data.get("saldo_ant", "0").strip()
-
-        try:
-            saldo_ant = float(saldo_ant)
-        except Exception:
-            saldo_ant = 0
-
         if not codigo:
             return JsonResponse({"success": False, "message": "Debe ingresar un código de artículo"})
 
-        fd = fc = None
-        if fecha_desde:
-            try: fd = datetime.strptime(fecha_desde.strip(), "%Y-%m-%d")
-            except: pass
-        if fecha_corte:
-            try: fc = datetime.strptime(fecha_corte.strip(), "%Y-%m-%d")
-            except: pass
-
-        qs = (
-            Movs.objects.select_related("tipo", "codigo")
-            .filter(codigo__codigo=codigo, tipo__isnull=False, linea__isnull=False)
-            .filter(Q(tipo__cod=12) | (Q(tipo__signo__isnull=False) & ~Q(tipo__signo=0)))
-            .exclude(linea=0)
-        )
-        if fd: qs = qs.filter(fecha__gte=fd)
-        if fc: qs = qs.filter(fecha__lte=fc.replace(hour=23, minute=59, second=59))
-        qs = qs.distinct().order_by("fecha")
+        try:
+            qs, saldo_ant = self._movimientos_periodo(codigo, fecha_desde, fecha_corte)
+        except ValueError:
+            return JsonResponse({'success': False, 'message': 'Rango de fechas inválido'})
 
         bodegas_map = {b["cod"]: b["nombre"] for b in Bodegas.objects.values("cod", "nombre")}
 
@@ -188,7 +177,7 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
             if self._es_salida(m):
                 salida_rows.add(len(rows) + 2)
                 total_salidas += abs(cantidad)
-            elif signo > 0:
+            else:
                 total_entradas += cantidad
             rows.append([
                 m.fecha.strftime("%d-%m-%Y") if m.fecha else "",
@@ -285,13 +274,6 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
         fecha_desde = data.get("fecha_desde", "").strip()
         fecha_corte = data.get("fecha_corte", "").strip()
 
-        saldo_ant = data.get("saldo_ant", "0").strip()
-
-        try:
-            saldo_ant = float(saldo_ant)
-        except Exception:
-            saldo_ant = 0
-
         usuario = str(request.user)
 
         if not codigo:
@@ -321,31 +303,10 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
             except Exception:
                 pass
 
-        qs = (
-            Movs.objects
-            .select_related("tipo", "codigo")
-            .filter(
-                codigo__codigo=codigo,
-                tipo__isnull=False,
-                linea__isnull=False,
-            )
-            .filter(Q(tipo__cod=12) | (Q(tipo__signo__isnull=False) & ~Q(tipo__signo=0)))
-            .exclude(linea=0)
-        )
-
-        if fd:
-            qs = qs.filter(fecha__gte=fd)
-
-        if fc:
-            qs = qs.filter(
-                fecha__lte=fc.replace(
-                    hour=23,
-                    minute=59,
-                    second=59
-                )
-            )
-
-        qs = qs.distinct().order_by("fecha")
+        try:
+            qs, saldo_ant = self._movimientos_periodo(codigo, fecha_desde, fecha_corte)
+        except ValueError:
+            return JsonResponse({'success': False, 'message': 'Rango de fechas inválido'})
 
         bodegas_map = {
             b["cod"]: b["nombre"]
@@ -367,7 +328,7 @@ class IndexInformeAuxExistenciaArticuloView(LoginRequiredMixin, TemplateView):
             if self._es_salida(m):
                 salida_rows.add(len(rows) + 1)
                 total_salidas += abs(cantidad)
-            elif signo > 0:
+            else:
                 total_entradas += cantidad
 
             rows.append([

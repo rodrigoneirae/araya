@@ -14,6 +14,7 @@
     --color-red-700: oklch(50.5% 0.213 27.518);
     --color-amber-500: oklch(76.9% 0.188 70.08);
     --color-amber-600: oklch(66.6% 0.179 58.318);
+    --color-amber-700: oklch(55.5% 0.163 48.998);
     --color-yellow-100: oklch(97.3% 0.071 103.193);
     --color-yellow-700: oklch(55.4% 0.135 66.442);
     --color-green-100: oklch(96.2% 0.044 156.743);
@@ -63,6 +64,7 @@
     --text-5xl--line-height: 1;
     --text-6xl: 3.75rem;
     --text-6xl--line-height: 1;
+    --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
@@ -478,6 +480,9 @@
   .h-3 {
     height: calc(var(--spacing) * 3);
   }
+  .h-4 {
+    height: calc(var(--spacing) * 4);
+  }
   .h-5 {
     height: calc(var(--spacing) * 5);
   }
@@ -529,6 +534,9 @@
   .w-3 {
     width: calc(var(--spacing) * 3);
   }
+  .w-4 {
+    width: calc(var(--spacing) * 4);
+  }
   .w-5 {
     width: calc(var(--spacing) * 5);
   }
@@ -568,6 +576,9 @@
   .w-36 {
     width: calc(var(--spacing) * 36);
   }
+  .w-40 {
+    width: calc(var(--spacing) * 40);
+  }
   .w-48 {
     width: calc(var(--spacing) * 48);
   }
@@ -583,8 +594,41 @@
   .w-80 {
     width: calc(var(--spacing) * 80);
   }
+  .w-\[52px\] {
+    width: 52px;
+  }
+  .w-\[58px\] {
+    width: 58px;
+  }
   .w-\[60px\] {
     width: 60px;
+  }
+  .w-\[70px\] {
+    width: 70px;
+  }
+  .w-\[72px\] {
+    width: 72px;
+  }
+  .w-\[74px\] {
+    width: 74px;
+  }
+  .w-\[78px\] {
+    width: 78px;
+  }
+  .w-\[82px\] {
+    width: 82px;
+  }
+  .w-\[86px\] {
+    width: 86px;
+  }
+  .w-\[92px\] {
+    width: 92px;
+  }
+  .w-\[96px\] {
+    width: 96px;
+  }
+  .w-\[180px\] {
+    width: 180px;
   }
   .w-\[200px\] {
     width: 200px;
@@ -661,6 +705,9 @@
   .min-w-\[1000px\] {
     min-width: 1000px;
   }
+  .min-w-\[1100px\] {
+    min-width: 1100px;
+  }
   .min-w-max {
     min-width: max-content;
   }
@@ -678,6 +725,9 @@
   }
   .shrink-0 {
     flex-shrink: 0;
+  }
+  .table-fixed {
+    table-layout: fixed;
   }
   .border-collapse {
     border-collapse: collapse;
@@ -892,11 +942,23 @@
     --tw-border-style: dashed;
     border-style: dashed;
   }
+  .border-amber-500\/40 {
+    border-color: color-mix(in srgb, oklch(76.9% 0.188 70.08) 40%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-amber-500) 40%, transparent);
+    }
+  }
   .border-aq-border {
     border-color: var(--color-aq-border);
   }
   .border-aq-primary {
     border-color: var(--color-aq-primary);
+  }
+  .border-aq-primary\/30 {
+    border-color: color-mix(in srgb, 74 124 89 30%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-aq-primary) 30%, transparent);
+    }
   }
   .border-blue-400\/20 {
     border-color: color-mix(in srgb, oklch(70.7% 0.165 254.624) 20%, transparent);
@@ -937,6 +999,12 @@
   .bg-amber-500 {
     background-color: var(--color-amber-500);
   }
+  .bg-amber-500\/20 {
+    background-color: color-mix(in srgb, oklch(76.9% 0.188 70.08) 20%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-amber-500) 20%, transparent);
+    }
+  }
   .bg-aq-bg {
     background-color: var(--color-aq-bg);
   }
@@ -954,6 +1022,12 @@
   }
   .bg-aq-primary-soft {
     background-color: var(--color-aq-primary-soft);
+  }
+  .bg-aq-primary\/10 {
+    background-color: color-mix(in srgb, 74 124 89 10%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-aq-primary) 10%, transparent);
+    }
   }
   .bg-aq-surface {
     background-color: var(--color-aq-surface);
@@ -1207,6 +1281,10 @@
     --tw-font-weight: var(--font-weight-medium);
     font-weight: var(--font-weight-medium);
   }
+  .font-normal {
+    --tw-font-weight: var(--font-weight-normal);
+    font-weight: var(--font-weight-normal);
+  }
   .font-semibold {
     --tw-font-weight: var(--font-weight-semibold);
     font-weight: var(--font-weight-semibold);
@@ -1243,6 +1321,12 @@
     color: color-mix(in srgb, 22 31 22 60%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       color: color-mix(in oklab, var(--color-aq-text) 60%, transparent);
+    }
+  }
+  .text-aq-text\/70 {
+    color: color-mix(in srgb, 22 31 22 70%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      color: color-mix(in oklab, var(--color-aq-text) 70%, transparent);
     }
   }
   .text-blue-500 {
@@ -1299,10 +1383,20 @@
   .uppercase {
     text-transform: uppercase;
   }
+  .ordinal {
+    --tw-ordinal: ordinal;
+    font-variant-numeric: var(--tw-ordinal,) var(--tw-slashed-zero,) var(--tw-numeric-figure,) var(--tw-numeric-spacing,) var(--tw-numeric-fraction,);
+  }
   .placeholder-aq-muted {
     &::placeholder {
       color: var(--color-aq-muted);
     }
+  }
+  .accent-aq-primary {
+    accent-color: var(--color-aq-primary);
+  }
+  .opacity-0 {
+    opacity: 0%;
   }
   .opacity-50 {
     opacity: 50%;
@@ -1523,6 +1617,13 @@
       }
     }
   }
+  .hover\:text-amber-700 {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-amber-700);
+      }
+    }
+  }
   .hover\:text-aq-primary {
     &:hover {
       @media (hover: hover) {
@@ -1634,11 +1735,6 @@
   .disabled\:opacity-50 {
     &:disabled {
       opacity: 50%;
-    }
-  }
-  .sm\:col-span-1 {
-    @media (width >= 40rem) {
-      grid-column: span 1 / span 1;
     }
   }
   .sm\:col-span-2 {
@@ -1900,6 +1996,11 @@
       padding: calc(var(--spacing) * 6);
     }
   }
+  .xl\:col-span-2 {
+    @media (width >= 80rem) {
+      grid-column: span 2 / span 2;
+    }
+  }
   .xl\:w-1\/2 {
     @media (width >= 80rem) {
       width: calc(1/2 * 100%);
@@ -1918,11 +2019,6 @@
   .xl\:grid-cols-5 {
     @media (width >= 80rem) {
       grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-  }
-  .xl\:grid-cols-6 {
-    @media (width >= 80rem) {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
     }
   }
 }
@@ -2434,7 +2530,7 @@ input[type="checkbox"]:focus {
 .hover\:bg-aq-primary-soft:hover {
   background-color: rgb(var(--aq-primary-soft));
 }
-input, textarea, select {
+input:not(.flatpickr-input):not(.cur-year), textarea, select:not(.flatpickr-monthDropdown-months) {
   background-color: rgb(var(--aq-surface));
   border: 1px solid rgb(var(--aq-border));
   color: rgb(var(--aq-text));
@@ -2446,11 +2542,137 @@ input:focus, textarea:focus, select:focus {
   border-color: rgb(var(--aq-primary));
   box-shadow: 0 0 0 2px rgb(var(--aq-primary-soft));
 }
+input.flatpickr-input:focus, input.cur-year:focus {
+  box-shadow: none;
+}
 ::placeholder {
   color: rgb(var(--aq-muted));
 }
 .dark input[type="date"] {
   color-scheme: dark;
+}
+.flatpickr-calendar {
+  background: rgb(var(--aq-surface));
+  border: 1px solid rgb(var(--aq-border));
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.18);
+  font-family: var(--font-sans);
+}
+html.dark .flatpickr-calendar {
+  color-scheme: dark;
+}
+.flatpickr-calendar.arrowTop::before {
+  border-bottom-color: rgb(var(--aq-border));
+}
+.flatpickr-calendar.arrowTop::after {
+  border-bottom-color: rgb(var(--aq-surface));
+}
+.flatpickr-calendar.arrowBottom::before {
+  border-top-color: rgb(var(--aq-border));
+}
+.flatpickr-calendar.arrowBottom::after {
+  border-top-color: rgb(var(--aq-surface));
+}
+.flatpickr-months {
+  align-items: center;
+}
+.flatpickr-months .flatpickr-month {
+  color: rgb(var(--aq-text));
+}
+.flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month {
+  color: rgb(var(--aq-muted));
+  padding: 0 0.5rem;
+}
+.flatpickr-months .flatpickr-prev-month:hover, .flatpickr-months .flatpickr-next-month:hover {
+  color: rgb(var(--aq-primary));
+}
+.flatpickr-months .flatpickr-prev-month svg, .flatpickr-months .flatpickr-next-month svg {
+  fill: currentColor;
+  width: 16px;
+  height: 16px;
+}
+.flatpickr-current-month {
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding-top: 0;
+  height: 34px;
+}
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+  appearance: menulist;
+  -webkit-appearance: menulist;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  color: rgb(var(--aq-text));
+  cursor: pointer;
+  font-weight: 600;
+  height: 26px;
+  padding: 0 0.25rem;
+}
+.flatpickr-current-month .flatpickr-monthDropdown-months:hover {
+  background-color: rgb(var(--aq-surface-2));
+  border-color: rgb(var(--aq-border));
+}
+.flatpickr-current-month .numInputWrapper {
+  width: 5ch;
+}
+.flatpickr-current-month input.cur-year {
+  background-color: transparent;
+  border: 0;
+  color: rgb(var(--aq-text));
+  font-weight: 600;
+  height: 26px;
+  padding: 0 0 0 0.25rem;
+}
+.flatpickr-current-month .numInputWrapper span.arrowUp::after {
+  border-bottom-color: rgb(var(--aq-muted));
+}
+.flatpickr-current-month .numInputWrapper span.arrowDown::after {
+  border-top-color: rgb(var(--aq-muted));
+}
+.flatpickr-weekdays {
+  color: rgb(var(--aq-muted));
+}
+span.flatpickr-weekday {
+  color: rgb(var(--aq-muted));
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.flatpickr-day {
+  border-radius: 0.5rem;
+  color: rgb(var(--aq-text));
+  font-size: 0.85rem;
+}
+.flatpickr-day:hover, .flatpickr-day:focus {
+  background: rgb(var(--aq-primary-soft));
+  border-color: rgb(var(--aq-primary-soft));
+}
+.flatpickr-day.today {
+  border-color: rgb(var(--aq-primary));
+  color: rgb(var(--aq-primary));
+  font-weight: 700;
+}
+.flatpickr-day.today:hover, .flatpickr-day.today:focus {
+  background: rgb(var(--aq-primary));
+  border-color: rgb(var(--aq-primary));
+  color: #fff;
+}
+.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
+  background: rgb(var(--aq-primary));
+  border-color: rgb(var(--aq-primary));
+  color: #fff;
+}
+.flatpickr-day.selected:hover, .flatpickr-day.selected:focus {
+  background: rgb(var(--aq-primary-hover));
+  border-color: rgb(var(--aq-primary-hover));
+  color: #fff;
+}
+.flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay, .flatpickr-day.flatpickr-disabled {
+  color: rgb(var(--aq-muted));
+}
+.flatpickr-day.flatpickr-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 .active-link {
   position: relative;
@@ -2736,6 +2958,26 @@ input[type="number"] {
   syntax: "*";
   inherits: false;
 }
+@property --tw-ordinal {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-slashed-zero {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-figure {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-spacing {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-fraction {
+  syntax: "*";
+  inherits: false;
+}
 @property --tw-shadow {
   syntax: "*";
   inherits: false;
@@ -2900,6 +3142,11 @@ input[type="number"] {
       --tw-leading: initial;
       --tw-font-weight: initial;
       --tw-tracking: initial;
+      --tw-ordinal: initial;
+      --tw-slashed-zero: initial;
+      --tw-numeric-figure: initial;
+      --tw-numeric-spacing: initial;
+      --tw-numeric-fraction: initial;
       --tw-shadow: 0 0 #0000;
       --tw-shadow-color: initial;
       --tw-shadow-alpha: 100%;

@@ -71,6 +71,12 @@
                 instance.altInput.setCustomValidity('');
             },
         });
+        // El desplegable interno de meses de flatpickr no es un select de la app:
+        // select2 lo reemplaza, congela el texto del mes y abre la lista detrás
+        // del calendario, impidiendo cambiar de mes con las flechas.
+        if (picker.monthsDropdownContainer) {
+            picker.monthsDropdownContainer.setAttribute('data-no-select2', '');
+        }
         input.required = false;
         picker.altInput.required = required;
         picker.altInput.placeholder = 'dd-mm-aaaa';

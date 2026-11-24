@@ -2527,12 +2527,12 @@ input:focus, textarea:focus, select:focus {
   border-color: rgb(var(--aq-primary));
   box-shadow: 0 0 0 2px rgb(var(--aq-primary-soft));
 }
-/* Después de la regla general de inputs para que las casillas marcadas sean visibles. */
-input[type="checkbox"]:checked {
+/* Mayor especificidad que los estilos generales de input en ambos temas. */
+html input[type="checkbox"]:checked {
   background-color: rgb(var(--aq-primary));
   border-color: rgb(var(--aq-primary));
 }
-input[type="checkbox"]:checked::after {
+html input[type="checkbox"]:checked::after {
   content: '';
   position: absolute;
   left: 5px;

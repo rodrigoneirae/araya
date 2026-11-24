@@ -182,6 +182,7 @@ function buscarPorRut() {
             modoEdicion = false;
             resetBtnEditar();
             cargarSucursales();
+            cargarSustentable();
         } else {
             document.getElementById('clienteForm').reset();
             document.getElementById('rut').value = rut;
@@ -194,6 +195,7 @@ function buscarPorRut() {
             modoEdicion = false;
             resetBtnEditar();
             document.getElementById('sucursalesSection').classList.add('hidden');
+            actualizarIndicadorSustentable(false);
         }
     });
 }
@@ -331,20 +333,25 @@ function eliminarSucursal(id, nombre) {
     });
 }
 
+function actualizarIndicadorSustentable(exists) {
+    const btn = document.getElementById('btnSustentable');
+    if (!btn) return;
+    btn.dataset.exists = exists ? '1' : '0';
+    btn.classList.toggle('text-green-500', exists);
+}
+
 function cargarSustentable() {
     const rut = document.getElementById('rut').value.trim().toUpperCase();
     if (!rut) return;
-    const btn = document.getElementById('btnSustentable');
-    if (btn) {
-        btn.dataset.exists = '0';
-        btn.classList.remove('text-green-500');
-    }
+    actualizarIndicadorSustentable(false);
     buscarXHR('get_sustentable', {rut: rut}, function(data) {
-        if (data.success && data.exists && btn) {
-            btn.dataset.exists = '1';
-            btn.classList.add('text-green-500');
-        }
+        if (document.getElementById('rut').value.trim().toUpperCase() !== rut) return;
+        actualizarIndicadorSustentable(data.success && data.exists);
     });
+}
+
+function normalizarTipoTrato(tipo) {
+    return String(tipo).trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
 function abrirModalSustentable() {
@@ -361,10 +368,15 @@ function abrirModalSustentable() {
     });
     document.querySelectorAll('input[name="sustTipoTrato"]').forEach(el => { el.checked = false; });
     buscarXHR('get_sustentable', {rut: rut}, function(data) {
+        if (document.getElementById('rut').value.trim().toUpperCase() !== rut) return;
+        if (!data.success) {
+            Toastify({text: data.message || 'No se pudo cargar la configuración sustentable', style: {background: '#f44336'}}).showToast();
+            return;
+        }
         document.getElementById('modalSustentableTitle').textContent = data.exists
             ? 'Editar Configuración Sustentable'
             : 'Nueva Configuración Sustentable';
-        if (data.success && data.exists && data.data) {
+        if (data.exists && data.data) {
             const d = data.data;
             document.getElementById('sustEmiteCertificado').checked = !!d.emite_certificado;
             document.getElementById('sustPagaDisposicion').checked = !!d.paga_disposicion;
@@ -375,10 +387,10 @@ function abrirModalSustentable() {
             document.getElementById('sustValorRetiro').value = d.valor_retiro || '';
             document.getElementById('sustValorReparacion').value = d.valor_reparacion || '';
             document.getElementById('sustCondicionesEspec').value = d.condiciones_espec || '';
-            const tipos = Array.isArray(d.tipo_trato) ? d.tipo_trato : [];
-            tipos.forEach(t => {
-                const cb = document.querySelector('input[name="sustTipoTrato"][value="' + t + '"]');
-                if (cb) cb.checked = true;
+            const tipos = Array.isArray(d.tipo_trato) ? d.tipo_trato : String(d.tipo_trato || '').split(',');
+            const seleccionados = new Set(tipos.map(normalizarTipoTrato));
+            document.querySelectorAll('input[name="sustTipoTrato"]').forEach(cb => {
+                cb.checked = seleccionados.has(normalizarTipoTrato(cb.value));
             });
         }
         document.getElementById('modalSustentable').classList.remove('hidden');
@@ -470,6 +482,7 @@ function nuevoCliente() {
 
     document.getElementById('btnEditar').classList.add('hidden');
     document.getElementById('btnEliminar').classList.add('hidden');
+    actualizarIndicadorSustentable(false);
     resetBtnEditar();
     modoEdicion = false;
 }

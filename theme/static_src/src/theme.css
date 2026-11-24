@@ -148,23 +148,6 @@ input[type="checkbox"] {
   position: relative;
 }
 
-input[type="checkbox"]:checked {
-  background-color: rgb(var(--aq-primary));
-  border-color: rgb(var(--aq-primary));
-}
-
-input[type="checkbox"]:checked::after {
-  content: '';
-  position: absolute;
-  left: 5px;
-  top: 2px;
-  width: 6px;
-  height: 10px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
 input[type="checkbox"]:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgb(var(--aq-primary-soft));
@@ -222,6 +205,24 @@ select:focus {
   outline: none;
   border-color: rgb(var(--aq-primary));
   box-shadow: 0 0 0 2px rgb(var(--aq-primary-soft));
+}
+
+/* Después de la regla general de inputs para que las casillas marcadas sean visibles. */
+input[type="checkbox"]:checked {
+  background-color: rgb(var(--aq-primary));
+  border-color: rgb(var(--aq-primary));
+}
+
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 input.flatpickr-input:focus,
